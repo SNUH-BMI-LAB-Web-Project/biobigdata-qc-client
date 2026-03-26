@@ -80,14 +80,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </SheetContent>
         </Sheet>
 
-        <div className="flex-1 overflow-y-auto">
-          {children}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div className="flex min-h-full flex-1 flex-col">{children}</div>
         </div>
       </div>
 
       {settingsOpen && (
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <DialogContent className="max-w-[95vw] sm:max-w-4xl h-[90vh] sm:h-[80vh] p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-[92vw] sm:max-w-2xl h-[55vh] sm:h-[40vh] p-0 gap-0 overflow-hidden">
             <DialogHeader className="sr-only">
               <DialogTitle>설정</DialogTitle>
               <DialogDescription>시스템 설정 및 관리</DialogDescription>
@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {profileOpen && (
         <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-          <DialogContent className="max-w-[95vw] sm:max-w-4xl h-[90vh] sm:h-[80vh] p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-[78vw] sm:max-w-md h-[55vh] sm:h-[42vh] p-0 gap-0 overflow-hidden">
             <DialogHeader className="sr-only">
               <DialogTitle>마이페이지</DialogTitle>
               <DialogDescription>프로필 정보 및 활동 통계</DialogDescription>

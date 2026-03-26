@@ -5,6 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Save, BarChart3, Bell, Users, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -12,9 +19,9 @@ type SettingSection = 'quality-score' | 'notifications' | 'users' | 'permissions
 
 const settingSections = [
   { id: 'quality-score' as SettingSection, name: '대시보드 품질 점수 기준', icon: BarChart3 },
+  { id: 'permissions' as SettingSection, name: '지표DB 권한 관리', icon: Shield },
   { id: 'notifications' as SettingSection, name: '알림 설정', icon: Bell },
   { id: 'users' as SettingSection, name: '사용자 관리', icon: Users },
-  { id: 'permissions' as SettingSection, name: '지표DB 권한 관리', icon: Shield },
   { id: 'security' as SettingSection, name: '보안 설정', icon: Shield },
 ]
 
@@ -125,20 +132,13 @@ function QualityScoreSection({
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">점수 기준 설정</CardTitle>
-          <CardDescription className="text-sm">
-            각 품질 등급의 최소 점수를 지정하세요
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <div className="space-y-6">
+        <div className="space-y-6">
           <ScoreField
             id="excellent"
             label="우수 (Excellent)"
             value={excellent}
             onChange={onExcellentChange}
-            suffix="점 이상"
             colorClass="bg-green-500"
             colorLabel="녹색으로 표시"
             description={`${excellent}점 이상은 우수한 품질로 평가됩니다`}
@@ -148,7 +148,6 @@ function QualityScoreSection({
             label="양호 (Good)"
             value={good}
             onChange={onGoodChange}
-            suffix={`점 이상 ${excellent}점 미만`}
             colorClass="bg-yellow-500"
             colorLabel="노란색으로 표시"
             description={`${good}점 이상 ${excellent}점 미만은 양호한 품질로 평가됩니다`}
@@ -158,51 +157,23 @@ function QualityScoreSection({
             label="보통 (Fair)"
             value={fair}
             onChange={onFairChange}
-            suffix={`점 이상 ${good}점 미만`}
             colorClass="bg-red-500"
             colorLabel="빨간색으로 표시"
             description={`${fair}점 미만은 개선이 필요한 품질로 평가됩니다`}
           />
-          <div className="pt-4 border-t">
-            <Button onClick={onSave} className="gap-2">
-              <Save className="w-4 h-4" />
-              설정 저장
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="text-base">현재 적용 기준</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between p-2 rounded bg-muted/30">
-              <span>우수</span>
-              <span className="font-medium text-green-600">{excellent}점 이상</span>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded bg-muted/30">
-              <span>양호</span>
-              <span className="font-medium text-yellow-600">{good}점 ~ {excellent - 1}점</span>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded bg-muted/30">
-              <span>보통</span>
-              <span className="font-medium text-red-600">{fair}점 미만</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </>
   )
 }
 
 function ScoreField({
-  id, label, value, onChange, suffix, colorClass, colorLabel, description,
+  id, label, value, onChange, colorClass, colorLabel, description,
 }: {
   id: string; label: string; value: number
   onChange: (v: number) => void
-  suffix: string; colorClass: string; colorLabel: string; description: string
+  colorClass: string; colorLabel: string; description: string
 }) {
   return (
     <div className="space-y-2">
@@ -217,13 +188,12 @@ function ScoreField({
           onChange={(e) => onChange(Number(e.target.value))}
           className="w-24"
         />
-        <span className="text-sm text-muted-foreground">{suffix}</span>
-        <div className="flex-1 flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">{description}</span>
+        <div className="flex-1 flex items-center justify-end gap-2 text-right">
           <div className={cn('h-2 w-16 rounded', colorClass)} />
           <span className="text-xs text-muted-foreground">{colorLabel}</span>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">{description}</p>
     </div>
   )
 }
@@ -261,51 +231,38 @@ function PermissionsSection({ onSave }: { onSave: () => void }) {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">사용자 권한 설정</CardTitle>
-          <CardDescription className="text-sm">
-            각 사용자의 지표DB 관리 권한을 설정합니다
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="hidden sm:grid grid-cols-3 gap-3 p-3 bg-muted/30 rounded-md font-medium text-sm">
-              <div>사용자</div>
-              <div>이메일</div>
-              <div>권한</div>
-            </div>
+      <div className="space-y-4">
+        <div className="hidden sm:grid sm:grid-cols-[140px_minmax(0,1fr)_200px] gap-3 p-3 bg-muted/30 rounded-md font-medium text-sm">
+          <div>사용자</div>
+          <div>이메일</div>
+          <div>권한</div>
+        </div>
 
-            {[
-              { name: '홍길동', email: 'hong@example.com', role: 'admin' },
-              { name: '김철수', email: 'kim@example.com', role: 'manager' },
-              { name: '이영희', email: 'lee@example.com', role: 'viewer' },
-              { name: '박민수', email: 'park@example.com', role: 'viewer' },
-            ].map((user, index) => (
-              <div key={index} className="flex flex-col sm:grid sm:grid-cols-3 gap-2 sm:gap-3 p-3 border rounded-md sm:items-center">
-                <div className="font-medium text-sm">{user.name}</div>
-                <div className="text-sm text-muted-foreground truncate">{user.email}</div>
-                <div>
-                  <select
-                    defaultValue={user.role}
-                    className="h-8 px-2 text-xs border rounded-md bg-background w-full"
-                  >
-                    <option value="admin">관리자 (전체 권한)</option>
-                    <option value="manager">관리 권한</option>
-                    <option value="viewer">조회 권한</option>
-                  </select>
-                </div>
-              </div>
-            ))}
-
-            <div className="pt-4 border-t">
-              <p className="text-xs text-muted-foreground">
-                관리 권한: 지표 적용/해제 가능 | 조회 권한: 지표 정보 조회만 가능
-              </p>
+        {[
+          { name: '홍길동', email: 'hong@example.com', role: 'admin' },
+          { name: '김철수', email: 'kim@example.com', role: 'manager' },
+          { name: '이영희', email: 'lee@example.com', role: 'viewer' },
+          { name: '박민수', email: 'park@example.com', role: 'viewer' },
+        ].map((user, index) => (
+          <div key={index} className="flex flex-col sm:grid sm:grid-cols-[140px_minmax(0,1fr)_200px] gap-2 sm:gap-3 sm:items-center">
+            <div className="pl-3 font-medium text-sm">{user.name}</div>
+            <div className="text-sm text-muted-foreground truncate">{user.email}</div>
+            <div>
+              <Select defaultValue={user.role}>
+                <SelectTrigger size="sm" className="h-8 w-full text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">관리자 (전체 권한)</SelectItem>
+                  <SelectItem value="manager">관리 권한</SelectItem>
+                  <SelectItem value="viewer">조회 권한</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        ))}
+
+      </div>
     </>
   )
 }

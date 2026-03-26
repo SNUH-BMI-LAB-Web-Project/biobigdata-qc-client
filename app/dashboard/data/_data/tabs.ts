@@ -59,6 +59,44 @@ export const patientTabs: TabDef[] = [
   ]},
 ]
 
+/** KR-CDI 순서 우선, 이후 임상 DB에만 있는 영역을 붙입니다. */
+export function getOrderedDomainKeys(patient: TabDef[], clinical: TabDef[]): string[] {
+  const order: string[] = []
+  const seen = new Set<string>()
+  for (const t of patient) {
+    if (!seen.has(t.value)) {
+      seen.add(t.value)
+      order.push(t.value)
+    }
+  }
+  for (const t of clinical) {
+    if (!seen.has(t.value)) {
+      seen.add(t.value)
+      order.push(t.value)
+    }
+  }
+  return order
+}
+
+export function getDomainFilterLabel(
+  key: string,
+  patient: TabDef[],
+  clinical: TabDef[],
+): string {
+  const p = patient.find(t => t.value === key)
+  const c = clinical.find(t => t.value === key)
+  if (p && c && p.label !== c.label) return `${p.label} / ${c.label}`
+  return p?.label ?? c?.label ?? key
+}
+
+export function parseFirstStatNumeric(tab: TabDef | undefined): number | null {
+  if (!tab?.stats?.length) return null
+  const v = tab.stats[0].value
+  if (typeof v === 'number') return v
+  const n = Number(String(v).replace(/,/g, ''))
+  return Number.isFinite(n) ? n : null
+}
+
 export const clinicalTabs: TabDef[] = [
   { value: 'summary', label: '요약', sublabel: 'Summary', icon: FileText, cols: 4, stats: [
     { label: '총 피험자 수', value: '3,456' }, { label: '총 방문 수', value: '12,890' },

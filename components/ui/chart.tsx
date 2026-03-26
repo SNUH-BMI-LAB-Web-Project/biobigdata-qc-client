@@ -49,6 +49,12 @@ function ChartContainer({
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`
 
+  React.useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7571/ingest/853cd441-7e88-4db1-9203-e99d7c0387f9',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'822190'},body:JSON.stringify({sessionId:'822190',runId:'initial',hypothesisId:'LOG_PIPELINE',location:'components/ui/chart.tsx:ChartContainer',message:'ChartContainer mounted',data:{chartId,configKeys:Object.keys(config ?? {}),className:className ?? null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+  }, [chartId, className, config])
+
   return (
     <ChartContext.Provider value={{ config }}>
       <div
@@ -84,7 +90,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix ? `${prefix} ` : ''}[data-chart="${id}"] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color =
@@ -173,7 +179,7 @@ function ChartTooltipContent({
   return (
     <div
       className={cn(
-        'border-border/50 bg-background grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl',
+        'border-border/50 bg-background grid min-w-[11rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs',
         className,
       )}
     >
@@ -232,9 +238,9 @@ function ChartTooltipContent({
                         {itemConfig?.label || item.name}
                       </span>
                     </div>
-                    {item.value && (
+                    {item.value != null && (
                       <span className="text-foreground font-mono font-medium tabular-nums">
-                        {item.value.toLocaleString()}
+                        {Number(item.value).toLocaleString()}
                       </span>
                     )}
                   </div>

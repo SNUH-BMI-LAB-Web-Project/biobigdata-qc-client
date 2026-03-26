@@ -17,7 +17,7 @@ interface ScoreSparklineProps {
   color?: string
 }
 
-export function ScoreSparkline({ data, className = 'h-[28px] w-16', color }: ScoreSparklineProps) {
+export function ScoreSparkline({ data, className = 'h-[56px] w-16', color }: ScoreSparklineProps) {
   const strokeColor = color ?? 'var(--color-primary)'
   const gradId = `spark-${data.map(d => d.score).join('-').slice(0, 20)}`
 

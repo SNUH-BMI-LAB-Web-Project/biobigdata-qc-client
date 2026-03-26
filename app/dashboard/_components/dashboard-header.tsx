@@ -28,10 +28,7 @@ export function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
               <Database className="w-4 h-4 text-primary" />
             </div>
-            <div>
-              <h1 className="text-base font-bold">BIKO-DQM</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">품질관리 대시보드</p>
-            </div>
+            <h1 className="text-base font-bold">BIKO-DQM</h1>
           </Link>
         </div>
         <div className="flex items-center gap-2" />

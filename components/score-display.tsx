@@ -2,24 +2,33 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 
+/** 점수 텍스트 — 프로그레스 바(emerald/sky/amber/rose 600·700)와 같은 구간·색상 계열, 한 단계 진한 톤 */
 export function getScoreColor(score: number) {
-  if (score >= 95) return 'text-green-600'
-  if (score >= 90) return 'text-blue-600'
-  if (score >= 85) return 'text-yellow-600'
-  return 'text-red-600'
+  if (score >= 95) return 'text-emerald-800 dark:text-emerald-400'
+  if (score >= 90) return 'text-sky-800 dark:text-sky-400'
+  if (score >= 85) return 'text-amber-800 dark:text-amber-400'
+  return 'text-rose-800 dark:text-rose-400'
 }
 
 export function getScoreBgColor(score: number) {
-  if (score >= 95) return 'bg-green-100'
-  if (score >= 90) return 'bg-blue-100'
-  if (score >= 85) return 'bg-yellow-100'
-  return 'bg-red-100'
+  if (score >= 95) return 'bg-emerald-200/85 dark:bg-emerald-950/45'
+  if (score >= 90) return 'bg-sky-200/85 dark:bg-sky-950/45'
+  if (score >= 85) return 'bg-amber-200/85 dark:bg-amber-950/45'
+  return 'bg-rose-200/85 dark:bg-rose-950/45'
 }
 
 export function getScoreLabel(score: number) {
   if (score >= 95) return '우수'
   if (score >= 90) return '양호'
   return '보통'
+}
+
+/** 프로그레스 바 채움 — 구간별 색 구분, 500 대신 600·700 톤으로 채도(어두운 색상) 사용 */
+export function getScoreProgressIndicatorClass(score: number) {
+  if (score >= 95) return 'bg-emerald-700/55 dark:bg-emerald-600/50'
+  if (score >= 90) return 'bg-sky-700/55 dark:bg-sky-600/50'
+  if (score >= 85) return 'bg-amber-700/52 dark:bg-amber-600/48'
+  return 'bg-rose-700/55 dark:bg-rose-600/50'
 }
 
 interface ScoreTextProps {
