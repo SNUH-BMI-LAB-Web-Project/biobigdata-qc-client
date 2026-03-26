@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import {
   Database,
   Clock,
@@ -37,10 +37,17 @@ import {
   HardDrive,
 } from 'lucide-react'
 
-// 지표별 테이블-컬럼 상세 데이터
 type IndicatorDetail = {
   name: string
+  category: string
+  description: string
   score: number
+  db1Score: number
+  db2Score: number
+  weight: number
+  threshold: number
+  lastModified: string
+  appliedDate: string
   tableColumnResults: {
     db: string
     table: string
@@ -170,7 +177,6 @@ const qualityData = {
 }
 
 export default function DashboardPage() {
-  const router = useRouter()
   const [expandedDb, setExpandedDb] = useState<{ [key: string]: number | null }>({
     db1: null,
     db2: null,
@@ -178,6 +184,10 @@ export default function DashboardPage() {
   const [selectedIndicator, setSelectedIndicator] = useState<IndicatorDetail | null>(null)
   const [tableSortField, setTableSortField] = useState<'db' | 'table' | 'column' | 'score' | null>(null)
   const [tableSortDirection, setTableSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [modalDbFilter, setModalDbFilter] = useState<string>('all')
+  const [modalTableFilter, setModalTableFilter] = useState('')
+  const [modalColumnFilter, setModalColumnFilter] = useState('')
+  const [modalActiveFilter, setModalActiveFilter] = useState<string>('all')
 
   const getScoreColor = (score: number) => {
     if (score >= 95) return 'text-green-600'
@@ -212,12 +222,25 @@ export default function DashboardPage() {
   const getSortedTableData = () => {
     if (!selectedIndicator) return []
     
-    // 적용된 항목만 필터링
-    const data = selectedIndicator.tableColumnResults.filter(row => row.isActive)
+    let data = [...selectedIndicator.tableColumnResults]
+
+    if (modalDbFilter !== 'all') {
+      data = data.filter(row => row.db === modalDbFilter)
+    }
+    if (modalTableFilter) {
+      data = data.filter(row => row.table.toLowerCase().includes(modalTableFilter.toLowerCase()))
+    }
+    if (modalColumnFilter) {
+      data = data.filter(row => row.column.toLowerCase().includes(modalColumnFilter.toLowerCase()))
+    }
+    if (modalActiveFilter !== 'all') {
+      const isActive = modalActiveFilter === 'active'
+      data = data.filter(row => row.isActive === isActive)
+    }
     
     if (!tableSortField) return data
 
-    return [...data].sort((a, b) => {
+    return data.sort((a, b) => {
       let comparison = 0
       if (tableSortField === 'score') {
         comparison = a.score - b.score
@@ -230,22 +253,37 @@ export default function DashboardPage() {
 
   const handleIndicatorClick = (dbKey: 'db1' | 'db2', categoryIndex: number, indicatorIndex: number) => {
     const data = qualityData[dbKey]
-    const indicator = data.categories[categoryIndex].indicators[indicatorIndex]
-    
-    // 샘플 테이블-컬럼 데이터 생성
+    const otherData = dbKey === 'db1' ? qualityData.db2 : qualityData.db1
+    const category = data.categories[categoryIndex]
+    const indicator = category.indicators[indicatorIndex]
+    const otherIndicator = otherData.categories[categoryIndex].indicators[indicatorIndex]
+
     const tableColumnResults = [
-      { db: data.name, table: 'patients', column: 'patient_id', score: indicator.score + 2, isActive: true, lastChecked: '2024-01-15 10:00' },
-      { db: data.name, table: 'patients', column: 'name', score: indicator.score - 1, isActive: true, lastChecked: '2024-01-15 10:00' },
-      { db: data.name, table: 'patients', column: 'birth_date', score: indicator.score + 1, isActive: true, lastChecked: '2024-01-15 10:00' },
-      { db: data.name, table: 'visits', column: 'visit_id', score: indicator.score - 2, isActive: true, lastChecked: '2024-01-15 10:05' },
-      { db: data.name, table: 'visits', column: 'visit_date', score: indicator.score, isActive: false, lastChecked: '2024-01-14 14:30' },
-      { db: data.name, table: 'medical_records', column: 'record_id', score: indicator.score + 3, isActive: true, lastChecked: '2024-01-15 10:10' },
-      { db: data.name, table: 'medical_records', column: 'diagnosis', score: indicator.score - 3, isActive: true, lastChecked: '2024-01-15 10:10' },
+      { db: '환자 진료 DB', table: 'patients', column: 'patient_id', score: indicator.score + 2, isActive: true, lastChecked: '2024-01-15 10:00' },
+      { db: '환자 진료 DB', table: 'patients', column: 'name', score: indicator.score - 1, isActive: true, lastChecked: '2024-01-15 10:00' },
+      { db: '환자 진료 DB', table: 'patients', column: 'birth_date', score: indicator.score + 1, isActive: true, lastChecked: '2024-01-15 10:00' },
+      { db: '환자 진료 DB', table: 'visits', column: 'visit_id', score: indicator.score - 2, isActive: true, lastChecked: '2024-01-15 10:05' },
+      { db: '환자 진료 DB', table: 'visits', column: 'visit_date', score: indicator.score, isActive: false, lastChecked: '2024-01-14 14:30' },
+      { db: '환자 진료 DB', table: 'medical_records', column: 'record_id', score: indicator.score + 3, isActive: true, lastChecked: '2024-01-15 10:10' },
+      { db: '환자 진료 DB', table: 'medical_records', column: 'diagnosis', score: indicator.score - 3, isActive: true, lastChecked: '2024-01-15 10:10' },
+      { db: '임상시험 DB', table: 'subjects', column: 'subject_id', score: otherIndicator.score + 1, isActive: true, lastChecked: '2024-01-15 10:12' },
+      { db: '임상시험 DB', table: 'subjects', column: 'enrollment_date', score: otherIndicator.score - 1, isActive: true, lastChecked: '2024-01-15 10:12' },
+      { db: '임상시험 DB', table: 'trial_data', column: 'trial_id', score: otherIndicator.score + 2, isActive: true, lastChecked: '2024-01-14 14:00' },
+      { db: '임상시험 DB', table: 'trial_data', column: 'outcome', score: otherIndicator.score - 2, isActive: true, lastChecked: '2024-01-14 14:00' },
+      { db: '임상시험 DB', table: 'trial_data', column: 'notes', score: otherIndicator.score, isActive: false, lastChecked: '2024-01-14 14:00' },
     ]
 
     setSelectedIndicator({
       name: indicator.name,
+      category: category.name,
+      description: `${category.name} 관련 품질 검증 지표입니다`,
       score: indicator.score,
+      db1Score: dbKey === 'db1' ? indicator.score : otherIndicator.score,
+      db2Score: dbKey === 'db2' ? indicator.score : otherIndicator.score,
+      weight: 8 + (indicatorIndex % 3),
+      threshold: 90 + (indicatorIndex % 6),
+      lastModified: '2024-01-15',
+      appliedDate: '2024-01-10',
       tableColumnResults,
     })
   }
@@ -269,30 +307,30 @@ export default function DashboardPage() {
             <CardTitle className="text-sm">데이터 통계</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 flex-shrink-0">
                   <Users className="w-4 h-4 text-primary" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">현재 환자 수</p>
                   <p className="text-base font-bold">{data.stats.patients.toLocaleString()}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent/10">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent/10 flex-shrink-0">
                   <Calendar className="w-4 h-4 text-accent" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">전체 방문 수</p>
                   <p className="text-base font-bold">{data.stats.visits.toLocaleString()}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary flex-shrink-0">
                   <HardDrive className="w-4 h-4" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">전체 데이터 수</p>
                   <p className="text-base font-bold">{data.stats.totalRecords.toLocaleString()}</p>
                 </div>
@@ -304,7 +342,7 @@ export default function DashboardPage() {
         {/* 2. Quality Validation Execution */}
         <Card className="border-2">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <CardTitle className="text-sm">품질검증 실행 및 마지막 결과</CardTitle>
                 <CardDescription className="flex items-center gap-1 text-xs mt-1">
@@ -312,7 +350,7 @@ export default function DashboardPage() {
                   {data.lastValidation}
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
                   <FileCheck className="w-3 h-3" />
                   검증 실행
@@ -342,7 +380,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Category Scores */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {data.categories.map((category, index) => (
             <Card
               key={index}
@@ -386,7 +424,7 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {data.categories[expandedDb[dbKey]!].indicators.map((indicator, index) => (
                   <div
                     key={index}
@@ -418,7 +456,7 @@ export default function DashboardPage() {
         {/* Main Content */}
         <main className="container mx-auto px-4 py-4 space-y-4">
         {/* Databases Side by Side */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* Database 1 - Left */}
           {renderDatabase('db1')}
 
@@ -435,83 +473,136 @@ export default function DashboardPage() {
         setSelectedIndicator(null)
         setTableSortField(null)
         setTableSortDirection('asc')
+        setModalDbFilter('all')
+        setModalTableFilter('')
+        setModalColumnFilter('')
+        setModalActiveFilter('all')
       }}
     >
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto p-4 sm:p-8 lg:p-12">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-lg">{selectedIndicator?.name}</DialogTitle>
-              <DialogDescription className="text-sm">
-                전체 점수: <span className={`font-bold ${getScoreColor(selectedIndicator?.score || 0)}`}>{selectedIndicator?.score}</span>
-              </DialogDescription>
-            </div>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => {
-                const indicatorId = qualityData.db1.categories.flatMap(c => c.indicators).findIndex(i => i.name === selectedIndicator?.name) + 1
-                router.push(`/dashboard/indicators/${indicatorId}`)
-              }}
-            >
-              지표 상세 정보
-            </Button>
-          </div>
+          <DialogTitle className="text-lg">{selectedIndicator?.name}</DialogTitle>
+          <DialogDescription className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
+            <Badge variant="outline">{selectedIndicator?.category}</Badge>
+            <span>가중치: {selectedIndicator?.weight}</span>
+            <span>기준값: {selectedIndicator?.threshold}</span>
+            <span>수정: {selectedIndicator?.lastModified}</span>
+            <span>적용: {selectedIndicator?.appliedDate}</span>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Info & Scores */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">지표 정보</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">카테고리</span>
+                  <Badge variant="outline">{selectedIndicator?.category}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">설명</span>
+                  <span>{selectedIndicator?.description}</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">현재 점수</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">환자 진료 DB</span>
+                  <span className={`font-bold ${getScoreColor(selectedIndicator?.db1Score || 0)}`}>
+                    {selectedIndicator?.db1Score}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">임상시험 DB</span>
+                  <span className={`font-bold ${getScoreColor(selectedIndicator?.db2Score || 0)}`}>
+                    {selectedIndicator?.db2Score}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Table-Column Results */}
           <div>
-            <h4 className="text-sm font-semibold mb-2">테이블-컬럼별 검증 결과</h4>
-            <div className="border rounded-lg overflow-hidden">
+            <h4 className="text-sm font-semibold mb-2">적용 대상 테이블 및 컬럼</h4>
+            <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-muted/30">
                     <TableHead className="text-xs w-16">
-                      <span>적용</span>
+                      <select
+                        value={modalActiveFilter}
+                        onChange={(e) => setModalActiveFilter(e.target.value)}
+                        className="h-7 px-1 text-xs border rounded bg-background w-full"
+                      >
+                        <option value="all">전체</option>
+                        <option value="active">적용</option>
+                        <option value="inactive">미적용</option>
+                      </select>
                     </TableHead>
                     <TableHead className="text-xs">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTableSort('db')}
-                        className="h-7 px-2 gap-1 hover:bg-transparent"
+                      <select
+                        value={modalDbFilter}
+                        onChange={(e) => setModalDbFilter(e.target.value)}
+                        className="h-7 px-2 text-xs border rounded bg-background w-full"
                       >
-                        DB명
-                        <ArrowUpDown className="w-3 h-3" />
+                        <option value="all">모든 DB</option>
+                        {Array.from(new Set(selectedIndicator?.tableColumnResults.map(r => r.db) || [])).map((db) => (
+                          <option key={db} value={db}>{db}</option>
+                        ))}
+                      </select>
+                    </TableHead>
+                    <TableHead className="text-xs">
+                      <Input
+                        placeholder="테이블 검색..."
+                        value={modalTableFilter}
+                        onChange={(e) => setModalTableFilter(e.target.value)}
+                        className="h-7 px-2 text-xs"
+                      />
+                    </TableHead>
+                    <TableHead className="text-xs">
+                      <Input
+                        placeholder="컬럼 검색..."
+                        value={modalColumnFilter}
+                        onChange={(e) => setModalColumnFilter(e.target.value)}
+                        className="h-7 px-2 text-xs"
+                      />
+                    </TableHead>
+                    <TableHead className="text-xs text-center">
+                      <span className="text-muted-foreground">점수</span>
+                    </TableHead>
+                    <TableHead className="text-xs">
+                      <span className="text-muted-foreground">마지막 확인</span>
+                    </TableHead>
+                  </TableRow>
+                  <TableRow>
+                    <TableHead className="text-xs w-16">적용</TableHead>
+                    <TableHead className="text-xs">
+                      <Button variant="ghost" size="sm" onClick={() => handleTableSort('db')} className="h-7 px-2 gap-1 hover:bg-transparent">
+                        DB명 <ArrowUpDown className="w-3 h-3" />
                       </Button>
                     </TableHead>
                     <TableHead className="text-xs">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTableSort('table')}
-                        className="h-7 px-2 gap-1 hover:bg-transparent"
-                      >
-                        테이블명
-                        <ArrowUpDown className="w-3 h-3" />
+                      <Button variant="ghost" size="sm" onClick={() => handleTableSort('table')} className="h-7 px-2 gap-1 hover:bg-transparent">
+                        테이블명 <ArrowUpDown className="w-3 h-3" />
                       </Button>
                     </TableHead>
                     <TableHead className="text-xs">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTableSort('column')}
-                        className="h-7 px-2 gap-1 hover:bg-transparent"
-                      >
-                        컬럼명
-                        <ArrowUpDown className="w-3 h-3" />
+                      <Button variant="ghost" size="sm" onClick={() => handleTableSort('column')} className="h-7 px-2 gap-1 hover:bg-transparent">
+                        컬럼명 <ArrowUpDown className="w-3 h-3" />
                       </Button>
                     </TableHead>
                     <TableHead className="text-xs text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTableSort('score')}
-                        className="h-7 px-2 gap-1 hover:bg-transparent"
-                      >
-                        점수
-                        <ArrowUpDown className="w-3 h-3" />
+                      <Button variant="ghost" size="sm" onClick={() => handleTableSort('score')} className="h-7 px-2 gap-1 hover:bg-transparent">
+                        점수 <ArrowUpDown className="w-3 h-3" />
                       </Button>
                     </TableHead>
                     <TableHead className="text-xs">마지막 확인</TableHead>
@@ -526,18 +617,21 @@ export default function DashboardPage() {
                       <TableCell className="text-xs">{row.db}</TableCell>
                       <TableCell className="text-xs font-medium">{row.table}</TableCell>
                       <TableCell className="text-xs">
-                        <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
-                          {row.column}
-                        </code>
+                        <code className="bg-muted px-1.5 py-0.5 rounded text-xs">{row.column}</code>
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className={`text-sm font-bold ${getScoreColor(row.score)}`}>
-                          {row.score}
-                        </span>
+                        <span className={`text-sm font-bold ${getScoreColor(row.score)}`}>{row.score}</span>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{row.lastChecked}</TableCell>
                     </TableRow>
                   ))}
+                  {getSortedTableData().length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+                        필터 조건에 맞는 데이터가 없습니다
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>

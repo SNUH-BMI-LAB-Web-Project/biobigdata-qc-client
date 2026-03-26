@@ -29,9 +29,10 @@ export function SettingsPanel() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden">
-      <aside className="w-56 border-r bg-card flex-shrink-0 overflow-y-auto">
-        <nav className="p-2 space-y-1">
+    <div className="flex flex-col sm:flex-row h-full overflow-hidden">
+      <aside className="sm:w-56 border-b sm:border-b-0 sm:border-r bg-card flex-shrink-0 overflow-x-auto sm:overflow-x-visible sm:overflow-y-auto">
+        <h2 className="px-3 pt-4 pb-2 text-sm font-bold hidden sm:block">설정</h2>
+        <nav className="p-2 flex sm:flex-col gap-1 sm:space-y-0">
           {settingSections.map((section) => {
             const Icon = section.icon
             const isActive = activeSection === section.id
@@ -40,7 +41,7 @@ export function SettingsPanel() {
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                  'flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-md text-sm transition-colors whitespace-nowrap flex-shrink-0 sm:w-full',
                   isActive
                     ? 'bg-primary/10 text-primary font-medium'
                     : 'hover:bg-muted text-muted-foreground'
@@ -54,7 +55,7 @@ export function SettingsPanel() {
         </nav>
       </aside>
 
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="max-w-3xl">
           {activeSection === 'quality-score' && (
             <QualityScoreSection
@@ -269,7 +270,7 @@ function PermissionsSection({ onSave }: { onSave: () => void }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3 p-3 bg-muted/30 rounded-md font-medium text-sm">
+            <div className="hidden sm:grid grid-cols-3 gap-3 p-3 bg-muted/30 rounded-md font-medium text-sm">
               <div>사용자</div>
               <div>이메일</div>
               <div>권한</div>
@@ -281,9 +282,9 @@ function PermissionsSection({ onSave }: { onSave: () => void }) {
               { name: '이영희', email: 'lee@example.com', role: 'viewer' },
               { name: '박민수', email: 'park@example.com', role: 'viewer' },
             ].map((user, index) => (
-              <div key={index} className="grid grid-cols-3 gap-3 p-3 border rounded-md items-center">
+              <div key={index} className="flex flex-col sm:grid sm:grid-cols-3 gap-2 sm:gap-3 p-3 border rounded-md sm:items-center">
                 <div className="font-medium text-sm">{user.name}</div>
-                <div className="text-sm text-muted-foreground">{user.email}</div>
+                <div className="text-sm text-muted-foreground truncate">{user.email}</div>
                 <div>
                   <select
                     defaultValue={user.role}
@@ -297,14 +298,10 @@ function PermissionsSection({ onSave }: { onSave: () => void }) {
               </div>
             ))}
 
-            <div className="pt-4 border-t flex justify-between items-center">
+            <div className="pt-4 border-t">
               <p className="text-xs text-muted-foreground">
                 관리 권한: 지표 적용/해제 가능 | 조회 권한: 지표 정보 조회만 가능
               </p>
-              <Button onClick={onSave} className="gap-2">
-                <Save className="w-4 h-4" />
-                권한 저장
-              </Button>
             </div>
           </div>
         </CardContent>

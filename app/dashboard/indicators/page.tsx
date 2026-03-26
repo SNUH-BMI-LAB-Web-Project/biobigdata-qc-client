@@ -278,17 +278,17 @@ export default function IndicatorsPage() {
         {/* Tabs */}
         <Tabs defaultValue="tables">
           <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="tables" className="gap-1.5 text-sm">
-              <Database className="w-3.5 h-3.5" />
-              {'테이블 목록'}
+            <TabsTrigger value="tables" className="gap-1 sm:gap-1.5 text-xs sm:text-sm truncate">
+              <Database className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="truncate">{'테이블 목록'}</span>
             </TabsTrigger>
-            <TabsTrigger value="indicators" className="gap-1.5 text-sm">
-              <TableIcon className="w-3.5 h-3.5" />
-              {'지표 목록'}
+            <TabsTrigger value="indicators" className="gap-1 sm:gap-1.5 text-xs sm:text-sm truncate">
+              <TableIcon className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="truncate">{'지표 목록'}</span>
             </TabsTrigger>
-            <TabsTrigger value="stats" className="gap-1.5 text-sm">
-              <BarChart3 className="w-3.5 h-3.5" />
-              {'통계 목록'}
+            <TabsTrigger value="stats" className="gap-1 sm:gap-1.5 text-xs sm:text-sm truncate">
+              <BarChart3 className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="truncate">{'통계 목록'}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -297,7 +297,7 @@ export default function IndicatorsPage() {
             {/* Search and Filter */}
             <Card>
               <CardContent className="py-4">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -310,7 +310,7 @@ export default function IndicatorsPage() {
                   <select
                     value={tableDbFilter}
                     onChange={(e) => setTableDbFilter(e.target.value)}
-                    className="h-9 px-3 text-sm border rounded-md bg-background"
+                    className="h-9 px-3 text-sm border rounded-md bg-background flex-shrink-0"
                   >
                     <option value="all">{'전체 DB'}</option>
                     {uniqueDbs.map((db) => (
@@ -323,8 +323,8 @@ export default function IndicatorsPage() {
 
             {/* Table List */}
             <Card>
-              <CardContent className="p-0">
-                <Table>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table className="min-w-[700px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-8 text-xs"></TableHead>
@@ -416,7 +416,7 @@ export default function IndicatorsPage() {
             {/* Search and Filters */}
             <Card>
               <CardContent className="py-4">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -426,7 +426,7 @@ export default function IndicatorsPage() {
                       className="pl-10"
                     />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
@@ -458,7 +458,7 @@ export default function IndicatorsPage() {
             {/* Table */}
             <Card>
               <CardHeader className="pb-3 border-b">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-3 text-sm">
                     <span className="text-muted-foreground">{'페이지당 표시'}</span>
                     <select
@@ -498,8 +498,8 @@ export default function IndicatorsPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
-                <Table>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table className="min-w-[900px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-16 text-xs">{'적용'}</TableHead>
@@ -566,8 +566,8 @@ export default function IndicatorsPage() {
           {/* Stats Tab */}
           <TabsContent value="stats" className="space-y-4 mt-4">
             <Card>
-              <CardContent className="p-0">
-                <Table>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12 text-xs">ID</TableHead>
