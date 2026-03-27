@@ -87,7 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {settingsOpen && (
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <DialogContent className="max-w-[92vw] sm:max-w-2xl h-[55vh] sm:h-[40vh] p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-[96vw] sm:max-w-4xl h-[70vh] sm:h-[72vh] p-0 gap-0 overflow-hidden">
             <DialogHeader className="sr-only">
               <DialogTitle>설정</DialogTitle>
               <DialogDescription>시스템 설정 및 관리</DialogDescription>

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -12,10 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Save, BarChart3, Bell, Users, Shield } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { Save, BarChart3, Bell, Users, Shield, Moon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type SettingSection = 'quality-score' | 'notifications' | 'users' | 'permissions' | 'security'
+type SettingSection =
+  | 'quality-score'
+  | 'notifications'
+  | 'users'
+  | 'permissions'
+  | 'security'
+  | 'dark-mode'
 
 const settingSections = [
   { id: 'quality-score' as SettingSection, name: '대시보드 품질 점수 기준', icon: BarChart3 },
@@ -23,9 +30,11 @@ const settingSections = [
   { id: 'notifications' as SettingSection, name: '알림 설정', icon: Bell },
   { id: 'users' as SettingSection, name: '사용자 관리', icon: Users },
   { id: 'security' as SettingSection, name: '보안 설정', icon: Shield },
+  { id: 'dark-mode' as SettingSection, name: '다크모드', icon: Moon },
 ]
 
 export function SettingsPanel() {
+  const { resolvedTheme, setTheme } = useTheme()
   const [activeSection, setActiveSection] = useState<SettingSection>('quality-score')
   const [excellent, setExcellent] = useState(95)
   const [good, setGood] = useState(85)
@@ -77,20 +86,16 @@ export function SettingsPanel() {
           )}
 
           {activeSection === 'notifications' && (
-            <PlaceholderSection
+            <SectionHeader
               title="알림 설정"
               description="시스템 알림 및 이메일 설정"
-              icon={Bell}
-              message="알림 설정 기능이 곧 추가됩니다"
             />
           )}
 
           {activeSection === 'users' && (
-            <PlaceholderSection
+            <SectionHeader
               title="사용자 관리"
               description="시스템 사용자 및 권한 관리"
-              icon={Users}
-              message="사용자 관리 기능이 곧 추가됩니다"
             />
           )}
 
@@ -99,11 +104,16 @@ export function SettingsPanel() {
           )}
 
           {activeSection === 'security' && (
-            <PlaceholderSection
+            <SectionHeader
               title="보안 설정"
               description="시스템 보안 및 접근 제어 설정"
-              icon={Shield}
-              message="보안 설정 기능이 곧 추가됩니다"
+            />
+          )}
+
+          {activeSection === 'dark-mode' && (
+            <DarkModeSection
+              isDarkMode={resolvedTheme === 'dark'}
+              onToggle={(checked) => setTheme(checked ? 'dark' : 'light')}
             />
           )}
         </div>
@@ -198,25 +208,53 @@ function ScoreField({
   )
 }
 
-function PlaceholderSection({
-  title, description, icon: Icon, message,
+function SectionHeader({
+  title, description,
 }: {
   title: string; description: string
-  icon: React.ComponentType<{ className?: string }>
-  message: string
+}) {
+  return (
+    <div className="mb-6">
+      <h1 className="text-xl font-bold">{title}</h1>
+      <p className="text-sm text-muted-foreground mt-1">{description}</p>
+    </div>
+  )
+}
+
+function DarkModeSection({
+  isDarkMode,
+  onToggle,
+}: {
+  isDarkMode: boolean
+  onToggle: (checked: boolean) => void
 }) {
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-xl font-bold">{title}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        <h1 className="text-xl font-bold">다크모드</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          화면 테마를 어둡게 전환합니다
+        </p>
       </div>
-      <Card>
-        <CardContent className="py-12 text-center text-muted-foreground">
-          <Icon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>{message}</p>
-        </CardContent>
-      </Card>
+
+      <div className="rounded-md border p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="dark-mode-toggle" className="text-sm font-medium">
+              다크모드 사용
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              켜면 어두운 테마가 즉시 적용됩니다
+            </p>
+          </div>
+          <Switch
+            id="dark-mode-toggle"
+            checked={isDarkMode}
+            onCheckedChange={onToggle}
+            aria-label="다크모드 토글"
+          />
+        </div>
+      </div>
     </>
   )
 }
