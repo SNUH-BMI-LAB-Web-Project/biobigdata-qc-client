@@ -1,9 +1,20 @@
+import dynamic from 'next/dynamic'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Database, TableIcon, BarChart3 } from 'lucide-react'
 import { PageHeader } from '@/components/page-header'
-import { TablesTab } from './_components/tables-tab'
-import { IndicatorsTab } from './_components/indicators-tab'
-import { StatsTab } from './_components/stats-tab'
+
+const TablesTab = dynamic(
+  () => import('./_components/tables-tab').then(m => ({ default: m.TablesTab })),
+  { loading: () => null }
+)
+const IndicatorsTab = dynamic(
+  () => import('./_components/indicators-tab').then(m => ({ default: m.IndicatorsTab })),
+  { loading: () => null }
+)
+const StatsTab = dynamic(
+  () => import('./_components/stats-tab').then(m => ({ default: m.StatsTab })),
+  { loading: () => null }
+)
 
 export default function IndicatorsPage() {
   return (

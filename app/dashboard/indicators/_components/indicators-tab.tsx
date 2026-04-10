@@ -63,6 +63,15 @@ export function IndicatorsTab() {
     [detailId, indicators]
   )
 
+  const activeCount = useMemo(
+    () => indicators.reduce((n, i) => n + (i.isActive ? 1 : 0), 0),
+    [indicators]
+  )
+
+  const handleDetailOpenChange = useCallback((open: boolean) => {
+    if (!open) setDetailId(null)
+  }, [])
+
   const handleToggleActive = useCallback((id: number, e: React.MouseEvent) => {
     e.stopPropagation()
     setIndicators(prev => prev.map(item =>
@@ -123,7 +132,7 @@ export function IndicatorsTab() {
           />
         </div>
         <p className="w-full min-w-0 shrink-0 text-right text-sm text-muted-foreground lg:ml-auto lg:w-auto lg:max-w-full">
-          총 {indicators.length}개 품질지표 (활성: {indicators.filter(i => i.isActive).length}개)
+          총 {indicators.length}개 품질지표 (활성: {activeCount}개)
         </p>
       </div>
 
@@ -199,7 +208,7 @@ export function IndicatorsTab() {
           {paginationItems.map((item, idx) =>
             item === 'ellipsis' ? (
               <span
-                key={`e-${idx}`}
+                key={`ellipsis-${currentPage}-${idx}`}
                 className="flex h-8 min-w-8 items-center justify-center px-1 text-sm text-muted-foreground"
                 aria-hidden
               >
@@ -243,7 +252,7 @@ export function IndicatorsTab() {
         indicator={detailIndicator}
         indicators={indicators}
         open={detailId != null}
-        onOpenChange={open => { if (!open) setDetailId(null) }}
+        onOpenChange={handleDetailOpenChange}
         onNavigate={setDetailId}
       />
     </div>
