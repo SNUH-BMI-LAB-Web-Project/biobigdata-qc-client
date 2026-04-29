@@ -61,7 +61,7 @@ function getPaginationItems(current: number, total: number): (number | 'ellipsis
   return items
 }
 
-const pageSize = 10
+const pageSize = 4
 
 export function StatsTab() {
   const [searchTerm, setSearchTerm] = useState('')

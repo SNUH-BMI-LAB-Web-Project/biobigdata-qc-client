@@ -54,7 +54,7 @@ export function IndicatorsTab() {
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const pageSize = 10
+  const pageSize = 4
   const [indicators, setIndicators] = useState<Indicator[]>(indicatorsData)
   const [detailId, setDetailId] = useState<number | null>(null)
 
@@ -140,7 +140,7 @@ export function IndicatorsTab() {
         <CardContent className="min-h-0 min-w-0 flex-1 overflow-auto p-0">
           <Table
             containerClassName="w-full min-w-0 overflow-x-auto"
-            className="min-w-[900px] border-collapse border-spacing-0 table-auto"
+            className="min-w-[740px] border-collapse border-spacing-0 table-auto"
           >
             <TableHeader>
               <TableRow>
@@ -151,8 +151,6 @@ export function IndicatorsTab() {
                 <TableHead className="text-xs">설명</TableHead>
                 <TableHead className="w-20 text-center text-xs">가중치</TableHead>
                 <TableHead className="w-20 text-center text-xs">기준값</TableHead>
-                <TableHead className="w-24 text-center text-xs">진료DB</TableHead>
-                <TableHead className="w-24 text-center text-xs">시험DB</TableHead>
                 <TableHead className="w-28 text-xs">수정일</TableHead>
                 <TableHead className="w-28 text-xs">적용일</TableHead>
               </TableRow>
@@ -182,8 +180,6 @@ export function IndicatorsTab() {
                   </TableCell>
                   <TableCell className="text-center text-xs">{item.weight}</TableCell>
                   <TableCell className="text-center text-xs font-medium">{item.threshold}</TableCell>
-                  <TableCell className="text-center text-xs font-medium">{item.db1Score}</TableCell>
-                  <TableCell className="text-center text-xs font-medium">{item.db2Score}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{item.lastModified}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{item.appliedDate}</TableCell>
                 </TableRow>
