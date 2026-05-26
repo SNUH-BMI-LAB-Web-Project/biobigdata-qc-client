@@ -1,0 +1,23 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gukba-big:latest
+    container_name: gukba-big
+    restart: unless-stopped
+    # 호스트 3001 → 컨테이너 3000
+    # (서버에서 3000/8888 등이 이미 사용 중일 경우 HOST_PORT 환경변수로 변경)
+    ports:
+      - "${HOST_PORT:-3001}:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

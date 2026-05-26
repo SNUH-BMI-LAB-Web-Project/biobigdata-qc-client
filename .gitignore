@@ -11,3 +11,11 @@ node_modules/
 
 # IDE
 .idea/
+.cursor/
+
+# Claude
+CLAUDE.md
+.claude/
+
+# Build cache
+tsconfig.tsbuildinfo
