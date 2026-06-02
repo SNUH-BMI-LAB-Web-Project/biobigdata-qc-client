@@ -67,7 +67,29 @@ const indicatorTypes = [
 ]
 
 // 검증 현황 데이터 (히스토리)
-const verificationHistory = [
+type DatasetDetail = {
+  name: string
+  startedAt: string
+  endedAt: string | null
+  score: number | null
+  queryCount: number
+  progress?: string
+  error?: string
+}
+
+type VerificationRecord = {
+  id: number
+  db: string
+  dbId: string
+  startedAt: string
+  endedAt: string | null
+  executedBy: string
+  indicatorType: string
+  status: 'completed' | 'error' | 'inProgress'
+  datasetDetails: DatasetDetail[]
+}
+
+const verificationHistory: VerificationRecord[] = [
   {
     id: 1,
     db: '연계DB',

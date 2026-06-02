@@ -17,45 +17,55 @@ import {
 } from '@/components/ui/table'
 import { ArrowLeft, ArrowUpDown, Filter } from 'lucide-react'
 
-// 임시 데이터 (실제로는 API에서 가져올 데이터)
+// 임시 데이터 (실제로는 API — dq_quality_metric ⨝ dq_field_check 등에서 가져올 데이터)
+//   ※ 점수는 dq_quality_results 기반 단계별 DB(연계DB/전처리DB) 통과율 (§2.2 파이프라인)
+const metricSeed: Record<number, {
+  metricId: string; version: string; category: string; checkLevel: string
+  name: string; description: string; link: number; prep: number; threshold: number
+  lastModified: string; appliedDate: string
+  appliedTables: { table: string; columns: string[]; isActive: boolean; lastModified: string }[]
+}> = {
+  1: { metricId: 'QM001', version: 'v1.3', category: '완전성', checkLevel: '컬럼', name: '환자 필수항목 결측 검증', description: 'BIKO_INFO_PATIENT 환자ID/성별/생년월일 결측 검사', link: 99.2, prep: 99.6, threshold: 99, lastModified: '2026-05-11', appliedDate: '2026-05-12',
+    appliedTables: [
+      { table: 'BIKO_INFO_PATIENT', columns: ['PATIENT_ID', 'GENDER', 'BIRTH_DATE'], isActive: true, lastModified: '2026-05-11' },
+    ] },
+  3: { metricId: 'QM003', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '진단코드 표준 적합성', description: 'BIKO_CARE_CONDITION 진단코드 KCD 표준 코드 적합 여부', link: 95.6, prep: 96.9, threshold: 95, lastModified: '2026-04-27', appliedDate: '2026-04-28',
+    appliedTables: [
+      { table: 'BIKO_CARE_CONDITION', columns: ['DIAGNOSIS_CD', 'DIAGNOSIS_TYPE'], isActive: true, lastModified: '2026-04-27' },
+    ] },
+  5: { metricId: 'QM005', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '진단 없는 약물 처방 검출', description: '고혈압 진단 없이 고혈압 약물이 처방된 케이스 검출', link: 88.4, prep: 90.2, threshold: 90, lastModified: '2026-05-03', appliedDate: '2026-05-04',
+    appliedTables: [
+      { table: 'BIKO_CARE_MEDICATION', columns: ['DRUG_CD', 'PATIENT_ID'], isActive: true, lastModified: '2026-05-03' },
+      { table: 'BIKO_CARE_CONDITION', columns: ['DIAGNOSIS_CD', 'PATIENT_ID'], isActive: true, lastModified: '2026-05-03' },
+    ] },
+}
+
 const getIndicatorData = (id: string) => {
-  const categories = ['완전성', '정확성', '일관성']
-  const categoryIndex = Math.floor((parseInt(id) - 1) / 9)
-  const indicatorIndex = (parseInt(id) - 1) % 9
-  
-  // 고정된 점수 생성 (하이드레이션 오류 방지)
-  const scores = [
-    { db1: 95.2, db2: 92.1, weight: 10, threshold: 95 },
-    { db1: 93.5, db2: 89.3, weight: 9, threshold: 90 },
-    { db1: 97.8, db2: 94.6, weight: 10, threshold: 95 },
-    { db1: 91.2, db2: 87.5, weight: 8, threshold: 90 },
-    { db1: 94.7, db2: 90.2, weight: 9, threshold: 93 },
-    { db1: 96.3, db2: 93.8, weight: 10, threshold: 95 },
-    { db1: 92.8, db2: 88.9, weight: 8, threshold: 90 },
-    { db1: 95.6, db2: 91.7, weight: 9, threshold: 93 },
-    { db1: 98.1, db2: 95.3, weight: 10, threshold: 95 },
-  ]
-  
-  const scoreData = scores[indicatorIndex] || scores[0]
+  const numId = parseInt(id)
+  const seed = metricSeed[numId] ?? {
+    metricId: `QM${String(numId).padStart(3, '0')}`, version: 'v1.0', category: '완전성', checkLevel: '컬럼',
+    name: '품질 지표', description: 'BIKO_Data_Quality_DB 품질 검증 지표', link: 96.5, prep: 97.2, threshold: 95,
+    lastModified: '2026-05-12', appliedDate: '2026-05-12',
+    appliedTables: [
+      { table: 'BIKO_INFO_PATIENT', columns: ['PATIENT_ID', 'GENDER'], isActive: true, lastModified: '2026-05-12' },
+      { table: 'BIKO_INFO_ENCOUNTER', columns: ['ENCOUNTER_ID', 'PATIENT_ID'], isActive: true, lastModified: '2026-05-12' },
+    ],
+  }
 
   return {
-    id: parseInt(id),
-    category: categories[categoryIndex],
-    name: `${categories[categoryIndex]} 지표 ${indicatorIndex + 1}`,
-    description: `${categories[categoryIndex]} 관련 품질 검증 지표입니다`,
-    db1Score: scoreData.db1,
-    db2Score: scoreData.db2,
-    weight: scoreData.weight,
-    threshold: scoreData.threshold,
-    lastModified: '2024-01-15',
-    appliedDate: '2024-01-10',
-    appliedTables: [
-      { db: '환자 진료 DB', table: 'patients', columns: ['patient_id', 'name', 'birth_date'], isActive: true, lastModified: '2024-01-15' },
-      { db: '환자 진료 DB', table: 'visits', columns: ['visit_id', 'patient_id', 'visit_date'], isActive: true, lastModified: '2024-01-10' },
-      { db: '환자 진료 DB', table: 'medical_records', columns: ['record_id', 'diagnosis'], isActive: false, lastModified: '2024-01-12' },
-      { db: '임상시험 DB', table: 'subjects', columns: ['subject_id', 'enrollment_date'], isActive: true, lastModified: '2024-01-12' },
-      { db: '임상시험 DB', table: 'trial_data', columns: ['trial_id', 'outcome', 'notes'], isActive: true, lastModified: '2024-01-14' },
-    ],
+    id: numId,
+    metricId: seed.metricId,
+    version: seed.version,
+    category: seed.category,
+    checkLevel: seed.checkLevel,
+    name: seed.name,
+    description: seed.description,
+    linkScore: seed.link,
+    prepScore: seed.prep,
+    threshold: seed.threshold,
+    lastModified: seed.lastModified,
+    appliedDate: seed.appliedDate,
+    appliedTables: seed.appliedTables.map((t) => ({ db: 'BIKO_Data_Quality_DB', ...t })),
   }
 }
 
@@ -144,10 +154,14 @@ export default function IndicatorDetailPage() {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="text-xl">{indicator.name}</CardTitle>
+                <CardTitle className="text-xl">
+                  <span className="font-mono text-base text-muted-foreground mr-2">{indicator.metricId}</span>
+                  {indicator.name}
+                </CardTitle>
                 <CardDescription className="flex items-center gap-4 mt-2">
                   <Badge variant="outline">{indicator.category}</Badge>
-                  <span>가중치: {indicator.weight}</span>
+                  <Badge variant="secondary">{indicator.checkLevel}</Badge>
+                  <span>버전: {indicator.version}</span>
                   <span>기준값: {indicator.threshold}</span>
                   <span>수정: {indicator.lastModified}</span>
                   <span>적용: {indicator.appliedDate}</span>
@@ -176,19 +190,19 @@ export default function IndicatorDetailPage() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">현재 점수</CardTitle>
+              <CardTitle className="text-sm">최근 검증 통과율</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">환자 진료 DB:</span>
-                <span className={`font-bold ${getScoreColor(indicator.db1Score, indicator.threshold)}`}>
-                  {indicator.db1Score.toFixed(1)}
+                <span className="text-muted-foreground">연계DB (LINK · QC1):</span>
+                <span className={`font-bold ${getScoreColor(indicator.linkScore, indicator.threshold)}`}>
+                  {indicator.linkScore.toFixed(1)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">임상시험 DB:</span>
-                <span className={`font-bold ${getScoreColor(indicator.db2Score, indicator.threshold)}`}>
-                  {indicator.db2Score.toFixed(1)}
+                <span className="text-muted-foreground">전처리DB (PREP · QC2/3):</span>
+                <span className={`font-bold ${getScoreColor(indicator.prepScore, indicator.threshold)}`}>
+                  {indicator.prepScore.toFixed(1)}
                 </span>
               </div>
             </CardContent>
