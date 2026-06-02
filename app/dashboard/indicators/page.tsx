@@ -245,6 +245,451 @@ const tablesData: TableInfo[] = [
 ]
 
 // ─────────────────────────────────────────────────────────────
+// dq_field 샘플 컬럼 — 위 tablesData 에 인라인 컬럼이 없는 테이블 보강용
+//   ※ 전부 예시 데이터. 실제 dq_field 연동 시 일괄 교체 대상
+// ─────────────────────────────────────────────────────────────
+const sampleFields: Record<string, FieldInfo[]> = {
+  // 모집관리
+  T1001: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'AGRE_TYPE_CD', type: 'VARCHAR2(10)', nullable: false, description: '동의 유형 코드' },
+    { name: 'AGRE_YN', type: 'CHAR(1)', nullable: false, description: '동의 여부(Y/N)' },
+    { name: 'WTHDR_YN', type: 'CHAR(1)', nullable: true, description: '철회 여부(Y/N)' },
+    { name: 'RSRC_TYPE_CD', type: 'VARCHAR2(10)', nullable: true, description: '자원 유형 코드' },
+  ],
+  T1002: [
+    { name: 'APLCNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '신청자 ID' },
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: true, description: '참여자 ID' },
+    { name: 'APLCNT_NM', type: 'VARCHAR2(100)', nullable: false, description: '신청자명' },
+    { name: 'BRTH_YMD', type: 'VARCHAR2(8)', nullable: true, description: '생년월일' },
+    { name: 'GNDR_CD', type: 'CHAR(1)', nullable: true, description: '성별 코드' },
+  ],
+  T1004: [
+    { name: 'APLY_NO', type: 'VARCHAR2(30)', nullable: false, description: '신청번호(FK)' },
+    { name: 'INST_CD', type: 'VARCHAR2(10)', nullable: false, description: '기관 코드' },
+    { name: 'INST_NM', type: 'VARCHAR2(200)', nullable: false, description: '기관명' },
+    { name: 'APLY_DT', type: 'TIMESTAMP', nullable: false, description: '신청 일시' },
+  ],
+  T1005: [
+    { name: 'APLY_NO', type: 'VARCHAR2(30)', nullable: false, description: '신청번호(FK)' },
+    { name: 'WTCS_CD', type: 'VARCHAR2(20)', nullable: false, description: '동의서 코드' },
+    { name: 'WTCS_VER', type: 'VARCHAR2(10)', nullable: false, description: '동의서 버전' },
+    { name: 'AGRE_YN', type: 'CHAR(1)', nullable: false, description: '동의 여부' },
+    { name: 'AGRE_DT', type: 'TIMESTAMP', nullable: true, description: '동의 일시' },
+  ],
+  T1006: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'FR_PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '가족 참여자 ID' },
+    { name: 'FR_RLTN_CD', type: 'VARCHAR2(10)', nullable: false, description: '가족관계 코드' },
+    { name: 'REG_DT', type: 'TIMESTAMP', nullable: false, description: '등록 일시' },
+  ],
+  T1007: [
+    { name: 'WTCS_FILE_ID', type: 'VARCHAR2(24)', nullable: false, description: '동의서 파일 ID' },
+    { name: 'APLY_NO', type: 'VARCHAR2(30)', nullable: false, description: '신청번호(FK)' },
+    { name: 'FILE_NM', type: 'VARCHAR2(255)', nullable: false, description: '파일명' },
+    { name: 'FILE_PATH', type: 'VARCHAR2(500)', nullable: true, description: '파일 경로' },
+  ],
+  T1008: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'GNM_ID', type: 'VARCHAR2(20)', nullable: false, description: '유전체 ID' },
+    { name: 'RCNTT_DT', type: 'TIMESTAMP', nullable: false, description: '철회 일시' },
+    { name: 'RCNTT_RSN', type: 'VARCHAR2(500)', nullable: true, description: '철회 사유' },
+  ],
+  T1009: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'RCNTT_DT', type: 'TIMESTAMP', nullable: false, description: '철회 일시' },
+    { name: 'RCNTT_RSN_CD', type: 'VARCHAR2(10)', nullable: true, description: '철회 사유 코드' },
+  ],
+  T1010: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'RSRC_ID', type: 'VARCHAR2(20)', nullable: false, description: '자원 ID' },
+    { name: 'RSRC_TYPE_CD', type: 'VARCHAR2(10)', nullable: false, description: '자원 유형 코드' },
+    { name: 'RCNTT_DT', type: 'TIMESTAMP', nullable: false, description: '철회 일시' },
+  ],
+  T1011: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'SP_ID', type: 'VARCHAR2(20)', nullable: false, description: '검체 ID' },
+    { name: 'SP_TYPE_CD', type: 'VARCHAR2(10)', nullable: false, description: '검체 유형 코드' },
+    { name: 'RCNTT_DT', type: 'TIMESTAMP', nullable: false, description: '철회 일시' },
+  ],
+  // 문검진
+  T1101: [
+    { name: 'RESPONSE_ID', type: 'VARCHAR2(24)', nullable: false, description: '응답 ID' },
+    { name: 'RECORD_ID', type: 'VARCHAR2(20)', nullable: false, description: '기록지 ID(FK)' },
+    { name: 'ARTICLE_CD', type: 'VARCHAR2(20)', nullable: false, description: '문항 코드' },
+    { name: 'RESPONSE_VAL', type: 'CLOB', nullable: true, description: '응답 값(통합 VIEW)' },
+  ],
+  T1103: [
+    { name: 'ARTICLE_CD', type: 'VARCHAR2(20)', nullable: false, description: '항목 코드' },
+    { name: 'RECORD_TYPE_CD', type: 'VARCHAR2(10)', nullable: false, description: '기록지 구분' },
+    { name: 'ARTICLE_NM', type: 'VARCHAR2(200)', nullable: false, description: '항목명' },
+    { name: 'ARTICLE_SEQ', type: 'NUMBER(10)', nullable: true, description: '항목 순서' },
+  ],
+  T1104: [
+    { name: 'ARTICLE_CD', type: 'VARCHAR2(20)', nullable: false, description: '항목 코드(FK)' },
+    { name: 'CTGR_CD', type: 'VARCHAR2(20)', nullable: false, description: '응답범주 코드' },
+    { name: 'CTGR_NM', type: 'VARCHAR2(200)', nullable: false, description: '응답범주명' },
+    { name: 'CTGR_SEQ', type: 'NUMBER(10)', nullable: true, description: '범주 순서' },
+  ],
+  T1201: [
+    { name: 'EXCN_ID', type: 'VARCHAR2(20)', nullable: false, description: '문진 실행 ID' },
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'MEBI_CD', type: 'VARCHAR2(20)', nullable: false, description: '문진 코드' },
+    { name: 'EXCN_STTS_CD', type: 'VARCHAR2(10)', nullable: false, description: '실행 상태 코드' },
+    { name: 'EXCN_DT', type: 'TIMESTAMP', nullable: true, description: '실행 일시' },
+  ],
+  T1202: [
+    { name: 'PTCP_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여 ID' },
+    { name: 'EXCN_ID', type: 'VARCHAR2(20)', nullable: false, description: '문진 실행 ID(FK)' },
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'PTCP_STTS_CD', type: 'VARCHAR2(10)', nullable: false, description: '참여 상태 코드' },
+    { name: 'RSPNS_DT', type: 'TIMESTAMP', nullable: true, description: '응답 일시' },
+  ],
+  // 공통
+  T1203: [
+    { name: 'ANS_CD', type: 'VARCHAR2(20)', nullable: false, description: '답변 코드' },
+    { name: 'QSTN_CD', type: 'VARCHAR2(20)', nullable: false, description: '질문 코드(FK)' },
+    { name: 'ANS_NM', type: 'VARCHAR2(500)', nullable: false, description: '답변명' },
+    { name: 'ANS_SEQ', type: 'NUMBER(10)', nullable: true, description: '답변 순서' },
+  ],
+  T1204: [
+    { name: 'ATCH_FILE_ID', type: 'VARCHAR2(24)', nullable: false, description: '첨부파일 ID' },
+    { name: 'QSTN_CD', type: 'VARCHAR2(20)', nullable: false, description: '질문 코드(FK)' },
+    { name: 'FILE_NM', type: 'VARCHAR2(255)', nullable: false, description: '파일명' },
+    { name: 'FILE_PATH', type: 'VARCHAR2(500)', nullable: true, description: '파일 경로' },
+  ],
+  T1205: [
+    { name: 'LMT_CD', type: 'VARCHAR2(20)', nullable: false, description: '제한 코드' },
+    { name: 'QSTN_CD', type: 'VARCHAR2(20)', nullable: false, description: '질문 코드(FK)' },
+    { name: 'LMT_TYPE_CD', type: 'VARCHAR2(10)', nullable: false, description: '제한 유형 코드' },
+    { name: 'LMT_VAL', type: 'VARCHAR2(200)', nullable: true, description: '제한 값' },
+  ],
+  T1206: [
+    { name: 'QSTN_CD', type: 'VARCHAR2(20)', nullable: false, description: '질문 코드' },
+    { name: 'TYPE_CD', type: 'VARCHAR2(10)', nullable: false, description: '유형 코드(FK)' },
+    { name: 'QSTN_CONT', type: 'CLOB', nullable: false, description: '질문 내용' },
+    { name: 'QSTN_SEQ', type: 'NUMBER(10)', nullable: true, description: '질문 순서' },
+  ],
+  T1207: [
+    { name: 'TYPE_CD', type: 'VARCHAR2(10)', nullable: false, description: '유형 코드' },
+    { name: 'TYPE_NM', type: 'VARCHAR2(100)', nullable: false, description: '유형명' },
+    { name: 'TYPE_DESC', type: 'VARCHAR2(500)', nullable: true, description: '유형 설명' },
+  ],
+  // eCRF
+  T1301: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'PRTPNT_NM', type: 'VARCHAR2(100)', nullable: false, description: '참여자명' },
+    { name: 'BRTH_YMD', type: 'VARCHAR2(8)', nullable: true, description: '생년월일' },
+    { name: 'GNDR_CD', type: 'CHAR(1)', nullable: true, description: '성별 코드' },
+    { name: 'REG_DT', type: 'TIMESTAMP', nullable: false, description: '등록 일시' },
+  ],
+  T1303: [
+    { name: 'CLSF_CD', type: 'VARCHAR2(20)', nullable: false, description: '분류 코드' },
+    { name: 'CLSF_NM', type: 'VARCHAR2(200)', nullable: false, description: '분류명' },
+    { name: 'UP_CLSF_CD', type: 'VARCHAR2(20)', nullable: true, description: '상위 분류 코드' },
+  ],
+  T1304: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'CLSF_CD', type: 'VARCHAR2(20)', nullable: false, description: '분류 코드(FK)' },
+    { name: 'CLSF_DT', type: 'TIMESTAMP', nullable: true, description: '분류 일시' },
+  ],
+  T1305: [
+    { name: 'DRR_ID', type: 'VARCHAR2(20)', nullable: false, description: 'DRR ID' },
+    { name: 'CRF_ID', type: 'VARCHAR2(20)', nullable: false, description: 'CRF ID(FK)' },
+    { name: 'RSLT_TXT', type: 'CLOB', nullable: true, description: '결과 본문' },
+    { name: 'RSLT_DT', type: 'TIMESTAMP', nullable: true, description: '결과 일시' },
+  ],
+  T1306: [
+    { name: 'DRR_FILE_ID', type: 'VARCHAR2(24)', nullable: false, description: 'DRR 파일 ID' },
+    { name: 'DRR_ID', type: 'VARCHAR2(20)', nullable: false, description: 'DRR ID(FK)' },
+    { name: 'FILE_NM', type: 'VARCHAR2(255)', nullable: false, description: '파일명' },
+    { name: 'FILE_PATH', type: 'VARCHAR2(500)', nullable: true, description: '파일 경로' },
+  ],
+  T1307: [
+    { name: 'CRF_ID', type: 'VARCHAR2(20)', nullable: false, description: 'CRF ID(FK)' },
+    { name: 'DTL_ITEM_CD', type: 'VARCHAR2(20)', nullable: false, description: '상세 항목 코드' },
+    { name: 'DTL_VAL', type: 'CLOB', nullable: true, description: '상세 값' },
+  ],
+  T1308: [
+    { name: 'RCPTN_ID', type: 'VARCHAR2(20)', nullable: false, description: '수신 ID' },
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'FILE_NM', type: 'VARCHAR2(255)', nullable: false, description: '파일명' },
+    { name: 'RCPTN_DT', type: 'TIMESTAMP', nullable: false, description: '수신 일시' },
+  ],
+  T1309: [
+    { name: 'GENE_DRR_ID', type: 'VARCHAR2(20)', nullable: false, description: '유전자 DRR ID' },
+    { name: 'CRF_ID', type: 'VARCHAR2(20)', nullable: false, description: 'CRF ID(FK)' },
+    { name: 'GENE_NM', type: 'VARCHAR2(100)', nullable: true, description: '유전자명' },
+    { name: 'VARIANT_CD', type: 'VARCHAR2(50)', nullable: true, description: '변이 코드' },
+  ],
+  T1310: [
+    { name: 'GENE_INSP_ID', type: 'VARCHAR2(20)', nullable: false, description: '유전자 검사 ID' },
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'INSP_NM', type: 'VARCHAR2(200)', nullable: false, description: '검사명' },
+    { name: 'INSP_DT', type: 'TIMESTAMP', nullable: true, description: '검사 일시' },
+  ],
+  T1311: [
+    { name: 'HPO_CD', type: 'VARCHAR2(20)', nullable: false, description: 'HPO 코드' },
+    { name: 'HPO_NM', type: 'VARCHAR2(200)', nullable: false, description: 'HPO 명칭' },
+    { name: 'HPO_DESC', type: 'CLOB', nullable: true, description: 'HPO 설명' },
+  ],
+  T1312: [
+    { name: 'PBD_CD', type: 'VARCHAR2(20)', nullable: false, description: '추정진단 코드' },
+    { name: 'PBD_NM', type: 'VARCHAR2(200)', nullable: false, description: '추정진단명' },
+    { name: 'DISEASE_CTGR', type: 'VARCHAR2(50)', nullable: true, description: '질환 분류' },
+  ],
+  T1313: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'PBD_CD', type: 'VARCHAR2(20)', nullable: false, description: '추정진단 코드(FK)' },
+    { name: 'PBD_DT', type: 'TIMESTAMP', nullable: true, description: '추정진단 일시' },
+  ],
+  T1314: [
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'HPO_CD', type: 'VARCHAR2(20)', nullable: false, description: 'HPO 코드(FK)' },
+    { name: 'PHA_DT', type: 'TIMESTAMP', nullable: true, description: '표현형이상 확인일' },
+  ],
+  T1315: [
+    { name: 'GNM_FILE_ID', type: 'VARCHAR2(24)', nullable: false, description: '유전체 파일 ID' },
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'FILE_NM', type: 'VARCHAR2(255)', nullable: false, description: '파일명' },
+    { name: 'FILE_TYPE_CD', type: 'VARCHAR2(10)', nullable: true, description: '파일 유형 코드' },
+  ],
+  T1316: [
+    { name: 'RCPTN_ID', type: 'VARCHAR2(20)', nullable: false, description: '수신 ID' },
+    { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
+    { name: 'RCPTN_DT', type: 'TIMESTAMP', nullable: false, description: '수신 일시' },
+    { name: 'RCPTN_STTS_CD', type: 'VARCHAR2(10)', nullable: true, description: '수신 상태 코드' },
+  ],
+  T1317: [
+    { name: 'CRTR_ID', type: 'VARCHAR2(20)', nullable: false, description: '등록기준 ID' },
+    { name: 'CRTR_NM', type: 'VARCHAR2(200)', nullable: false, description: '등록기준명' },
+    { name: 'CRTR_VAL', type: 'VARCHAR2(500)', nullable: true, description: '등록기준 값' },
+  ],
+  T1318: [
+    { name: 'VRTE_ID', type: 'VARCHAR2(20)', nullable: false, description: '변종 ID' },
+    { name: 'GENE_DRR_ID', type: 'VARCHAR2(20)', nullable: false, description: '유전자 DRR ID(FK)' },
+    { name: 'VARIANT_NM', type: 'VARCHAR2(200)', nullable: true, description: '변이명' },
+    { name: 'CLNVAR_CD', type: 'VARCHAR2(50)', nullable: true, description: 'ClinVar 코드' },
+  ],
+  // KR-CDI
+  T1402: [
+    { name: 'ORG_ID', type: 'VARCHAR2(20)', nullable: false, description: '의료기관 ID' },
+    { name: 'ORG_NM', type: 'VARCHAR2(200)', nullable: false, description: '의료기관명' },
+    { name: 'ORG_TYPE_CD', type: 'VARCHAR2(10)', nullable: true, description: '의료기관 유형' },
+    { name: 'TELNO', type: 'VARCHAR2(20)', nullable: true, description: '전화번호' },
+    { name: 'ADDR', type: 'VARCHAR2(500)', nullable: true, description: '주소' },
+  ],
+  T1405: [
+    { name: 'PROCEDURE_ID', type: 'VARCHAR2(20)', nullable: false, description: '수술/처치 ID' },
+    { name: 'ENCOUNTER_ID', type: 'VARCHAR2(20)', nullable: false, description: '내원 ID(FK)' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'PROCEDURE_CD', type: 'VARCHAR2(20)', nullable: false, description: '수술/처치 코드' },
+    { name: 'PROCEDURE_DATE', type: 'TIMESTAMP', nullable: false, description: '시행 일자' },
+  ],
+  T1408: [
+    { name: 'PATHOLOGY_ID', type: 'VARCHAR2(20)', nullable: false, description: '병리검사 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'EXAM_NM', type: 'VARCHAR2(200)', nullable: false, description: '병리검사명' },
+    { name: 'RESULT_TXT', type: 'CLOB', nullable: true, description: '병리검사 결과' },
+    { name: 'STATUS_CD', type: 'VARCHAR2(10)', nullable: true, description: '병리검사 상태' },
+  ],
+  T1409: [
+    { name: 'IMAGING_ID', type: 'VARCHAR2(20)', nullable: false, description: '영상검사 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'EXAM_NM', type: 'VARCHAR2(200)', nullable: false, description: '진단영상검사명' },
+    { name: 'RESULT_TXT', type: 'CLOB', nullable: true, description: '진단영상검사 결과' },
+    { name: 'STATUS_CD', type: 'VARCHAR2(10)', nullable: true, description: '검사 상태' },
+  ],
+  T1410: [
+    { name: 'FUNCTIONAL_ID', type: 'VARCHAR2(20)', nullable: false, description: '기능검사 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'EXAM_NM', type: 'VARCHAR2(200)', nullable: false, description: '기능검사명' },
+    { name: 'RESULT_VAL', type: 'CLOB', nullable: true, description: '기능검사 결과' },
+    { name: 'EXAM_DATE', type: 'TIMESTAMP', nullable: false, description: '기능검사 일자' },
+  ],
+  T1411: [
+    { name: 'VITAL_ID', type: 'VARCHAR2(20)', nullable: false, description: '활력징후 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'SBP', type: 'NUMBER(10)', nullable: true, description: '수축기 혈압' },
+    { name: 'DBP', type: 'NUMBER(10)', nullable: true, description: '이완기 혈압' },
+    { name: 'BODY_TEMP', type: 'BINARY_DOUBLE', nullable: true, description: '체온' },
+    { name: 'MEASURE_DATE', type: 'TIMESTAMP', nullable: false, description: '측정 일시' },
+  ],
+  T1412: [
+    { name: 'ALLERGY_ID', type: 'VARCHAR2(20)', nullable: false, description: '알레르기 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'CAUSE_CD', type: 'VARCHAR2(20)', nullable: true, description: '원인 구분' },
+    { name: 'SYMPTOM', type: 'VARCHAR2(500)', nullable: true, description: '증상' },
+    { name: 'ONSET_DATE', type: 'TIMESTAMP', nullable: true, description: '발생일' },
+  ],
+  T1413: [
+    { name: 'IMMUN_ID', type: 'VARCHAR2(20)', nullable: false, description: '예방접종 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'VACCINE_NM', type: 'VARCHAR2(200)', nullable: false, description: '예방접종명' },
+    { name: 'DOSE_SEQ', type: 'NUMBER(10)', nullable: true, description: '접종 차수' },
+    { name: 'VACCINE_DATE', type: 'TIMESTAMP', nullable: true, description: '접종 일자' },
+  ],
+  T1414: [
+    { name: 'STUDY_ID', type: 'VARCHAR2(20)', nullable: false, description: 'DICOM 스터디 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'STUDY_DATE', type: 'TIMESTAMP', nullable: true, description: '촬영 일자' },
+    { name: 'MODALITY', type: 'VARCHAR2(20)', nullable: true, description: '촬영장비/모달리티' },
+    { name: 'BODY_PART', type: 'VARCHAR2(100)', nullable: true, description: '촬영 부위' },
+  ],
+  T1415: [
+    { name: 'MEDIA_ID', type: 'VARCHAR2(20)', nullable: false, description: '참고자료 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'DEVICE_NM', type: 'VARCHAR2(200)', nullable: true, description: '기기 명칭' },
+    { name: 'CREATED_DATE', type: 'TIMESTAMP', nullable: true, description: '생성 일자' },
+    { name: 'BODY_SITE', type: 'VARCHAR2(100)', nullable: true, description: '대상 신체 부위' },
+  ],
+  T1416: [
+    { name: 'DOCUMENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '문서 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'DOC_TYPE_CD', type: 'VARCHAR2(10)', nullable: false, description: '문서 타입' },
+    { name: 'FILE_FORMAT', type: 'VARCHAR2(20)', nullable: true, description: '파일 형식(PDF/CDA/JPG)' },
+    { name: 'CREATED_DATE', type: 'TIMESTAMP', nullable: true, description: '생성 일자' },
+  ],
+  // TFN
+  T2001: [
+    { name: 'ALGY_ID', type: 'VARCHAR2(20)', nullable: false, description: '알러지 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'CAUSE_NM', type: 'VARCHAR2(200)', nullable: true, description: '원인 물질' },
+    { name: 'REACTION', type: 'VARCHAR2(500)', nullable: true, description: '반응/증상' },
+    { name: 'ONSET_DT', type: 'TIMESTAMP', nullable: true, description: '발생일' },
+  ],
+  T2003: [
+    { name: 'INSP_ID', type: 'VARCHAR2(20)', nullable: false, description: '검사 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'INSP_NM', type: 'VARCHAR2(200)', nullable: false, description: '검사명' },
+    { name: 'RESULT_TXT', type: 'CLOB', nullable: true, description: '검사 결과' },
+    { name: 'INSP_DT', type: 'TIMESTAMP', nullable: true, description: '검사 일자' },
+  ],
+  T2004: [
+    { name: 'INSP_ID', type: 'VARCHAR2(20)', nullable: false, description: '진단검사 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'INSP_CD', type: 'VARCHAR2(20)', nullable: false, description: '검사 코드' },
+    { name: 'RESULT_VAL', type: 'VARCHAR2(100)', nullable: true, description: '결과값' },
+    { name: 'RESULT_UNIT', type: 'VARCHAR2(20)', nullable: true, description: '결과 단위' },
+  ],
+  T2005: [
+    { name: 'INSP_ID', type: 'VARCHAR2(20)', nullable: false, description: '병리검사 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'INSP_NM', type: 'VARCHAR2(200)', nullable: false, description: '병리검사명' },
+    { name: 'RESULT_TXT', type: 'CLOB', nullable: true, description: '병리검사 결과' },
+    { name: 'INSP_DT', type: 'TIMESTAMP', nullable: true, description: '검사 일자' },
+  ],
+  T2006: [
+    { name: 'INSP_ID', type: 'VARCHAR2(20)', nullable: false, description: '영상검사 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'INSP_NM', type: 'VARCHAR2(200)', nullable: false, description: '영상검사명' },
+    { name: 'RESULT_TXT', type: 'CLOB', nullable: true, description: '판독 결과' },
+    { name: 'INSP_DT', type: 'TIMESTAMP', nullable: true, description: '검사 일자' },
+  ],
+  T2007: [
+    { name: 'ORG_ID', type: 'VARCHAR2(20)', nullable: false, description: '의료기관 ID' },
+    { name: 'ORG_NM', type: 'VARCHAR2(200)', nullable: false, description: '의료기관명' },
+    { name: 'ORG_TYPE_CD', type: 'VARCHAR2(10)', nullable: true, description: '의료기관 유형' },
+  ],
+  T2008: [
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID' },
+    { name: 'BRTH_YMD', type: 'VARCHAR2(8)', nullable: true, description: '생년월일' },
+    { name: 'GNDR_CD', type: 'CHAR(1)', nullable: true, description: '성별 코드' },
+    { name: 'DEATH_YMD', type: 'VARCHAR2(8)', nullable: true, description: '사망일' },
+  ],
+  T2009: [
+    { name: 'PRCTDR_ID', type: 'VARCHAR2(20)', nullable: false, description: '진료의 ID' },
+    { name: 'ORG_ID', type: 'VARCHAR2(20)', nullable: false, description: '의료기관 ID(FK)' },
+    { name: 'PRCTDR_NM', type: 'VARCHAR2(100)', nullable: true, description: '진료의명' },
+    { name: 'DEPT_NM', type: 'VARCHAR2(100)', nullable: true, description: '진료과명' },
+  ],
+  T2010: [
+    { name: 'PRCTDR_ID', type: 'VARCHAR2(20)', nullable: false, description: '진료의 ID(FK)' },
+    { name: 'ENCOUNTER_ID', type: 'VARCHAR2(20)', nullable: false, description: '내원 ID(FK)' },
+    { name: 'ROLE_CD', type: 'VARCHAR2(10)', nullable: false, description: '진료의 역할 코드' },
+  ],
+  T2011: [
+    { name: 'PSCRIP_ID', type: 'VARCHAR2(20)', nullable: false, description: '처방 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'DRUG_CD', type: 'VARCHAR2(20)', nullable: false, description: '약물 코드' },
+    { name: 'DOSE', type: 'BINARY_DOUBLE', nullable: true, description: '용량' },
+    { name: 'PSCRIP_DT', type: 'TIMESTAMP', nullable: true, description: '처방 일자' },
+  ],
+  T2012: [
+    { name: 'SURGERY_ID', type: 'VARCHAR2(20)', nullable: false, description: '수술 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'SURGERY_NM', type: 'VARCHAR2(200)', nullable: false, description: '수술명' },
+    { name: 'SURGERY_DT', type: 'TIMESTAMP', nullable: true, description: '수술 일자' },
+  ],
+  T2013: [
+    { name: 'VHOSP_ID', type: 'VARCHAR2(20)', nullable: false, description: '내원 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'ORG_ID', type: 'VARCHAR2(20)', nullable: false, description: '의료기관 ID(FK)' },
+    { name: 'VISIT_TYPE', type: 'VARCHAR2(10)', nullable: true, description: '내원 유형' },
+    { name: 'ADMSN_DT', type: 'TIMESTAMP', nullable: true, description: '입원 일시' },
+    { name: 'DSCHRG_DT', type: 'TIMESTAMP', nullable: true, description: '퇴원 일시' },
+  ],
+  // 공공데이터
+  T2102: [
+    { name: 'REPORT_ID', type: 'VARCHAR2(24)', nullable: false, description: '검진 리포트 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'EXAM_DT', type: 'TIMESTAMP', nullable: false, description: '검진 일자' },
+    { name: 'RESULT_VAL', type: 'VARCHAR2(100)', nullable: true, description: '검진 결과값' },
+    { name: 'RESULT_UNIT', type: 'VARCHAR2(20)', nullable: true, description: '결과 단위' },
+  ],
+  T2103: [
+    { name: 'MED_ID', type: 'VARCHAR2(24)', nullable: false, description: '투약 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'DRUG_CD', type: 'VARCHAR2(20)', nullable: false, description: '약물 코드' },
+    { name: 'DOSE', type: 'BINARY_DOUBLE', nullable: true, description: '용량' },
+    { name: 'PSCRIP_DT', type: 'TIMESTAMP', nullable: true, description: '투약 일자' },
+  ],
+  T2104: [
+    { name: 'OBS_ID', type: 'VARCHAR2(24)', nullable: false, description: 'Observation ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'OBS_CD', type: 'VARCHAR2(20)', nullable: false, description: '관찰 코드' },
+    { name: 'OBS_VAL', type: 'VARCHAR2(100)', nullable: true, description: '관찰 값' },
+    { name: 'OBS_DT', type: 'TIMESTAMP', nullable: true, description: '관찰 일자' },
+  ],
+  T2105: [
+    { name: 'VAC_ID', type: 'VARCHAR2(24)', nullable: false, description: '예방접종 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'VACCINE_CD', type: 'VARCHAR2(20)', nullable: false, description: '백신 코드' },
+    { name: 'VAC_DT', type: 'TIMESTAMP', nullable: true, description: '접종 일자' },
+  ],
+  T2106: [
+    { name: 'VISIT_ID', type: 'VARCHAR2(24)', nullable: false, description: '내원 ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'ORG_ID', type: 'VARCHAR2(20)', nullable: true, description: '의료기관 ID' },
+    { name: 'VISIT_DT', type: 'TIMESTAMP', nullable: false, description: '내원 일자' },
+    { name: 'VISIT_TYPE', type: 'VARCHAR2(10)', nullable: true, description: '내원 유형' },
+  ],
+  // PGHD
+  T2201: [
+    { name: 'PGHD_ID', type: 'VARCHAR2(24)', nullable: false, description: 'PGHD ID' },
+    { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(FK)' },
+    { name: 'ITEM_CD', type: 'VARCHAR2(20)', nullable: false, description: '항목 코드(FK)' },
+    { name: 'ITEM_VAL', type: 'VARCHAR2(100)', nullable: true, description: '항목 값' },
+    { name: 'MEASURE_DT', type: 'TIMESTAMP', nullable: true, description: '측정 일시' },
+  ],
+  T2202: [
+    { name: 'ITEM_CD', type: 'VARCHAR2(20)', nullable: false, description: '항목 코드' },
+    { name: 'ITEM_NM', type: 'VARCHAR2(200)', nullable: false, description: '항목명' },
+    { name: 'ITEM_UNIT', type: 'VARCHAR2(20)', nullable: true, description: '항목 단위' },
+  ],
+  T2203: [
+    { name: 'STAT_ID', type: 'VARCHAR2(24)', nullable: false, description: '통계 ID' },
+    { name: 'ITEM_CD', type: 'VARCHAR2(20)', nullable: false, description: '항목 코드(FK)' },
+    { name: 'STAT_TYPE', type: 'VARCHAR2(20)', nullable: false, description: '통계 유형' },
+    { name: 'STAT_VAL', type: 'BINARY_DOUBLE', nullable: true, description: '통계 값' },
+    { name: 'STAT_DT', type: 'TIMESTAMP', nullable: true, description: '통계 일자' },
+  ],
+}
+
+// 테이블별 컬럼(dq_field) 조회 — 인라인 columns 우선, 없으면 샘플 맵
+const getFields = (t: TableInfo): FieldInfo[] => t.columns ?? sampleFields[t.tableId] ?? []
+
+// ─────────────────────────────────────────────────────────────
 // 품질 지표 데이터 (dq_quality_metric) — 구조적 검증
 //   targetTable 은 dq_table.table_name 과 일치
 // ─────────────────────────────────────────────────────────────
@@ -473,10 +918,10 @@ export default function IndicatorsPage() {
                           <TableRow key={`${table.tableId}-columns`}>
                             <TableCell colSpan={8} className="p-0 bg-muted/20">
                               <div className="px-8 py-3">
-                                {table.columns && table.columns.length > 0 ? (
+                                {getFields(table).length > 0 ? (
                                   <>
                                     <p className="text-xs font-semibold text-muted-foreground mb-2">
-                                      {'컬럼(dq_field) — 샘플 '}{table.columns.length}{'개'}
+                                      {'컬럼(dq_field) — 샘플 '}{getFields(table).length}{'개'}
                                     </p>
                                     <Table>
                                       <TableHeader>
@@ -488,7 +933,7 @@ export default function IndicatorsPage() {
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
-                                        {table.columns.map((col) => (
+                                        {getFields(table).map((col) => (
                                           <TableRow key={col.name}>
                                             <TableCell className="text-xs font-mono font-medium">{col.name}</TableCell>
                                             <TableCell>
