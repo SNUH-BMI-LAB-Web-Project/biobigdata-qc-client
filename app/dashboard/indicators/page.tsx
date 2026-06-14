@@ -1114,7 +1114,6 @@ export default function IndicatorsPage() {
                       <TableHead className="w-20 text-xs">{'검증단위'}</TableHead>
                       <TableHead className="text-xs">{'지표명'}</TableHead>
                       <TableHead className="text-xs">{'설명'}</TableHead>
-                      <TableHead className="text-xs">{'적용 테이블'}</TableHead>
                       <TableHead className="w-16 text-center text-xs">{'가중치'}</TableHead>
                       <TableHead className="w-20 text-center text-xs">{'기준값'}</TableHead>
                       <TableHead className="w-24 text-center text-xs">{'진료DB'}</TableHead>
@@ -1146,7 +1145,6 @@ export default function IndicatorsPage() {
                         </TableCell>
                         <TableCell className="text-xs font-medium">{item.name}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{item.description}</TableCell>
-                        <TableCell className="text-xs font-mono text-muted-foreground">{item.targetTable}</TableCell>
                         <TableCell className="text-center text-xs">{item.weight}</TableCell>
                         <TableCell className="text-center text-xs font-medium">
                           {item.threshold}
@@ -1190,10 +1188,7 @@ export default function IndicatorsPage() {
                       <TableHead className="w-20 text-center text-xs">{'단계'}</TableHead>
                       <TableHead className="text-xs">{'지표명'}</TableHead>
                       <TableHead className="text-xs">{'설명'}</TableHead>
-                      <TableHead className="w-32 text-xs">{'분석 ID'}</TableHead>
-                      <TableHead className="w-24 text-center text-xs">{'결과 유형'}</TableHead>
                       <TableHead className="w-20 text-center text-xs">{'유형'}</TableHead>
-                      <TableHead className="w-16 text-xs">{'버전'}</TableHead>
                       <TableHead className="text-xs">{'비고'}</TableHead>
                       <TableHead className="w-20 text-center text-xs">{'산출 주기'}</TableHead>
                       <TableHead className="w-28 text-xs">{'마지막 산출'}</TableHead>
@@ -1212,16 +1207,9 @@ export default function IndicatorsPage() {
                         </TableCell>
                         <TableCell className="text-xs font-medium">{stat.name}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{stat.description}</TableCell>
-                        <TableCell className="text-xs font-mono text-muted-foreground">{stat.analysisId}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="secondary" className="text-xs">
-                            {stat.distribution ? '분포' : 'count'}
-                          </Badge>
-                        </TableCell>
                         <TableCell className="text-center">
                           <Badge variant="secondary" className="text-xs font-mono">{stat.siMetric}</Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{stat.version}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{stat.others || '-'}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className="text-xs">{stat.cycle}</Badge>
