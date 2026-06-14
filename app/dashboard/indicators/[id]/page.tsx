@@ -21,19 +21,19 @@ import { ArrowLeft, ArrowUpDown, Filter } from 'lucide-react'
 //   ※ 점수는 dq_quality_results 기반 단계별 DB(연계DB/전처리DB) 통과율 (§2.2 파이프라인)
 const metricSeed: Record<number, {
   metricId: string; version: string; category: string; checkLevel: string
-  name: string; description: string; link: number; prep: number; threshold: number
+  name: string; description: string; link: number; prep: number; threshold: number; weight: number
   lastModified: string; appliedDate: string
   appliedTables: { table: string; columns: string[]; isActive: boolean; lastModified: string }[]
 }> = {
-  1: { metricId: 'QM001', version: 'v1.3', category: '완전성', checkLevel: '컬럼', name: '환자 필수항목 결측 검증', description: 'BIKO_INFO_PATIENT 환자ID/성별/생년월일 결측 검사', link: 99.2, prep: 99.6, threshold: 99, lastModified: '2026-05-11', appliedDate: '2026-05-12',
+  1: { metricId: 'QM001', version: 'v1.3', category: '완전성', checkLevel: '컬럼', name: '환자 필수항목 결측 검증', description: 'BIKO_INFO_PATIENT 환자ID/성별/생년월일 결측 검사', link: 99.2, prep: 99.6, threshold: 99, weight: 8, lastModified: '2026-05-11', appliedDate: '2026-05-12',
     appliedTables: [
       { table: 'BIKO_INFO_PATIENT', columns: ['PATIENT_ID', 'GENDER', 'BIRTH_DATE'], isActive: true, lastModified: '2026-05-11' },
     ] },
-  3: { metricId: 'QM003', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '진단코드 표준 적합성', description: 'BIKO_CARE_CONDITION 진단코드 KCD 표준 코드 적합 여부', link: 95.6, prep: 96.9, threshold: 95, lastModified: '2026-04-27', appliedDate: '2026-04-28',
+  3: { metricId: 'QM003', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '진단코드 표준 적합성', description: 'BIKO_CARE_CONDITION 진단코드 KCD 표준 코드 적합 여부', link: 95.6, prep: 96.9, threshold: 95, weight: 9, lastModified: '2026-04-27', appliedDate: '2026-04-28',
     appliedTables: [
       { table: 'BIKO_CARE_CONDITION', columns: ['DIAGNOSIS_CD', 'DIAGNOSIS_TYPE'], isActive: true, lastModified: '2026-04-27' },
     ] },
-  5: { metricId: 'QM005', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '진단 없는 약물 처방 검출', description: '고혈압 진단 없이 고혈압 약물이 처방된 케이스 검출', link: 88.4, prep: 90.2, threshold: 90, lastModified: '2026-05-03', appliedDate: '2026-05-04',
+  5: { metricId: 'QM005', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '진단 없는 약물 처방 검출', description: '고혈압 진단 없이 고혈압 약물이 처방된 케이스 검출', link: 88.4, prep: 90.2, threshold: 90, weight: 10, lastModified: '2026-05-03', appliedDate: '2026-05-04',
     appliedTables: [
       { table: 'BIKO_CARE_MEDICATION', columns: ['DRUG_CD', 'PATIENT_ID'], isActive: true, lastModified: '2026-05-03' },
       { table: 'BIKO_CARE_CONDITION', columns: ['DIAGNOSIS_CD', 'PATIENT_ID'], isActive: true, lastModified: '2026-05-03' },
@@ -44,7 +44,7 @@ const getIndicatorData = (id: string) => {
   const numId = parseInt(id)
   const seed = metricSeed[numId] ?? {
     metricId: `QM${String(numId).padStart(3, '0')}`, version: 'v1.0', category: '완전성', checkLevel: '컬럼',
-    name: '품질 지표', description: 'BIKO_Data_Quality_DB 품질 검증 지표', link: 96.5, prep: 97.2, threshold: 95,
+    name: '품질 지표', description: 'BIKO_Data_Quality_DB 품질 검증 지표', link: 96.5, prep: 97.2, threshold: 95, weight: 8,
     lastModified: '2026-05-12', appliedDate: '2026-05-12',
     appliedTables: [
       { table: 'BIKO_INFO_PATIENT', columns: ['PATIENT_ID', 'GENDER'], isActive: true, lastModified: '2026-05-12' },
@@ -63,6 +63,7 @@ const getIndicatorData = (id: string) => {
     linkScore: seed.link,
     prepScore: seed.prep,
     threshold: seed.threshold,
+    weight: seed.weight,
     lastModified: seed.lastModified,
     appliedDate: seed.appliedDate,
     appliedTables: seed.appliedTables.map((t) => ({ db: 'BIKO_Data_Quality_DB', ...t })),
@@ -161,6 +162,7 @@ export default function IndicatorDetailPage() {
                 <CardDescription className="flex items-center gap-4 mt-2">
                   <Badge variant="outline">{indicator.category}</Badge>
                   <Badge variant="secondary">{indicator.checkLevel}</Badge>
+                  <span>가중치: {indicator.weight}</span>
                   <span>기준값: {indicator.threshold}</span>
                   <span>수정: {indicator.lastModified}</span>
                   <span>적용: {indicator.appliedDate}</span>
