@@ -24,10 +24,18 @@ import { Search, ChevronLeft, ChevronRight, Save, ChevronDown, ChevronRight as C
 
 // dq_field — 컬럼 단위 정의 (※ 실데이터 미연동, 일부 테이블만 샘플)
 type FieldInfo = {
-  name: string      // 물리 컬럼명
-  type: string      // Oracle 타입 (VARCHAR2/NUMBER/CLOB/TIMESTAMP ...)
+  fieldId?: string          // field_id (F00000) — 미지정 시 렌더에서 derive
+  name: string              // field_name (물리 컬럼명)
+  type: string              // datatype (VARCHAR2/NUMBER/CLOB/TIMESTAMP ...)
   nullable: boolean
-  description: string
+  isRequired?: string       // is_required (Y/N) — 미지정 시 nullable로 derive
+  isPk?: string             // IS_PK (Y/N)
+  isFk?: string             // IS_FK (Y/N)
+  fkTable?: string          // fk_table_name (FK 참조 테이블)
+  fkField?: string          // fk_field_name (FK 참조 컬럼)
+  isEnable?: boolean        // is_enable (사용 여부, 기본 Y)
+  description: string       // field_description
+  descriptionDetail?: string// field_description_detail
 }
 
 // dq_table — 원천 테이블 정의 (§3.5 표시: 1~6, 16번 컬럼)
@@ -39,8 +47,14 @@ type TableInfo = {
   tableRequired: string   // table_required (Y/R/R2/O)
   tableDescription: string// table_description (한글 설명)
   isEnable: boolean       // is_enable (사용 여부)
+  recordCount?: number    // (v0 참조) 레코드 수 — 실데이터 연동 전 mock
+  tableLastModified?: string // (v0 참조) 최종 수정일 — 실데이터 연동 전 mock
   columns?: FieldInfo[]   // dq_field 샘플 (확신 가능한 테이블만)
 }
+
+// stage → 검증 대상 DB 표시명 (v0 'DB' 컬럼 대응)
+const stageDbLabel = (stage: string): string =>
+  ({ LINK: '연계DB', COLL: '수집DB', PREP: '전처리DB', INTG: '통합DB', OPEN: '개방DB' }[stage] ?? stage)
 
 // dq_quality_metric — 품질 지표(구조적 검증) 정의
 type QualityMetric = {
@@ -52,6 +66,7 @@ type QualityMetric = {
   name: string
   description: string
   targetTable: string
+  weight: number     // (v0 참조) 가중치 — 실데이터 연동 전 mock
   // dq_quality_results 기반 최근 통과율 — 동일 지표를 단계별 DB에 수행 (§2.2 파이프라인)
   linkScore: number  // 연계DB(LINK) — QC1
   prepScore: number  // 전처리DB(PREP) — QC2/QC3
@@ -70,6 +85,11 @@ type StatMetric = {
   analysisId: string  // dq_achilles_analysis.analysis_id (QA00000000)
   distribution: boolean // 0=단순 count(dq_achilles_results) / 1=분포(dq_achilles_results_dist)
   version: string
+  stage: string       // si_stage — DB 단계 (LINK/COLL/PREP/INTG/OPEN)
+  siMetric: string    // si_metric — 통계 지표 유형 (SCALE/DIST/FLOW/JOIN/TREND)
+  others: string      // others — 유효종료 사유 등 비고
+  cycle: string       // (v0 참조) 산출 주기 (매일/매주/매월) — 실데이터 연동 전 mock
+  lastRun: string     // (v0 참조) 마지막 산출일 — 실데이터 연동 전 mock
   isActive: boolean
 }
 
@@ -81,7 +101,7 @@ const tablesData: TableInfo[] = [
   // 1차생성_모집관리 (RCM_*)
   { tableId: 'T1001', tableName: 'RCM_AGRE_RCNTT_RSRC_INFO', stage: 'LINK', dataCategory: '1차생성_모집관리', tableRequired: 'Y', tableDescription: '모집관리_동의_철회_자원_정보', isEnable: true },
   { tableId: 'T1002', tableName: 'RCM_PRTPNT_APLCNT_INFO', stage: 'LINK', dataCategory: '1차생성_모집관리', tableRequired: 'Y', tableDescription: '모집관리_참여자_신청자_정보', isEnable: true },
-  { tableId: 'T1003', tableName: 'RCM_PRTPNT_APLY_INFO', stage: 'LINK', dataCategory: '1차생성_모집관리', tableRequired: 'Y', tableDescription: '모집관리_참여자_신청_정보', isEnable: true,
+  { tableId: 'T1003', tableName: 'RCM_PRTPNT_APLY_INFO', stage: 'LINK', dataCategory: '1차생성_모집관리', tableRequired: 'Y', tableDescription: '모집관리_참여자_신청_정보', isEnable: true, recordCount: 15234, tableLastModified: '2026-05-11',
     columns: [
       { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
       { name: 'APLY_NO', type: 'VARCHAR2(30)', nullable: false, description: '신청번호' },
@@ -100,7 +120,7 @@ const tablesData: TableInfo[] = [
 
   // 1차생성_문검진 (HEALTH_CHECKUP_*, RCM_MEBI_*)
   { tableId: 'T1101', tableName: 'ETC_HEALTH_CHECKUP_RECORDS_RESPONSE', stage: 'LINK', dataCategory: '1차생성_문검진', tableRequired: 'Y', tableDescription: '기타건강검진기록지응답', isEnable: false },
-  { tableId: 'T1102', tableName: 'HEALTH_CHECKUP_RECORDS', stage: 'LINK', dataCategory: '1차생성_문검진', tableRequired: 'Y', tableDescription: '건강검진기록지', isEnable: true,
+  { tableId: 'T1102', tableName: 'HEALTH_CHECKUP_RECORDS', stage: 'LINK', dataCategory: '1차생성_문검진', tableRequired: 'Y', tableDescription: '건강검진기록지', isEnable: true, recordCount: 48567, tableLastModified: '2026-05-11',
     columns: [
       { name: 'RECORD_ID', type: 'VARCHAR2(20)', nullable: false, description: '기록지 ID' },
       { name: 'PRTPNT_ID', type: 'VARCHAR2(20)', nullable: false, description: '참여자 ID' },
@@ -153,7 +173,7 @@ const tablesData: TableInfo[] = [
   { tableId: 'T1318', tableName: 'RDS_VRTE_GENE_DRR_INFO', stage: 'LINK', dataCategory: '1차생성_희귀질환(eCRF)', tableRequired: 'Y', tableDescription: '희귀질환_진단_참고_보고_유전자_변종', isEnable: true },
 
   // 1차생성_기초임상(KR-CDI) (BIKO_*) — table_required 등급 R/R2/O
-  { tableId: 'T1401', tableName: 'BIKO_INFO_PATIENT', stage: 'LINK', dataCategory: '1차생성_기초임상(KR-CDI)', tableRequired: 'R', tableDescription: '환자 정보 (Patient Information)', isEnable: true,
+  { tableId: 'T1401', tableName: 'BIKO_INFO_PATIENT', stage: 'LINK', dataCategory: '1차생성_기초임상(KR-CDI)', tableRequired: 'R', tableDescription: '환자 정보 (Patient Information)', isEnable: true, recordCount: 125890, tableLastModified: '2026-05-11',
     columns: [
       { name: 'PATIENT_ID', type: 'VARCHAR2(20)', nullable: false, description: '환자 ID(참여자ID)' },
       { name: 'BIRTH_DATE', type: 'VARCHAR2(8)', nullable: false, description: '생년월일(YYYYMMDD)' },
@@ -694,36 +714,36 @@ const getFields = (t: TableInfo): FieldInfo[] => t.columns ?? sampleFields[t.tab
 //   targetTable 은 dq_table.table_name 과 일치
 // ─────────────────────────────────────────────────────────────
 const qualityMetricsData: QualityMetric[] = [
-  { id: 1, metricId: 'QM001', version: 'v1.3', category: '완전성', checkLevel: '컬럼', name: '환자 필수항목 결측 검증', description: 'BIKO_INFO_PATIENT 환자ID/성별/생년월일 결측 검사', targetTable: 'BIKO_INFO_PATIENT', linkScore: 99.2, prepScore: 99.6, threshold: 99, lastModified: '2026-05-11', appliedDate: '2026-05-12', isActive: true },
-  { id: 2, metricId: 'QM002', version: 'v1.3', category: '완전성', checkLevel: '테이블', name: '내원 레코드 존재 검증', description: 'BIKO_INFO_ENCOUNTER 환자별 내원 기록 존재 여부', targetTable: 'BIKO_INFO_ENCOUNTER', linkScore: 97.8, prepScore: 98.4, threshold: 95, lastModified: '2026-05-11', appliedDate: '2026-05-12', isActive: true },
-  { id: 3, metricId: 'QM003', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '진단코드 표준 적합성', description: 'BIKO_CARE_CONDITION 진단코드 KCD 표준 코드 적합 여부', targetTable: 'BIKO_CARE_CONDITION', linkScore: 95.6, prepScore: 96.9, threshold: 95, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: true },
-  { id: 4, metricId: 'QM004', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '약물코드 표준 적합성', description: 'BIKO_CARE_MEDICATION 약물코드 ATC/EDI 표준 적합 여부', targetTable: 'BIKO_CARE_MEDICATION', linkScore: 93.1, prepScore: 94.8, threshold: 93, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: true },
-  { id: 5, metricId: 'QM005', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '진단 없는 약물 처방 검출', description: '고혈압 진단 없이 고혈압 약물이 처방된 케이스 검출', targetTable: 'BIKO_CARE_MEDICATION', linkScore: 88.4, prepScore: 90.2, threshold: 90, lastModified: '2026-05-03', appliedDate: '2026-05-04', isActive: true },
-  { id: 6, metricId: 'QM006', version: 'v0.7', category: '완전성', checkLevel: '컬럼', name: '문검진 응답값 결측', description: 'HEALTH_CHECKUP_RECORDS_RESPONSE 필수 문항 응답 결측 검사', targetTable: 'HEALTH_CHECKUP_RECORDS_RESPONSE', linkScore: 96.3, prepScore: 97.1, threshold: 95, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: true },
-  { id: 7, metricId: 'QM007', version: 'v0.7', category: '정합성', checkLevel: '컬럼', name: 'CRF 참여자ID 형식 적합성', description: 'RDS_PRTPNT_CRF_INFO 참여자ID 형식/길이 적합 여부', targetTable: 'RDS_PRTPNT_CRF_INFO', linkScore: 98.9, prepScore: 99.1, threshold: 98, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: true },
-  { id: 8, metricId: 'QM008', version: 'v0.8', category: '타당성', checkLevel: '컨셉', name: '검사결과 정상범위 이탈', description: 'BIKO_EXAM_LABORATORY 검사결과값 LOINC 정상범위 이탈 검출', targetTable: 'BIKO_EXAM_LABORATORY', linkScore: 91.2, prepScore: 92.5, threshold: 90, lastModified: '2026-05-03', appliedDate: '2026-05-04', isActive: true },
-  { id: 9, metricId: 'QM009', version: 'v0.3', category: '완전성', checkLevel: '테이블', name: '신청정보 누락 검증', description: 'RCM_PRTPNT_APLY_INFO 참여자별 신청정보 누락 여부', targetTable: 'RCM_PRTPNT_APLY_INFO', linkScore: 99.5, prepScore: 99.7, threshold: 99, lastModified: '2026-04-10', appliedDate: '2026-04-10', isActive: true },
-  { id: 10, metricId: 'QM010', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '검사 단위 적합성', description: 'BIKO_EXAM_LABORATORY 결과 단위 UCUM 표준 적합 여부', targetTable: 'BIKO_EXAM_LABORATORY', linkScore: 94.7, prepScore: 95.9, threshold: 93, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: false },
-  { id: 11, metricId: 'QM011', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '사망일 이후 내원 검출', description: '사망일자 이후의 내원/진료 기록 존재 검출', targetTable: 'BIKO_INFO_ENCOUNTER', linkScore: 99.8, prepScore: 99.9, threshold: 99, lastModified: '2026-05-03', appliedDate: '2026-05-04', isActive: true },
-  { id: 12, metricId: 'QM012', version: 'v0.3', category: '완전성', checkLevel: '컬럼', name: '진단일자 결측 검증', description: 'TFN_DIAG 진단일자 결측 검사', targetTable: 'TFN_DIAG', linkScore: 90.4, prepScore: 92.1, threshold: 90, lastModified: '2026-04-10', appliedDate: '2026-04-10', isActive: false },
-  { id: 13, metricId: 'QM013', version: 'v0.3', category: '정합성', checkLevel: '컬럼', name: '청구일자 범위 적합성', description: 'PUB_CLAIM_HISTORY 청구일자 유효 범위 적합 여부', targetTable: 'PUB_CLAIM_HISTORY', linkScore: 97.2, prepScore: 97.8, threshold: 95, lastModified: '2026-04-10', appliedDate: '2026-04-10', isActive: true },
-  { id: 14, metricId: 'QM014', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '연령-진단 불일치 검출', description: '연령대와 부합하지 않는 진단(소아 vs 노인성 질환) 검출', targetTable: 'BIKO_CARE_CONDITION', linkScore: 89.6, prepScore: 91.3, threshold: 90, lastModified: '2026-05-03', appliedDate: '2026-05-04', isActive: true },
+  { id: 1, metricId: 'QM001', version: 'v1.3', category: '완전성', checkLevel: '컬럼', name: '환자 필수항목 결측 검증', description: 'BIKO_INFO_PATIENT 환자ID/성별/생년월일 결측 검사', targetTable: 'BIKO_INFO_PATIENT', weight: 8, linkScore: 99.2, prepScore: 99.6, threshold: 99, lastModified: '2026-05-11', appliedDate: '2026-05-12', isActive: true },
+  { id: 2, metricId: 'QM002', version: 'v1.3', category: '완전성', checkLevel: '테이블', name: '내원 레코드 존재 검증', description: 'BIKO_INFO_ENCOUNTER 환자별 내원 기록 존재 여부', targetTable: 'BIKO_INFO_ENCOUNTER', weight: 8, linkScore: 97.8, prepScore: 98.4, threshold: 95, lastModified: '2026-05-11', appliedDate: '2026-05-12', isActive: true },
+  { id: 3, metricId: 'QM003', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '진단코드 표준 적합성', description: 'BIKO_CARE_CONDITION 진단코드 KCD 표준 코드 적합 여부', targetTable: 'BIKO_CARE_CONDITION', weight: 9, linkScore: 95.6, prepScore: 96.9, threshold: 95, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: true },
+  { id: 4, metricId: 'QM004', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '약물코드 표준 적합성', description: 'BIKO_CARE_MEDICATION 약물코드 ATC/EDI 표준 적합 여부', targetTable: 'BIKO_CARE_MEDICATION', weight: 9, linkScore: 93.1, prepScore: 94.8, threshold: 93, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: true },
+  { id: 5, metricId: 'QM005', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '진단 없는 약물 처방 검출', description: '고혈압 진단 없이 고혈압 약물이 처방된 케이스 검출', targetTable: 'BIKO_CARE_MEDICATION', weight: 10, linkScore: 88.4, prepScore: 90.2, threshold: 90, lastModified: '2026-05-03', appliedDate: '2026-05-04', isActive: true },
+  { id: 6, metricId: 'QM006', version: 'v0.7', category: '완전성', checkLevel: '컬럼', name: '문검진 응답값 결측', description: 'HEALTH_CHECKUP_RECORDS_RESPONSE 필수 문항 응답 결측 검사', targetTable: 'HEALTH_CHECKUP_RECORDS_RESPONSE', weight: 8, linkScore: 96.3, prepScore: 97.1, threshold: 95, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: true },
+  { id: 7, metricId: 'QM007', version: 'v0.7', category: '정합성', checkLevel: '컬럼', name: 'CRF 참여자ID 형식 적합성', description: 'RDS_PRTPNT_CRF_INFO 참여자ID 형식/길이 적합 여부', targetTable: 'RDS_PRTPNT_CRF_INFO', weight: 9, linkScore: 98.9, prepScore: 99.1, threshold: 98, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: true },
+  { id: 8, metricId: 'QM008', version: 'v0.8', category: '타당성', checkLevel: '컨셉', name: '검사결과 정상범위 이탈', description: 'BIKO_EXAM_LABORATORY 검사결과값 LOINC 정상범위 이탈 검출', targetTable: 'BIKO_EXAM_LABORATORY', weight: 10, linkScore: 91.2, prepScore: 92.5, threshold: 90, lastModified: '2026-05-03', appliedDate: '2026-05-04', isActive: true },
+  { id: 9, metricId: 'QM009', version: 'v0.3', category: '완전성', checkLevel: '테이블', name: '신청정보 누락 검증', description: 'RCM_PRTPNT_APLY_INFO 참여자별 신청정보 누락 여부', targetTable: 'RCM_PRTPNT_APLY_INFO', weight: 8, linkScore: 99.5, prepScore: 99.7, threshold: 99, lastModified: '2026-04-10', appliedDate: '2026-04-10', isActive: true },
+  { id: 10, metricId: 'QM010', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '검사 단위 적합성', description: 'BIKO_EXAM_LABORATORY 결과 단위 UCUM 표준 적합 여부', targetTable: 'BIKO_EXAM_LABORATORY', weight: 9, linkScore: 94.7, prepScore: 95.9, threshold: 93, lastModified: '2026-04-27', appliedDate: '2026-04-28', isActive: false },
+  { id: 11, metricId: 'QM011', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '사망일 이후 내원 검출', description: '사망일자 이후의 내원/진료 기록 존재 검출', targetTable: 'BIKO_INFO_ENCOUNTER', weight: 10, linkScore: 99.8, prepScore: 99.9, threshold: 99, lastModified: '2026-05-03', appliedDate: '2026-05-04', isActive: true },
+  { id: 12, metricId: 'QM012', version: 'v0.3', category: '완전성', checkLevel: '컬럼', name: '진단일자 결측 검증', description: 'TFN_DIAG 진단일자 결측 검사', targetTable: 'TFN_DIAG', weight: 8, linkScore: 90.4, prepScore: 92.1, threshold: 90, lastModified: '2026-04-10', appliedDate: '2026-04-10', isActive: false },
+  { id: 13, metricId: 'QM013', version: 'v0.3', category: '정합성', checkLevel: '컬럼', name: '청구일자 범위 적합성', description: 'PUB_CLAIM_HISTORY 청구일자 유효 범위 적합 여부', targetTable: 'PUB_CLAIM_HISTORY', weight: 9, linkScore: 97.2, prepScore: 97.8, threshold: 95, lastModified: '2026-04-10', appliedDate: '2026-04-10', isActive: true },
+  { id: 14, metricId: 'QM014', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '연령-진단 불일치 검출', description: '연령대와 부합하지 않는 진단(소아 vs 노인성 질환) 검출', targetTable: 'BIKO_CARE_CONDITION', weight: 10, linkScore: 89.6, prepScore: 91.3, threshold: 90, lastModified: '2026-05-03', appliedDate: '2026-05-04', isActive: true },
 ]
 
 // ─────────────────────────────────────────────────────────────
 // 통계 지표 데이터 (dq_statistics_metric + dq_achilles_analysis)
 // ─────────────────────────────────────────────────────────────
 const statMetricsData: StatMetric[] = [
-  { statId: 'SI-LINK-HC-CNT-01', category: '문검진', name: '문검진 응답 건수', description: '문진·검진 항목별 응답 레코드 수', analysisId: 'QA00000001', distribution: false, version: 'v0.1', isActive: true },
-  { statId: 'SI-LINK-HC-DIST-02', category: '문검진', name: '문항별 응답 분포', description: '문진 문항별 응답값 분포', analysisId: 'QA00000002', distribution: true, version: 'v0.1', isActive: true },
-  { statId: 'SI-LINK-CDI-CNT-01', category: 'KR-CDI', name: '환자 수', description: 'BIKO_INFO_PATIENT 고유 환자 수', analysisId: 'QA00000010', distribution: false, version: 'v0.2', isActive: true },
-  { statId: 'SI-LINK-CDI-CNT-02', category: 'KR-CDI', name: '내원 건수', description: 'BIKO_INFO_ENCOUNTER 내원 사건 수', analysisId: 'QA00000011', distribution: false, version: 'v0.2', isActive: true },
-  { statId: 'SI-LINK-CDI-DIST-03', category: 'KR-CDI', name: '진단코드 분포', description: 'KCD 진단코드별 상위 분포', analysisId: 'QA00000012', distribution: true, version: 'v0.3', isActive: true },
-  { statId: 'SI-LINK-CDI-DIST-04', category: 'KR-CDI', name: '연령대별 환자 분포', description: '10세 단위 연령대별 환자 분포', analysisId: 'QA00000013', distribution: true, version: 'v0.3', isActive: true },
-  { statId: 'SI-LINK-CDI-DIST-05', category: 'KR-CDI', name: '검사결과값 분포', description: 'LOINC 검사항목별 결과값 분포', analysisId: 'QA00000014', distribution: true, version: 'v0.3', isActive: false },
-  { statId: 'SI-LINK-EC-CNT-01', category: 'eCRF', name: 'eCRF 참여자 수', description: 'RDS_PRTPNT_CRF_INFO 고유 참여자 수', analysisId: 'QA00000020', distribution: false, version: 'v0.2', isActive: true },
-  { statId: 'SI-LINK-EC-DIST-02', category: 'eCRF', name: 'HPO 표현형 분포', description: 'HPO 코드별 표현형 빈도 분포', analysisId: 'QA00000021', distribution: true, version: 'v0.3', isActive: true },
-  { statId: 'SI-LINK-MEBI-DIST-01', category: '문검진', name: '성별 분포', description: '참여자 성별 분포', analysisId: 'QA00000030', distribution: true, version: 'v0.4', isActive: true },
+  { statId: 'SI-LINK-HC-CNT-01', category: '문검진', name: '문검진 응답 건수', description: '문진·검진 항목별 응답 레코드 수', analysisId: 'QA00000001', distribution: false, version: 'v0.1', stage: 'LINK', siMetric: 'SCALE', others: '', cycle: '매일', lastRun: '2026-05-12', isActive: true },
+  { statId: 'SI-LINK-HC-DIST-02', category: '문검진', name: '문항별 응답 분포', description: '문진 문항별 응답값 분포', analysisId: 'QA00000002', distribution: true, version: 'v0.1', stage: 'LINK', siMetric: 'DIST', others: '', cycle: '매주', lastRun: '2026-05-12', isActive: true },
+  { statId: 'SI-LINK-CDI-CNT-01', category: 'KR-CDI', name: '환자 수', description: 'BIKO_INFO_PATIENT 고유 환자 수', analysisId: 'QA00000010', distribution: false, version: 'v0.2', stage: 'LINK', siMetric: 'SCALE', others: '', cycle: '매일', lastRun: '2026-05-12', isActive: true },
+  { statId: 'SI-LINK-CDI-CNT-02', category: 'KR-CDI', name: '내원 건수', description: 'BIKO_INFO_ENCOUNTER 내원 사건 수', analysisId: 'QA00000011', distribution: false, version: 'v0.2', stage: 'LINK', siMetric: 'SCALE', others: '', cycle: '매일', lastRun: '2026-05-12', isActive: true },
+  { statId: 'SI-LINK-CDI-DIST-03', category: 'KR-CDI', name: '진단코드 분포', description: 'KCD 진단코드별 상위 분포', analysisId: 'QA00000012', distribution: true, version: 'v0.3', stage: 'LINK', siMetric: 'DIST', others: '', cycle: '매월', lastRun: '2026-05-01', isActive: true },
+  { statId: 'SI-LINK-CDI-DIST-04', category: 'KR-CDI', name: '연령대별 환자 분포', description: '10세 단위 연령대별 환자 분포', analysisId: 'QA00000013', distribution: true, version: 'v0.3', stage: 'LINK', siMetric: 'DIST', others: '', cycle: '매월', lastRun: '2026-05-01', isActive: true },
+  { statId: 'SI-LINK-CDI-DIST-05', category: 'KR-CDI', name: '검사결과값 분포', description: 'LOINC 검사항목별 결과값 분포', analysisId: 'QA00000014', distribution: true, version: 'v0.3', stage: 'LINK', siMetric: 'DIST', others: '', cycle: '매주', lastRun: '2026-05-12', isActive: false },
+  { statId: 'SI-LINK-EC-CNT-01', category: 'eCRF', name: 'eCRF 참여자 수', description: 'RDS_PRTPNT_CRF_INFO 고유 참여자 수', analysisId: 'QA00000020', distribution: false, version: 'v0.2', stage: 'LINK', siMetric: 'SCALE', others: '', cycle: '매일', lastRun: '2026-05-12', isActive: true },
+  { statId: 'SI-LINK-EC-DIST-02', category: 'eCRF', name: 'HPO 표현형 분포', description: 'HPO 코드별 표현형 빈도 분포', analysisId: 'QA00000021', distribution: true, version: 'v0.3', stage: 'LINK', siMetric: 'DIST', others: '', cycle: '매주', lastRun: '2026-05-12', isActive: true },
+  { statId: 'SI-LINK-MEBI-DIST-01', category: '문검진', name: '성별 분포', description: '참여자 성별 분포', analysisId: 'QA00000030', distribution: true, version: 'v0.4', stage: 'LINK', siMetric: 'DIST', others: '', cycle: '매월', lastRun: '2026-05-01', isActive: true },
 ]
 
 // table_required 등급 배지 색
@@ -870,13 +890,17 @@ export default function IndicatorsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-8 text-xs"></TableHead>
+                      <TableHead className="w-20 text-xs">{'DB'}</TableHead>
                       <TableHead className="w-24 text-xs">{'테이블ID'}</TableHead>
                       <TableHead className="text-xs">{'테이블명'}</TableHead>
                       <TableHead className="w-20 text-center text-xs">{'단계'}</TableHead>
                       <TableHead className="w-44 text-xs">{'분류'}</TableHead>
                       <TableHead className="w-20 text-center text-xs">{'등급'}</TableHead>
                       <TableHead className="text-xs">{'설명'}</TableHead>
+                      <TableHead className="w-24 text-center text-xs">{'레코드 수'}</TableHead>
+                      <TableHead className="w-20 text-center text-xs">{'컬럼 수'}</TableHead>
                       <TableHead className="w-20 text-center text-xs">{'사용'}</TableHead>
+                      <TableHead className="w-28 text-xs">{'최종 수정'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -894,6 +918,9 @@ export default function IndicatorsPage() {
                               <ChevronRightIcon className="w-4 h-4 text-muted-foreground" />
                             )}
                           </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary" className="text-xs">{stageDbLabel(table.stage)}</Badge>
+                          </TableCell>
                           <TableCell className="text-xs font-mono text-muted-foreground">{table.tableId}</TableCell>
                           <TableCell className="text-sm font-mono font-medium">{table.tableName}</TableCell>
                           <TableCell className="text-center">
@@ -904,6 +931,8 @@ export default function IndicatorsPage() {
                             <Badge variant={requiredVariant(table.tableRequired)} className="text-xs">{table.tableRequired}</Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{table.tableDescription}</TableCell>
+                          <TableCell className="text-center text-xs font-mono text-muted-foreground">{table.recordCount != null ? table.recordCount.toLocaleString() : '-'}</TableCell>
+                          <TableCell className="text-center text-xs text-muted-foreground">{getFields(table).length || '-'}</TableCell>
                           <TableCell className="text-center text-xs">
                             {table.isEnable ? (
                               <span className="font-medium text-foreground">{'Y'}</span>
@@ -911,12 +940,13 @@ export default function IndicatorsPage() {
                               <span className="text-muted-foreground">{'N'}</span>
                             )}
                           </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{table.tableLastModified ?? '-'}</TableCell>
                         </TableRow>
 
                         {/* Expanded Column Details (dq_field) */}
                         {expandedTableId === table.tableId && (
                           <TableRow key={`${table.tableId}-columns`}>
-                            <TableCell colSpan={8} className="p-0 bg-muted/20">
+                            <TableCell colSpan={12} className="p-0 bg-muted/20">
                               <div className="px-8 py-3">
                                 {getFields(table).length > 0 ? (
                                   <>
@@ -926,15 +956,24 @@ export default function IndicatorsPage() {
                                     <Table>
                                       <TableHeader>
                                         <TableRow>
+                                          <TableHead className="w-20 text-xs">{'컬럼ID'}</TableHead>
                                           <TableHead className="text-xs">{'컬럼명'}</TableHead>
                                           <TableHead className="text-xs">{'타입'}</TableHead>
-                                          <TableHead className="w-20 text-center text-xs">{'NULL'}</TableHead>
+                                          <TableHead className="w-16 text-center text-xs">{'NULL'}</TableHead>
+                                          <TableHead className="w-16 text-center text-xs">{'필수'}</TableHead>
+                                          <TableHead className="w-12 text-center text-xs">{'PK'}</TableHead>
+                                          <TableHead className="w-12 text-center text-xs">{'FK'}</TableHead>
+                                          <TableHead className="text-xs">{'FK참조테이블'}</TableHead>
+                                          <TableHead className="text-xs">{'FK참조컬럼'}</TableHead>
+                                          <TableHead className="w-12 text-center text-xs">{'사용'}</TableHead>
                                           <TableHead className="text-xs">{'설명'}</TableHead>
+                                          <TableHead className="text-xs">{'상세설명'}</TableHead>
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
-                                        {getFields(table).map((col) => (
+                                        {getFields(table).map((col, ci) => (
                                           <TableRow key={col.name}>
+                                            <TableCell className="text-xs font-mono text-muted-foreground">{col.fieldId ?? `F${String(ci + 1).padStart(5, '0')}`}</TableCell>
                                             <TableCell className="text-xs font-mono font-medium">{col.name}</TableCell>
                                             <TableCell>
                                               <Badge variant="secondary" className="text-xs font-mono">
@@ -948,7 +987,14 @@ export default function IndicatorsPage() {
                                                 <span className="font-medium text-foreground">{'X'}</span>
                                               )}
                                             </TableCell>
+                                            <TableCell className="text-center text-xs">{col.isRequired ?? (col.nullable ? 'N' : 'Y')}</TableCell>
+                                            <TableCell className="text-center text-xs">{col.isPk ?? '-'}</TableCell>
+                                            <TableCell className="text-center text-xs">{col.isFk ?? '-'}</TableCell>
+                                            <TableCell className="text-xs font-mono text-muted-foreground">{col.fkTable ?? '-'}</TableCell>
+                                            <TableCell className="text-xs font-mono text-muted-foreground">{col.fkField ?? '-'}</TableCell>
+                                            <TableCell className="text-center text-xs">{col.isEnable === false ? 'N' : 'Y'}</TableCell>
                                             <TableCell className="text-xs text-muted-foreground">{col.description}</TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">{col.descriptionDetail ?? '-'}</TableCell>
                                           </TableRow>
                                         ))}
                                       </TableBody>
@@ -1064,15 +1110,17 @@ export default function IndicatorsPage() {
                     <TableRow>
                       <TableHead className="w-12 text-xs">{'적용'}</TableHead>
                       <TableHead className="w-20 text-xs">{'지표ID'}</TableHead>
-                      <TableHead className="w-16 text-xs">{'버전'}</TableHead>
                       <TableHead className="w-20 text-xs">{'차원'}</TableHead>
                       <TableHead className="w-20 text-xs">{'검증단위'}</TableHead>
                       <TableHead className="text-xs">{'지표명'}</TableHead>
+                      <TableHead className="text-xs">{'설명'}</TableHead>
                       <TableHead className="text-xs">{'적용 테이블'}</TableHead>
+                      <TableHead className="w-16 text-center text-xs">{'가중치'}</TableHead>
                       <TableHead className="w-20 text-center text-xs">{'기준값'}</TableHead>
-                      <TableHead className="w-24 text-center text-xs">{'연계DB'}</TableHead>
-                      <TableHead className="w-24 text-center text-xs">{'전처리DB'}</TableHead>
+                      <TableHead className="w-24 text-center text-xs">{'진료DB'}</TableHead>
+                      <TableHead className="w-24 text-center text-xs">{'시험DB'}</TableHead>
                       <TableHead className="w-28 text-xs">{'수정일'}</TableHead>
+                      <TableHead className="w-28 text-xs">{'적용일'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1086,7 +1134,6 @@ export default function IndicatorsPage() {
                           <Checkbox checked={item.isActive} />
                         </TableCell>
                         <TableCell className="text-xs font-mono font-medium">{item.metricId}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{item.version}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
                             {item.category}
@@ -1098,7 +1145,9 @@ export default function IndicatorsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs font-medium">{item.name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{item.description}</TableCell>
                         <TableCell className="text-xs font-mono text-muted-foreground">{item.targetTable}</TableCell>
+                        <TableCell className="text-center text-xs">{item.weight}</TableCell>
                         <TableCell className="text-center text-xs font-medium">
                           {item.threshold}
                         </TableCell>
@@ -1117,6 +1166,7 @@ export default function IndicatorsPage() {
                           </span>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{item.lastModified}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{item.appliedDate}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1137,11 +1187,16 @@ export default function IndicatorsPage() {
                     <TableRow>
                       <TableHead className="w-44 text-xs">{'통계지표 ID'}</TableHead>
                       <TableHead className="w-24 text-xs">{'분류'}</TableHead>
+                      <TableHead className="w-20 text-center text-xs">{'단계'}</TableHead>
                       <TableHead className="text-xs">{'지표명'}</TableHead>
                       <TableHead className="text-xs">{'설명'}</TableHead>
                       <TableHead className="w-32 text-xs">{'분석 ID'}</TableHead>
                       <TableHead className="w-24 text-center text-xs">{'결과 유형'}</TableHead>
+                      <TableHead className="w-20 text-center text-xs">{'유형'}</TableHead>
                       <TableHead className="w-16 text-xs">{'버전'}</TableHead>
+                      <TableHead className="text-xs">{'비고'}</TableHead>
+                      <TableHead className="w-20 text-center text-xs">{'산출 주기'}</TableHead>
+                      <TableHead className="w-28 text-xs">{'마지막 산출'}</TableHead>
                       <TableHead className="w-20 text-center text-xs">{'상태'}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1152,6 +1207,9 @@ export default function IndicatorsPage() {
                         <TableCell>
                           <Badge variant="outline" className="text-xs">{stat.category}</Badge>
                         </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="text-xs">{stat.stage}</Badge>
+                        </TableCell>
                         <TableCell className="text-xs font-medium">{stat.name}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{stat.description}</TableCell>
                         <TableCell className="text-xs font-mono text-muted-foreground">{stat.analysisId}</TableCell>
@@ -1160,7 +1218,15 @@ export default function IndicatorsPage() {
                             {stat.distribution ? '분포' : 'count'}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary" className="text-xs font-mono">{stat.siMetric}</Badge>
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{stat.version}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{stat.others || '-'}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="text-xs">{stat.cycle}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{stat.lastRun}</TableCell>
                         <TableCell className="text-center text-xs">
                           <Badge variant={stat.isActive ? 'secondary' : 'destructive'} className="text-xs">
                             {stat.isActive ? '활성' : '비활성'}

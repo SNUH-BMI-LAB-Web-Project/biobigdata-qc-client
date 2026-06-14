@@ -161,7 +161,6 @@ export default function IndicatorDetailPage() {
                 <CardDescription className="flex items-center gap-4 mt-2">
                   <Badge variant="outline">{indicator.category}</Badge>
                   <Badge variant="secondary">{indicator.checkLevel}</Badge>
-                  <span>버전: {indicator.version}</span>
                   <span>기준값: {indicator.threshold}</span>
                   <span>수정: {indicator.lastModified}</span>
                   <span>적용: {indicator.appliedDate}</span>
@@ -194,13 +193,13 @@ export default function IndicatorDetailPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">연계DB (LINK · QC1):</span>
+                <span className="text-muted-foreground">진료DB (LINK · QC1):</span>
                 <span className={`font-bold ${getScoreColor(indicator.linkScore, indicator.threshold)}`}>
                   {indicator.linkScore.toFixed(1)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">전처리DB (PREP · QC2/3):</span>
+                <span className="text-muted-foreground">시험DB (PREP · QC2/3):</span>
                 <span className={`font-bold ${getScoreColor(indicator.prepScore, indicator.threshold)}`}>
                   {indicator.prepScore.toFixed(1)}
                 </span>

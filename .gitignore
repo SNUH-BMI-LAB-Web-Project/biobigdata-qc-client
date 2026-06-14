@@ -19,3 +19,6 @@ CLAUDE.md
 
 # Build cache
 tsconfig.tsbuildinfo
+
+# 내부 명세 자료 (지표/품질검증 원본 엑셀 — 저장소 공유 금지)
+docs/spec/
