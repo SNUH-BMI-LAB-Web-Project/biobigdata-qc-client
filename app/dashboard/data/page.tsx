@@ -1,740 +1,447 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  Database, 
-  Users, 
-  Calendar, 
-  HardDrive, 
-  TrendingUp,
-  User,
-  MapPin,
-  Stethoscope,
-  Pill,
-  FlaskConical,
-  Scissors,
-  Eye,
-  FileText,
-  Activity,
-  AlertCircle,
-  Syringe,
-  TestTube,
-  Scan,
-  Heart
-} from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Loader2, Database, BarChart3, ListOrdered } from 'lucide-react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts'
+import { useApi } from '@/hooks/use-api'
+import { qcApi, CHECK_STATUS_LABEL, STAGE_LABEL, SUB_STAGE_LABEL } from '@/lib/api'
+import type {
+  DqCheckLogResponse,
+  DqAchillesResultResponse,
+  DqAchillesResultDistResponse,
+  CheckStatus,
+} from '@/lib/api'
 
-type PatientTab = 'summary' | 'person' | 'encounter' | 'condition' | 'procedure' | 'medication' | 'laboratory' | 'pathology' | 'imaging' | 'functional' | 'vital' | 'allergy' | 'immunization'
-type ClinicalTab = 'summary' | 'person' | 'visit' | 'condition' | 'drug' | 'measurement' | 'procedure' | 'observation'
+const STAGE_OPTIONS = ['LINK', 'PREP', 'COLL', 'INTG', 'OPEN'] as const
+const PAGE_SIZE = 20
 
-export default function DataDashboardPage() {
-  const [activeDb, setActiveDb] = useState<'patient' | 'clinical'>('patient')
-  const [patientTab, setPatientTab] = useState<PatientTab>('summary')
-  const [clinicalTab, setClinicalTab] = useState<ClinicalTab>('summary')
+// 상태 배지 색상: 완료 green / 진행중 blue / 오류 red / 중단 gray
+function statusBadgeClass(status: CheckStatus): string {
+  switch (status) {
+    case 1:
+      return 'bg-green-100 text-green-800'
+    case 0:
+      return 'bg-blue-100 text-blue-800'
+    case 2:
+      return 'bg-red-100 text-red-800'
+    case 3:
+    default:
+      return 'bg-gray-100 text-gray-700'
+  }
+}
+
+function fmtDate(s: string | null | undefined): string {
+  if (!s) return '-'
+  return s.replace('T', ' ').slice(0, 19)
+}
+
+function fmtNum(n: number | null | undefined): string {
+  if (n === null || n === undefined || Number.isNaN(n)) return '-'
+  return n.toLocaleString()
+}
+
+// 비어있지 않은 stratum 이름만 추출
+function strata(r: { stratum1Name: string; stratum2Name: string; stratum3Name: string; stratum4Name: string; stratum5Name: string }): string[] {
+  return [r.stratum1Name, r.stratum2Name, r.stratum3Name, r.stratum4Name, r.stratum5Name]
+    .filter((s) => s !== null && s !== undefined && String(s).trim() !== '')
+}
+
+function stratumKey(r: { stratum1Name: string; stratum2Name: string; stratum3Name: string; stratum4Name: string; stratum5Name: string }): string {
+  const parts = strata(r)
+  return parts.length ? parts.join(' / ') : '-'
+}
+
+// ── 상태/로딩/에러/빈 상태 공통 박스 ────────────────────────────
+function Spinner({ label }: { label?: string }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+      <Loader2 className="w-4 h-4 animate-spin" />
+      {label ?? '불러오는 중...'}
+    </div>
+  )
+}
+
+function ErrorBox({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm">
+      <p className="text-red-600">{message}</p>
+      <Button variant="outline" size="sm" onClick={onRetry}>
+        {'다시 시도'}
+      </Button>
+    </div>
+  )
+}
+
+function EmptyBox({ message }: { message: string }) {
+  return (
+    <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
+      {message}
+    </div>
+  )
+}
+
+export default function DataStatisticsResultPage() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <DataStatisticsResultContent />
+    </Suspense>
+  )
+}
+
+function DataStatisticsResultContent() {
+  const searchParams = useSearchParams()
+  const deepLinkCheckId = useMemo(() => {
+    const v = searchParams.get('checkId')
+    if (!v) return null
+    const n = Number(v)
+    return Number.isFinite(n) ? n : null
+  }, [searchParams])
+
+  const [stage, setStage] = useState<string>('ALL')
+  const [page, setPage] = useState(1)
+  const [selectedCheckId, setSelectedCheckId] = useState<number | null>(deepLinkCheckId)
+
+  // 딥링크 checkId 동기화
+  useEffect(() => {
+    if (deepLinkCheckId !== null) setSelectedCheckId(deepLinkCheckId)
+  }, [deepLinkCheckId])
+
+  // ── 검증 실행 내역 ────────────────────────────────────────────
+  const logsApi = useApi(
+    (signal) =>
+      qcApi.getStatisticsCheckLogs(
+        { stage: stage === 'ALL' ? undefined : stage, page, size: PAGE_SIZE },
+        signal,
+      ),
+    [stage, page],
+  )
+
+  const logs = logsApi.data?.items ?? []
+  const totalPages = logsApi.data?.totalPages ?? 0
 
   return (
     <div className="flex-1 flex flex-col">
       <main className="container mx-auto px-4 py-4 space-y-4">
         <div>
-          <h1 className="text-xl font-bold">데이터 대시보드</h1>
+          <h1 className="text-xl font-bold">{'데이터 통계 결과'}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {'데이터베이스 통계 및 현황'}
+            {'통계지표(Achilles) 검증 결과를 확인합니다'}
           </p>
         </div>
 
-        {/* DB Selection Tabs */}
-        <Tabs value={activeDb} onValueChange={(v) => setActiveDb(v as 'patient' | 'clinical')}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="patient">환자 진료 DB (KR-CDI)</TabsTrigger>
-            <TabsTrigger value="clinical">임상시험 DB (통합 DB)</TabsTrigger>
-          </TabsList>
+        {/* 검증 실행 내역 */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Database className="w-4 h-4" />
+                  {'통계 검증 실행 내역'}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {'완료된 검증을 선택하여 통계 결과를 확인하세요'}
+                </CardDescription>
+              </div>
+              <Select
+                value={stage}
+                onValueChange={(v) => {
+                  setStage(v)
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger className="w-40 h-8 text-xs">
+                  <SelectValue placeholder="단계 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{'전체 단계'}</SelectItem>
+                  {STAGE_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {STAGE_LABEL[s] ?? s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {logsApi.loading ? (
+              <Spinner label="검증 내역을 불러오는 중..." />
+            ) : logsApi.error ? (
+              <ErrorBox message={logsApi.error} onRetry={logsApi.refetch} />
+            ) : logs.length === 0 ? (
+              <EmptyBox message="검증 실행 내역이 없습니다." />
+            ) : (
+              <>
+                <table className="w-full text-xs">
+                  <thead className="border-b bg-muted/30">
+                    <tr>
+                      <th className="text-left p-2 font-medium">{'번호'}</th>
+                      <th className="text-left p-2 font-medium">{'단계'}</th>
+                      <th className="text-left p-2 font-medium">{'서브 단계'}</th>
+                      <th className="text-left p-2 font-medium">{'실행자'}</th>
+                      <th className="text-left p-2 font-medium">{'시작 일시'}</th>
+                      <th className="text-left p-2 font-medium">{'종료 일시'}</th>
+                      <th className="text-left p-2 font-medium">{'상태'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logs.map((row: DqCheckLogResponse) => {
+                      const isCompleted = row.checkStatus === 1
+                      const isSelected = selectedCheckId === row.checkId
+                      return (
+                        <tr
+                          key={row.checkId}
+                          className={`border-b transition-all ${
+                            isCompleted ? 'cursor-pointer' : 'opacity-60'
+                          } ${
+                            isSelected
+                              ? 'bg-primary/10 border-l-2 border-l-primary'
+                              : isCompleted
+                                ? 'hover:bg-muted/30'
+                                : ''
+                          }`}
+                          onClick={() => {
+                            if (isCompleted) setSelectedCheckId(row.checkId)
+                          }}
+                        >
+                          <td className="p-2 font-mono">{row.checkId}</td>
+                          <td className="p-2">{STAGE_LABEL[row.stage] ?? row.stage}</td>
+                          <td className="p-2">
+                            {row.subStage ? SUB_STAGE_LABEL[row.subStage] ?? row.subStage : '-'}
+                          </td>
+                          <td className="p-2">{row.checkStatusFstWrt || '-'}</td>
+                          <td className="p-2 font-mono">{fmtDate(row.checkStartDatetime)}</td>
+                          <td className="p-2 font-mono">{fmtDate(row.checkEndDatetime)}</td>
+                          <td className="p-2">
+                            <Badge
+                              variant="secondary"
+                              className={`text-xs ${statusBadgeClass(row.checkStatus)}`}
+                            >
+                              {CHECK_STATUS_LABEL[row.checkStatus]}
+                            </Badge>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-end gap-2 p-2 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      {'이전'}
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {page} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      {'다음'}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Patient DB Content */}
-          <TabsContent value="patient" className="space-y-4">
-            <Card>
-              <CardContent className="pt-6">
-                <Tabs value={patientTab} onValueChange={(v) => setPatientTab(v as PatientTab)}>
-                  <TabsList className="grid w-full grid-cols-7 h-auto mb-4">
-                    <TabsTrigger value="summary" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
-                        <span>요약</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Summary)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="person" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        <span>환자</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Person)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="encounter" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        <span>내원</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Encounter)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="condition" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Stethoscope className="w-3 h-3" />
-                        <span>진단</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Condition)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="procedure" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Scissors className="w-3 h-3" />
-                        <span>수술/처치</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Procedure)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="medication" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Pill className="w-3 h-3" />
-                        <span>약물</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Medication)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="laboratory" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <FlaskConical className="w-3 h-3" />
-                        <span>진단검사</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Laboratory)</span>
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsList className="grid w-full grid-cols-6 h-auto mb-4">
-                    <TabsTrigger value="pathology" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <TestTube className="w-3 h-3" />
-                        <span>병리검사</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Pathology)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="imaging" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Scan className="w-3 h-3" />
-                        <span>영상검사</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Imaging)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="functional" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Heart className="w-3 h-3" />
-                        <span>기능검사</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Functional)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="vital" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Activity className="w-3 h-3" />
-                        <span>활력징후</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Vital Signs)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="allergy" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        <span>알레르기</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Allergy)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="immunization" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Syringe className="w-3 h-3" />
-                        <span>예방접종</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Immunization)</span>
-                    </TabsTrigger>
-                  </TabsList>
-
-                  {/* Patient Tab Contents */}
-                  <TabsContent value="summary">
-                    <div className="grid grid-cols-4 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 환자 수</div>
-                          <div className="text-2xl font-bold mt-1">15,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 내원 수</div>
-                          <div className="text-2xl font-bold mt-1">48,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 진단 수</div>
-                          <div className="text-2xl font-bold mt-1">32,891</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 처방 수</div>
-                          <div className="text-2xl font-bold mt-1">95,432</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="person">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">등록 환자 수</div>
-                          <div className="text-2xl font-bold mt-1">15,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">남성</div>
-                          <div className="text-2xl font-bold mt-1">7,523</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">여성</div>
-                          <div className="text-2xl font-bold mt-1">7,711</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="encounter">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 내원 수</div>
-                          <div className="text-2xl font-bold mt-1">48,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">외래</div>
-                          <div className="text-2xl font-bold mt-1">42,345</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">입원</div>
-                          <div className="text-2xl font-bold mt-1">6,222</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="condition">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 진단 수</div>
-                          <div className="text-2xl font-bold mt-1">32,891</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">주진단</div>
-                          <div className="text-2xl font-bold mt-1">15,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">부진단</div>
-                          <div className="text-2xl font-bold mt-1">17,657</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="procedure">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 수술/처치 수</div>
-                          <div className="text-2xl font-bold mt-1">8,456</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">수술</div>
-                          <div className="text-2xl font-bold mt-1">3,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">처치</div>
-                          <div className="text-2xl font-bold mt-1">5,222</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="medication">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 처방 수</div>
-                          <div className="text-2xl font-bold mt-1">95,432</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">경구제</div>
-                          <div className="text-2xl font-bold mt-1">78,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">주사제</div>
-                          <div className="text-2xl font-bold mt-1">17,198</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="laboratory">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 검사 수</div>
-                          <div className="text-2xl font-bold mt-1">124,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">혈액검사</div>
-                          <div className="text-2xl font-bold mt-1">56,789</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">기타 검사</div>
-                          <div className="text-2xl font-bold mt-1">67,778</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="pathology">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 병리검사 수</div>
-                          <div className="text-2xl font-bold mt-1">3,456</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">조직검사</div>
-                          <div className="text-2xl font-bold mt-1">2,345</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">세포검사</div>
-                          <div className="text-2xl font-bold mt-1">1,111</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="imaging">
-                    <div className="grid grid-cols-4 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 영상검사 수</div>
-                          <div className="text-2xl font-bold mt-1">15,678</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">X-ray</div>
-                          <div className="text-2xl font-bold mt-1">8,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">CT</div>
-                          <div className="text-2xl font-bold mt-1">4,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">MRI</div>
-                          <div className="text-2xl font-bold mt-1">2,877</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="functional">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 기능검사 수</div>
-                          <div className="text-2xl font-bold mt-1">12,345</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">심전도</div>
-                          <div className="text-2xl font-bold mt-1">6,789</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">폐기능</div>
-                          <div className="text-2xl font-bold mt-1">5,556</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="vital">
-                    <div className="grid grid-cols-4 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">측정 횟수</div>
-                          <div className="text-2xl font-bold mt-1">156,789</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">혈압</div>
-                          <div className="text-2xl font-bold mt-1">48,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">체온</div>
-                          <div className="text-2xl font-bold mt-1">48,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">맥박</div>
-                          <div className="text-2xl font-bold mt-1">48,567</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="allergy">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">알레르기 기록 수</div>
-                          <div className="text-2xl font-bold mt-1">2,345</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">약물 알레르기</div>
-                          <div className="text-2xl font-bold mt-1">1,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">음식 알레르기</div>
-                          <div className="text-2xl font-bold mt-1">778</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="immunization">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 접종 수</div>
-                          <div className="text-2xl font-bold mt-1">8,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">독감 백신</div>
-                          <div className="text-2xl font-bold mt-1">4,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">기타 백신</div>
-                          <div className="text-2xl font-bold mt-1">3,667</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Clinical DB Content */}
-          <TabsContent value="clinical" className="space-y-4">
-            <Card>
-              <CardContent className="pt-6">
-                <Tabs value={clinicalTab} onValueChange={(v) => setClinicalTab(v as ClinicalTab)}>
-                  <TabsList className="grid w-full grid-cols-8 h-auto">
-                    <TabsTrigger value="summary" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
-                        <span>요약</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Summary)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="person" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        <span>사람</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Person)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="visit" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>방문</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Visit)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="condition" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Stethoscope className="w-3 h-3" />
-                        <span>진단</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Condition)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="drug" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Pill className="w-3 h-3" />
-                        <span>약물</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Drug)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="measurement" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <FlaskConical className="w-3 h-3" />
-                        <span>검사</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Measurement)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="procedure" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Scissors className="w-3 h-3" />
-                        <span>수술/처치</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Procedure)</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="observation" className="text-xs py-2 flex-col h-auto gap-0">
-                      <div className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        <span>관찰정보</span>
-                      </div>
-                      <span className="text-[10px] opacity-60">(Observation)</span>
-                    </TabsTrigger>
-                  </TabsList>
-
-                  {/* Clinical Tab Contents */}
-                  <TabsContent value="summary">
-                    <div className="grid grid-cols-4 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 피험자 수</div>
-                          <div className="text-2xl font-bold mt-1">3,456</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 방문 수</div>
-                          <div className="text-2xl font-bold mt-1">12,890</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">진행중인 시험</div>
-                          <div className="text-2xl font-bold mt-1">23</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">완료된 시험</div>
-                          <div className="text-2xl font-bold mt-1">45</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="person">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">등록 피험자 수</div>
-                          <div className="text-2xl font-bold mt-1">3,456</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">남성</div>
-                          <div className="text-2xl font-bold mt-1">1,789</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">여성</div>
-                          <div className="text-2xl font-bold mt-1">1,667</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="visit">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 방문 수</div>
-                          <div className="text-2xl font-bold mt-1">12,890</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">스크리닝</div>
-                          <div className="text-2xl font-bold mt-1">3,456</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">추적 방문</div>
-                          <div className="text-2xl font-bold mt-1">9,434</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="condition">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 진단 기록 수</div>
-                          <div className="text-2xl font-bold mt-1">8,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">기저질환</div>
-                          <div className="text-2xl font-bold mt-1">4,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">이상반응</div>
-                          <div className="text-2xl font-bold mt-1">3,667</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="drug">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 투약 기록 수</div>
-                          <div className="text-2xl font-bold mt-1">25,678</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">시험약</div>
-                          <div className="text-2xl font-bold mt-1">15,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">병용약물</div>
-                          <div className="text-2xl font-bold mt-1">10,444</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="measurement">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 검사 수</div>
-                          <div className="text-2xl font-bold mt-1">45,678</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">실험실 검사</div>
-                          <div className="text-2xl font-bold mt-1">32,456</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">바이탈 측정</div>
-                          <div className="text-2xl font-bold mt-1">13,222</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="procedure">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 시술 수</div>
-                          <div className="text-2xl font-bold mt-1">2,345</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">생검</div>
-                          <div className="text-2xl font-bold mt-1">1,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">영상유도 시술</div>
-                          <div className="text-2xl font-bold mt-1">1,111</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="observation">
-                    <div className="grid grid-cols-3 gap-3">
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">총 관찰 기록 수</div>
-                          <div className="text-2xl font-bold mt-1">18,234</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">효능 평가</div>
-                          <div className="text-2xl font-bold mt-1">9,567</div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4">
-                          <div className="text-xs text-muted-foreground">안전성 평가</div>
-                          <div className="text-2xl font-bold mt-1">8,667</div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* 통계 결과 표시 */}
+        {selectedCheckId === null ? (
+          <Card>
+            <CardContent className="pt-6">
+              <EmptyBox message="위 내역에서 완료된 검증을 선택하면 통계 결과가 표시됩니다." />
+            </CardContent>
+          </Card>
+        ) : (
+          <StatisticsResults checkId={selectedCheckId} />
+        )}
       </main>
+    </div>
+  )
+}
+
+// ── 선택한 checkId의 통계 결과 (단순값 + 분포) ──────────────────
+function StatisticsResults({ checkId }: { checkId: number }) {
+  const countApi = useApi(
+    (signal) => qcApi.getAchillesResults(checkId, undefined, signal),
+    [checkId],
+  )
+  const distApi = useApi(
+    (signal) => qcApi.getAchillesResultsDist(checkId, undefined, signal),
+    [checkId],
+  )
+
+  return (
+    <div className="space-y-4">
+      {/* 단순값 (distribution=0) */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ListOrdered className="w-4 h-4" />
+            {'통계 결과 — 단순값'}
+          </CardTitle>
+          <CardDescription className="text-xs">
+            {`검증 #${checkId} · count 값 (distribution=0)`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {countApi.loading ? (
+            <Spinner />
+          ) : countApi.error ? (
+            <ErrorBox message={countApi.error} onRetry={countApi.refetch} />
+          ) : (countApi.data?.length ?? 0) === 0 ? (
+            <EmptyBox message="단순값 통계 결과가 없습니다." />
+          ) : (
+            <table className="w-full text-xs">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="text-left p-2 font-medium">{'분석 ID'}</th>
+                  <th className="text-left p-2 font-medium">{'분류 (Stratum)'}</th>
+                  <th className="text-right p-2 font-medium">{'Count'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(countApi.data as DqAchillesResultResponse[]).map((row, idx) => (
+                  <tr key={`${row.analysisId}-${idx}`} className="border-b hover:bg-muted/30">
+                    <td className="p-2 font-mono">{row.analysisId}</td>
+                    <td className="p-2">{stratumKey(row)}</td>
+                    <td className="p-2 text-right font-mono">{fmtNum(row.countValue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 분포 (distribution=1) */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            {'통계 결과 — 분포'}
+          </CardTitle>
+          <CardDescription className="text-xs">
+            {`검증 #${checkId} · 분포 값 (distribution=1)`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {distApi.loading ? (
+            <Spinner />
+          ) : distApi.error ? (
+            <ErrorBox message={distApi.error} onRetry={distApi.refetch} />
+          ) : (distApi.data?.length ?? 0) === 0 ? (
+            <EmptyBox message="분포 통계 결과가 없습니다." />
+          ) : (
+            <DistributionResults rows={distApi.data as DqAchillesResultDistResponse[]} />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function DistributionResults({ rows }: { rows: DqAchillesResultDistResponse[] }) {
+  return (
+    <div className="space-y-4">
+      {/* 분위수 막대 차트 (avg, p10~p90, min/max를 막대로 표현) */}
+      <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={rows.map((r, idx) => ({
+              name: stratumKey(r) === '-' ? r.analysisId : stratumKey(r),
+              idx,
+              min: r.minValue,
+              p10: r.p10Value,
+              p25: r.p25Value,
+              median: r.medianValue,
+              avg: r.avgValue,
+              p75: r.p75Value,
+              p90: r.p90Value,
+              max: r.maxValue,
+            }))}
+            margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
+            <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} angle={-15} textAnchor="end" height={50} />
+            <YAxis tick={{ fontSize: 9 }} />
+            <Tooltip contentStyle={{ fontSize: '11px', padding: '4px 8px' }} />
+            <Bar dataKey="min" name="최소" fill="hsl(var(--muted-foreground))" />
+            <Bar dataKey="avg" name="평균" fill="hsl(var(--primary))" />
+            <Bar dataKey="median" name="중앙값" fill="#3b82f6" />
+            <Bar dataKey="max" name="최대" fill="#22c55e" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* 분포 상세 테이블 */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="border-b bg-muted/30">
+            <tr>
+              <th className="text-left p-2 font-medium">{'분석 ID'}</th>
+              <th className="text-left p-2 font-medium">{'분류'}</th>
+              <th className="text-right p-2 font-medium">{'Count'}</th>
+              <th className="text-right p-2 font-medium">{'최소'}</th>
+              <th className="text-right p-2 font-medium">{'P10'}</th>
+              <th className="text-right p-2 font-medium">{'P25'}</th>
+              <th className="text-right p-2 font-medium">{'중앙값'}</th>
+              <th className="text-right p-2 font-medium">{'평균'}</th>
+              <th className="text-right p-2 font-medium">{'P75'}</th>
+              <th className="text-right p-2 font-medium">{'P90'}</th>
+              <th className="text-right p-2 font-medium">{'최대'}</th>
+              <th className="text-right p-2 font-medium">{'표준편차'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, idx) => (
+              <tr key={`${row.analysisId}-${idx}`} className="border-b hover:bg-muted/30">
+                <td className="p-2 font-mono">{row.analysisId}</td>
+                <td className="p-2">{stratumKey(row)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.countValue)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.minValue)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.p10Value)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.p25Value)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.medianValue)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.avgValue)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.p75Value)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.p90Value)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.maxValue)}</td>
+                <td className="p-2 text-right font-mono">{fmtNum(row.stdevValue)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

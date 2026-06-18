@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,125 +15,123 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ArrowLeft, ArrowUpDown, Filter } from 'lucide-react'
+import { ArrowLeft, ArrowUpDown, Loader2 } from 'lucide-react'
+import { useApi } from '@/hooks/use-api'
+import { qcApi, STAGE_LABEL } from '@/lib/api'
+import type { FieldCheckItem } from '@/lib/api'
 
-// 임시 데이터 (실제로는 API — dq_quality_metric ⨝ dq_field_check 등에서 가져올 데이터)
-//   ※ 점수는 dq_quality_results 기반 단계별 DB(연계DB/전처리DB) 통과율 (§2.2 파이프라인)
-const metricSeed: Record<number, {
-  metricId: string; version: string; category: string; checkLevel: string
-  name: string; description: string; link: number; prep: number; threshold: number; weight: number
-  lastModified: string; appliedDate: string
-  appliedTables: { table: string; columns: string[]; isActive: boolean; lastModified: string }[]
-}> = {
-  1: { metricId: 'QM001', version: 'v1.3', category: '완전성', checkLevel: '컬럼', name: '환자 필수항목 결측 검증', description: 'BIKO_INFO_PATIENT 환자ID/성별/생년월일 결측 검사', link: 99.2, prep: 99.6, threshold: 99, weight: 8, lastModified: '2026-05-11', appliedDate: '2026-05-12',
-    appliedTables: [
-      { table: 'BIKO_INFO_PATIENT', columns: ['PATIENT_ID', 'GENDER', 'BIRTH_DATE'], isActive: true, lastModified: '2026-05-11' },
-    ] },
-  3: { metricId: 'QM003', version: 'v1.1', category: '정합성', checkLevel: '컬럼', name: '진단코드 표준 적합성', description: 'BIKO_CARE_CONDITION 진단코드 KCD 표준 코드 적합 여부', link: 95.6, prep: 96.9, threshold: 95, weight: 9, lastModified: '2026-04-27', appliedDate: '2026-04-28',
-    appliedTables: [
-      { table: 'BIKO_CARE_CONDITION', columns: ['DIAGNOSIS_CD', 'DIAGNOSIS_TYPE'], isActive: true, lastModified: '2026-04-27' },
-    ] },
-  5: { metricId: 'QM005', version: 'v1.2', category: '타당성', checkLevel: '컨셉', name: '진단 없는 약물 처방 검출', description: '고혈압 진단 없이 고혈압 약물이 처방된 케이스 검출', link: 88.4, prep: 90.2, threshold: 90, weight: 10, lastModified: '2026-05-03', appliedDate: '2026-05-04',
-    appliedTables: [
-      { table: 'BIKO_CARE_MEDICATION', columns: ['DRUG_CD', 'PATIENT_ID'], isActive: true, lastModified: '2026-05-03' },
-      { table: 'BIKO_CARE_CONDITION', columns: ['DIAGNOSIS_CD', 'PATIENT_ID'], isActive: true, lastModified: '2026-05-03' },
-    ] },
+const PAGE_SIZE = 20
+
+// isActive는 백엔드에서 문자열로 내려옴 — 활성 여부 판정
+const isActiveFlag = (value: string) => {
+  const v = (value ?? '').toString().trim().toLowerCase()
+  return v === '1' || v === 'y' || v === 'true' || v === 'active' || v === '활성'
 }
 
-const getIndicatorData = (id: string) => {
-  const numId = parseInt(id)
-  const seed = metricSeed[numId] ?? {
-    metricId: `QM${String(numId).padStart(3, '0')}`, version: 'v1.0', category: '완전성', checkLevel: '컬럼',
-    name: '품질 지표', description: 'BIKO_Data_Quality_DB 품질 검증 지표', link: 96.5, prep: 97.2, threshold: 95, weight: 8,
-    lastModified: '2026-05-12', appliedDate: '2026-05-12',
-    appliedTables: [
-      { table: 'BIKO_INFO_PATIENT', columns: ['PATIENT_ID', 'GENDER'], isActive: true, lastModified: '2026-05-12' },
-      { table: 'BIKO_INFO_ENCOUNTER', columns: ['ENCOUNTER_ID', 'PATIENT_ID'], isActive: true, lastModified: '2026-05-12' },
-    ],
-  }
-
-  return {
-    id: numId,
-    metricId: seed.metricId,
-    version: seed.version,
-    category: seed.category,
-    checkLevel: seed.checkLevel,
-    name: seed.name,
-    description: seed.description,
-    linkScore: seed.link,
-    prepScore: seed.prep,
-    threshold: seed.threshold,
-    weight: seed.weight,
-    lastModified: seed.lastModified,
-    appliedDate: seed.appliedDate,
-    appliedTables: seed.appliedTables.map((t) => ({ db: 'BIKO_Data_Quality_DB', ...t })),
-  }
+// 점수 색상: >=90 green, 80~90 orange, <80 red
+const getScoreColor = (score: number) => {
+  if (score >= 90) return 'text-green-600'
+  if (score >= 80) return 'text-orange-600'
+  return 'text-red-600'
 }
 
 export default function IndicatorDetailPage() {
   const router = useRouter()
-  const params = useParams()
-  const indicator = getIndicatorData(params.id as string)
+  const { id } = useParams<{ id: string }>()
+  const metricId = id
 
-  const [tableSortField, setTableSortField] = useState<'db' | 'table' | 'column' | 'lastModified' | null>(null)
-  const [tableSortDirection, setTableSortDirection] = useState<'asc' | 'desc'>('asc')
-  const [dbFilter, setDbFilter] = useState<string>('all')
+  // ── 필터 / 페이지 상태 ──────────────────────────────────────
   const [tableFilter, setTableFilter] = useState<string>('')
   const [columnFilter, setColumnFilter] = useState<string>('')
-  const [activeFilter, setActiveFilter] = useState<string>('all')
+  const [activeFilter, setActiveFilter] = useState<string>('all') // all | active | inactive
+  const [page, setPage] = useState<number>(1)
 
-  const handleTableSort = (field: 'db' | 'table' | 'column' | 'lastModified') => {
-    if (tableSortField === field) {
-      setTableSortDirection(tableSortDirection === 'asc' ? 'desc' : 'asc')
+  const [sortField, setSortField] = useState<keyof FieldCheckItem | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
+  // 검색어/필터 변경 시 디바운스용 — 입력값을 그대로 쿼리에 전달하되 페이지는 1로 초기화
+  const handleFilterChange = (setter: (v: string) => void) => (v: string) => {
+    setter(v)
+    setPage(1)
+  }
+
+  // ── 지표 상세 ───────────────────────────────────────────────
+  const {
+    data: detail,
+    loading: detailLoading,
+    error: detailError,
+    refetch: refetchDetail,
+  } = useApi((signal) => qcApi.getQualityMetricDetail(metricId, signal), [metricId])
+
+  // ── 적용 대상 컬럼 ──────────────────────────────────────────
+  const isActiveParam =
+    activeFilter === 'active' ? '1' : activeFilter === 'inactive' ? '0' : undefined
+
+  const {
+    data: checksPage,
+    loading: checksLoading,
+    error: checksError,
+    refetch: refetchChecks,
+  } = useApi(
+    (signal) =>
+      qcApi.getQualityMetricChecks(
+        metricId,
+        {
+          page,
+          size: PAGE_SIZE,
+          isActive: isActiveParam,
+          tableName: tableFilter || undefined,
+          fieldName: columnFilter || undefined,
+        },
+        signal,
+      ),
+    [metricId, page, isActiveParam, tableFilter, columnFilter],
+  )
+
+  const handleSort = (field: keyof FieldCheckItem) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
-      setTableSortField(field)
-      setTableSortDirection('asc')
+      setSortField(field)
+      setSortDirection('asc')
     }
   }
 
-  const getExpandedFilteredAndSortedTableData = () => {
-    let filtered = indicator.appliedTables.flatMap((table) =>
-      table.columns.map((column) => ({
-        db: table.db,
-        table: table.table,
-        column: column,
-        isActive: table.isActive,
-        lastModified: table.lastModified,
-      }))
-    )
-
-    // Apply filters
-    if (dbFilter !== 'all') {
-      filtered = filtered.filter((row) => row.db === dbFilter)
-    }
-    if (tableFilter) {
-      filtered = filtered.filter((row) => row.table.toLowerCase().includes(tableFilter.toLowerCase()))
-    }
-    if (columnFilter) {
-      filtered = filtered.filter((row) => row.column.toLowerCase().includes(columnFilter.toLowerCase()))
-    }
-    if (activeFilter !== 'all') {
-      const isActive = activeFilter === 'active'
-      filtered = filtered.filter((row) => row.isActive === isActive)
-    }
-
-    if (!tableSortField) return filtered
-
-    return [...filtered].sort((a, b) => {
-      const aVal = a[tableSortField]
-      const bVal = b[tableSortField]
+  // 현재 페이지 항목에 대해서만 클라이언트 정렬
+  const sortedChecks = useMemo(() => {
+    const items = checksPage?.items ?? []
+    if (!sortField) return items
+    return [...items].sort((a, b) => {
+      const aVal = (a[sortField] ?? '').toString()
+      const bVal = (b[sortField] ?? '').toString()
       const comparison = aVal.localeCompare(bVal)
-      return tableSortDirection === 'asc' ? comparison : -comparison
+      return sortDirection === 'asc' ? comparison : -comparison
     })
+  }, [checksPage, sortField, sortDirection])
+
+  const stageScores = detail?.stageScores ?? {}
+  const stageEntries = Object.entries(stageScores)
+
+  // ── 상세 로딩/에러/빈 상태 ──────────────────────────────────
+  if (detailLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
-  const uniqueDbs = Array.from(new Set(indicator.appliedTables.map((t) => t.db)))
-
-  const getScoreColor = (score: number, threshold: number) => {
-    if (score >= 95) return 'text-green-600'
-    if (score >= 85) return 'text-blue-600'
-    if (score >= 75) return 'text-yellow-600'
-    return 'text-red-600'
+  if (detailError || !detail) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 py-20">
+        <p className="text-sm text-muted-foreground">
+          {detailError ?? '지표 정보를 불러오지 못했습니다.'}
+        </p>
+        <Button variant="outline" size="sm" onClick={refetchDetail}>
+          다시 시도
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -156,16 +154,16 @@ export default function IndicatorDetailPage() {
             <div className="flex items-start justify-between">
               <div>
                 <CardTitle className="text-xl">
-                  <span className="font-mono text-base text-muted-foreground mr-2">{indicator.metricId}</span>
-                  {indicator.name}
+                  <span className="font-mono text-base text-muted-foreground mr-2">{detail.metricId}</span>
+                  {detail.metricNameKor}
                 </CardTitle>
                 <CardDescription className="flex items-center gap-4 mt-2">
-                  <Badge variant="outline">{indicator.category}</Badge>
-                  <Badge variant="secondary">{indicator.checkLevel}</Badge>
-                  <span>가중치: {indicator.weight}</span>
-                  <span>기준값: {indicator.threshold}</span>
-                  <span>수정: {indicator.lastModified}</span>
-                  <span>적용: {indicator.appliedDate}</span>
+                  <Badge variant="outline">{detail.category}</Badge>
+                  <Badge variant="secondary">{detail.metricLevel}</Badge>
+                  <Badge variant={isActiveFlag(detail.isActive) ? 'default' : 'secondary'}>
+                    {isActiveFlag(detail.isActive) ? '활성' : '비활성'}
+                  </Badge>
+                  <span>지표 생성일: {detail.createdAt}</span>
                 </CardDescription>
               </div>
             </div>
@@ -181,36 +179,37 @@ export default function IndicatorDetailPage() {
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">카테고리:</span>
-                <Badge variant="outline">{indicator.category}</Badge>
+                <Badge variant="outline">{detail.category}</Badge>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">설명:</span>
-                <span>{indicator.description}</span>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground shrink-0">설명:</span>
+                <span className="text-right">{detail.metricDescription}</span>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">최근 검증 통과율</CardTitle>
+              <CardTitle className="text-sm">단계별 검증 통과율</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">진료DB (LINK · QC1):</span>
-                <span className={`font-bold ${getScoreColor(indicator.linkScore, indicator.threshold)}`}>
-                  {indicator.linkScore.toFixed(1)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">시험DB (PREP · QC2/3):</span>
-                <span className={`font-bold ${getScoreColor(indicator.prepScore, indicator.threshold)}`}>
-                  {indicator.prepScore.toFixed(1)}
-                </span>
-              </div>
+              {stageEntries.length === 0 && (
+                <p className="text-muted-foreground">검증 결과가 없습니다.</p>
+              )}
+              {stageEntries.map(([stage, score]) => (
+                <div key={stage} className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {STAGE_LABEL[stage] ?? stage}:
+                  </span>
+                  <span className={`font-bold ${getScoreColor(score)}`}>
+                    {score.toFixed(1)}
+                  </span>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
 
-        {/* Applied Tables */}
+        {/* Applied Tables / Columns */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">적용 대상 테이블 및 컬럼</CardTitle>
@@ -223,7 +222,7 @@ export default function IndicatorDetailPage() {
                     <TableHead className="text-xs w-16">
                       <select
                         value={activeFilter}
-                        onChange={(e) => setActiveFilter(e.target.value)}
+                        onChange={(e) => handleFilterChange(setActiveFilter)(e.target.value)}
                         className="h-7 px-1 text-xs border rounded bg-background w-full"
                       >
                         <option value="all">전체</option>
@@ -232,22 +231,13 @@ export default function IndicatorDetailPage() {
                       </select>
                     </TableHead>
                     <TableHead className="text-xs">
-                      <select
-                        value={dbFilter}
-                        onChange={(e) => setDbFilter(e.target.value)}
-                        className="h-7 px-2 text-xs border rounded bg-background w-full"
-                      >
-                        <option value="all">모든 DB</option>
-                        {uniqueDbs.map((db) => (
-                          <option key={db} value={db}>{db}</option>
-                        ))}
-                      </select>
+                      <span className="text-muted-foreground">DB명</span>
                     </TableHead>
                     <TableHead className="text-xs">
                       <Input
                         placeholder="테이블 검색..."
                         value={tableFilter}
-                        onChange={(e) => setTableFilter(e.target.value)}
+                        onChange={(e) => handleFilterChange(setTableFilter)(e.target.value)}
                         className="h-7 px-2 text-xs"
                       />
                     </TableHead>
@@ -255,12 +245,12 @@ export default function IndicatorDetailPage() {
                       <Input
                         placeholder="컬럼 검색..."
                         value={columnFilter}
-                        onChange={(e) => setColumnFilter(e.target.value)}
+                        onChange={(e) => handleFilterChange(setColumnFilter)(e.target.value)}
                         className="h-7 px-2 text-xs"
                       />
                     </TableHead>
                     <TableHead className="text-xs">
-                      <span className="text-muted-foreground">마지막 수정</span>
+                      <span className="text-muted-foreground">생성일</span>
                     </TableHead>
                   </TableRow>
                   <TableRow>
@@ -271,7 +261,7 @@ export default function IndicatorDetailPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleTableSort('db')}
+                        onClick={() => handleSort('dbName')}
                         className="h-7 px-2 gap-1 hover:bg-transparent"
                       >
                         DB명
@@ -282,7 +272,7 @@ export default function IndicatorDetailPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleTableSort('table')}
+                        onClick={() => handleSort('tableName')}
                         className="h-7 px-2 gap-1 hover:bg-transparent"
                       >
                         테이블명
@@ -293,7 +283,7 @@ export default function IndicatorDetailPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleTableSort('column')}
+                        onClick={() => handleSort('fieldName')}
                         className="h-7 px-2 gap-1 hover:bg-transparent"
                       >
                         컬럼명
@@ -304,32 +294,51 @@ export default function IndicatorDetailPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleTableSort('lastModified')}
+                        onClick={() => handleSort('createdAt')}
                         className="h-7 px-2 gap-1 hover:bg-transparent"
                       >
-                        마지막 수정
+                        생성일
                         <ArrowUpDown className="w-3 h-3" />
                       </Button>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {getExpandedFilteredAndSortedTableData().map((row, index) => (
+                  {checksLoading && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mx-auto" />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!checksLoading && checksError && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                        <div className="flex flex-col items-center gap-3">
+                          <span>{checksError}</span>
+                          <Button variant="outline" size="sm" onClick={refetchChecks}>
+                            다시 시도
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!checksLoading && !checksError && sortedChecks.map((row, index) => (
                     <TableRow key={index}>
                       <TableCell className="text-center">
-                        <Checkbox checked={row.isActive} disabled />
+                        <Checkbox checked={isActiveFlag(row.isActive)} disabled />
                       </TableCell>
-                      <TableCell className="text-xs">{row.db}</TableCell>
-                      <TableCell className="text-xs font-medium">{row.table}</TableCell>
+                      <TableCell className="text-xs">{row.dbName || '-'}</TableCell>
+                      <TableCell className="text-xs font-medium">{row.tableName}</TableCell>
                       <TableCell className="text-xs">
                         <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
-                          {row.column}
+                          {row.fieldName}
                         </code>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{row.lastModified}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{row.createdAt}</TableCell>
                     </TableRow>
                   ))}
-                  {getExpandedFilteredAndSortedTableData().length === 0 && (
+                  {!checksLoading && !checksError && sortedChecks.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
                         필터 조건에 맞는 데이터가 없습니다
@@ -339,6 +348,33 @@ export default function IndicatorDetailPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination */}
+            {checksPage && checksPage.totalPages > 1 && (
+              <div className="flex items-center justify-between border-t px-4 py-3 text-xs">
+                <span className="text-muted-foreground">
+                  총 {checksPage.totalCount}건 · {checksPage.page}/{checksPage.totalPages} 페이지
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1 || checksLoading}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    이전
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= checksPage.totalPages || checksLoading}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    다음
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>

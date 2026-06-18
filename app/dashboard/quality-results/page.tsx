@@ -1,271 +1,140 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { CheckCircle, XCircle, AlertCircle, Database, TrendingUp, TrendingDown, FileDown } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { CheckCircle, XCircle, AlertCircle, Database, Loader2 } from 'lucide-react'
+import { useApi } from '@/hooks/use-api'
+import { qcApi, STAGE_LABEL, CHECK_STATUS_LABEL } from '@/lib/api'
+import type { CheckStatus, DqQualityResultResponse } from '@/lib/api'
 
-// DB별 상세 데이터
-const dbDetailData = {
-  '수집DB': {
-    avgScore: 91.9,
-    datasetCount: 4,
-    lastRun: '2024-01-15 14:35',
-    trend: 'up',
-    datasets: [
-      { 
-        name: '1차생성_문검진', 
-        score: 95.2, 
-        status: '통과', 
-        lastRun: '2024-01-15 14:30',
-        duration: '5분 12초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 96.5, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 98.2, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 94.1, status: '통과' },
-          { name: '정확성 - 범위 검증', score: 92.3, status: '통과' },
-          { name: '일관성 - 코드값 매핑', score: 94.9, status: '통과' },
-        ]
-      },
-      { 
-        name: '1차생성_기초임상(KR-CDI)', 
-        score: 88.5, 
-        status: '경고', 
-        lastRun: '2024-01-15 14:32',
-        duration: '8분 45초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 92.1, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 95.3, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 85.2, status: '경고' },
-          { name: '정확성 - 범위 검증', score: 78.5, status: '실패' },
-          { name: '일관성 - 코드값 매핑', score: 91.4, status: '통과' },
-        ]
-      },
-      { 
-        name: '2차연계_의무기록(PHR)', 
-        score: 92.1, 
-        status: '통과', 
-        lastRun: '2024-01-15 14:35',
-        duration: '3분 28초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 94.2, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 96.8, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 91.5, status: '통과' },
-          { name: '정확성 - 범위 검증', score: 88.3, status: '경고' },
-          { name: '일관성 - 코드값 매핑', score: 89.7, status: '경고' },
-        ]
-      },
-      { 
-        name: '2차연계_공공데이터', 
-        score: 94.3, 
-        status: '통과', 
-        lastRun: '2024-01-15 14:28',
-        duration: '4분 15초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 97.1, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 98.5, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 93.2, status: '통과' },
-          { name: '정확성 - 범위 검증', score: 90.1, status: '통과' },
-          { name: '일관성 - 코드값 매핑', score: 92.6, status: '통과' },
-        ]
-      },
-    ],
-  },
-  '전처리DB': {
-    avgScore: 88.1,
-    datasetCount: 4,
-    lastRun: '2024-01-15 15:10',
-    trend: 'down',
-    datasets: [
-      { 
-        name: '1차생성_문검진', 
-        score: 97.8, 
-        status: '통과', 
-        lastRun: '2024-01-15 15:00',
-        duration: '4분 32초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 98.5, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 99.1, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 97.2, status: '통과' },
-          { name: '정확성 - 범위 검증', score: 96.5, status: '통과' },
-          { name: '일관성 - 코드값 매핑', score: 97.7, status: '통과' },
-        ]
-      },
-      { 
-        name: '1차생성_기초임상(KR-CDI)', 
-        score: 91.2, 
-        status: '통과', 
-        lastRun: '2024-01-15 15:02',
-        duration: '7분 18초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 93.2, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 95.1, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 90.5, status: '통과' },
-          { name: '정확성 - 범위 검증', score: 87.2, status: '경고' },
-          { name: '일관성 - 코드값 매핑', score: 90.0, status: '통과' },
-        ]
-      },
-      { 
-        name: '1차생성_기초임상(CDM)', 
-        score: 78.3, 
-        status: '실패', 
-        lastRun: '2024-01-15 15:05',
-        duration: '12분 05초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 85.2, status: '경고' },
-          { name: '완전성 - 필수값 존재', score: 82.1, status: '경고' },
-          { name: '정확성 - 데이터 타입', score: 72.5, status: '실패' },
-          { name: '정확성 - 범위 검증', score: 68.3, status: '실패' },
-          { name: '일관성 - 코드값 매핑', score: 83.4, status: '경고' },
-        ]
-      },
-      { 
-        name: '1차생성_희귀질환(eCRF)', 
-        score: 85.1, 
-        status: '경고', 
-        lastRun: '2024-01-15 15:10',
-        duration: '6분 42초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 88.5, status: '경고' },
-          { name: '완전성 - 필수값 존재', score: 90.2, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 82.3, status: '경고' },
-          { name: '정확성 - 범위 검증', score: 79.5, status: '실패' },
-          { name: '일관성 - 코드값 매핑', score: 85.0, status: '경고' },
-        ]
-      },
-    ],
-  },
-  '통합DB': {
-    avgScore: 94.2,
-    datasetCount: 2,
-    lastRun: '2024-01-15 16:15',
-    trend: 'up',
-    datasets: [
-      { 
-        name: '1차생성_기초임상(CDM)', 
-        score: 94.6, 
-        status: '통과', 
-        lastRun: '2024-01-15 16:00',
-        duration: '9분 22초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 96.2, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 97.5, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 93.8, status: '통과' },
-          { name: '정확성 - 범위 검증', score: 91.5, status: '통과' },
-          { name: '일관성 - 코드값 매핑', score: 94.0, status: '통과' },
-        ]
-      },
-      { 
-        name: '1차생성_희귀질환(eCRF)', 
-        score: 93.8, 
-        status: '통과', 
-        lastRun: '2024-01-15 16:15',
-        duration: '5분 48초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 95.5, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 96.2, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 92.1, status: '통과' },
-          { name: '정확성 - 범위 검증', score: 90.8, status: '통과' },
-          { name: '일관성 - 코드값 매핑', score: 94.4, status: '통과' },
-        ]
-      },
-    ],
-  },
-  '개방DB': {
-    avgScore: 96.5,
-    datasetCount: 2,
-    lastRun: '2024-01-15 17:00',
-    trend: 'up',
-    datasets: [
-      { 
-        name: '1차생성_기초임상(CDM)', 
-        score: 96.5, 
-        status: '통과', 
-        lastRun: '2024-01-15 17:00',
-        duration: '8분 15초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 98.2, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 99.1, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 96.5, status: '통과' },
-          { name: '정확성 - 범위 검증', score: 94.2, status: '통과' },
-          { name: '일관성 - 코드값 매핑', score: 94.5, status: '통과' },
-        ]
-      },
-      { 
-        name: '1차생성_희귀질환(eCRF)', 
-        score: 95.8, 
-        status: '통과', 
-        lastRun: '2024-01-15 16:50',
-        duration: '6분 33초',
-        indicators: [
-          { name: '완전성 - NULL 비율', score: 97.5, status: '통과' },
-          { name: '완전성 - 필수값 존재', score: 98.2, status: '통과' },
-          { name: '정확성 - 데이터 타입', score: 95.1, status: '통과' },
-          { name: '정확성 - 범위 검증', score: 93.5, status: '통과' },
-          { name: '일관성 - 코드값 매핑', score: 94.7, status: '통과' },
-        ]
-      },
-    ],
-  },
+const PAGE_SIZE = 20
+
+// 점수 색상 규칙: >=90 green, 80~90 orange, <80 red
+function getScoreColor(score: number) {
+  if (score >= 90) return 'text-green-600'
+  if (score >= 80) return 'text-orange-500'
+  return 'text-red-600'
 }
 
-const dbList = ['수집DB', '전처리DB', '통합DB', '개방DB'] as const
+function getStatusBadge(status: CheckStatus) {
+  const label = CHECK_STATUS_LABEL[status] ?? '-'
+  switch (status) {
+    case 1:
+      return <Badge className="text-xs bg-green-100 text-green-800 hover:bg-green-100">{label}</Badge>
+    case 0:
+      return <Badge className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100">{label}</Badge>
+    case 2:
+      return <Badge className="text-xs bg-red-100 text-red-800 hover:bg-red-100">{label}</Badge>
+    default:
+      return <Badge className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-100">{label}</Badge>
+  }
+}
 
-export default function QualityResultsPage() {
-  const [selectedDb, setSelectedDb] = useState<keyof typeof dbDetailData>('수집DB')
-  const [selectedDataset, setSelectedDataset] = useState<number>(0)
+function getMetricStatusIcon(metric: DqQualityResultResponse) {
+  if (metric.notApplicable === 1) return <XCircle className="w-4 h-4 text-red-600" />
+  if (metric.passRate >= 90) return <CheckCircle className="w-4 h-4 text-green-600" />
+  if (metric.passRate >= 80) return <AlertCircle className="w-4 h-4 text-orange-500" />
+  return <XCircle className="w-4 h-4 text-red-600" />
+}
 
-  const currentData = dbDetailData[selectedDb]
-  const currentDataset = currentData.datasets[selectedDataset]
+function formatDatetime(value: string | null | undefined) {
+  if (!value) return '-'
+  return value.replace('T', ' ').slice(0, 19)
+}
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case '통과':
-        return <CheckCircle className="w-4 h-4 text-green-600" />
-      case '경고':
-        return <AlertCircle className="w-4 h-4 text-yellow-600" />
-      case '실패':
-        return <XCircle className="w-4 h-4 text-red-600" />
-      default:
-        return null
+// 공용 로딩/에러 표시
+function StatusBlock({
+  loading,
+  error,
+  empty,
+  emptyMessage,
+  onRetry,
+}: {
+  loading: boolean
+  error: string | null
+  empty: boolean
+  emptyMessage: string
+  onRetry: () => void
+}) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        {'불러오는 중...'}
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-8">
+        <p className="text-sm text-red-600">{error}</p>
+        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onRetry}>
+          {'다시 시도'}
+        </Button>
+      </div>
+    )
+  }
+  if (empty) {
+    return (
+      <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+        {emptyMessage}
+      </div>
+    )
+  }
+  return null
+}
+
+function QualityResultsContent() {
+  const searchParams = useSearchParams()
+
+  const [selectedStage, setSelectedStage] = useState<string | null>(null)
+  const [selectedCheckId, setSelectedCheckId] = useState<number | null>(null)
+
+  // 딥링크: ?checkId=123 → 마운트 시 선택
+  useEffect(() => {
+    const raw = searchParams.get('checkId')
+    if (raw) {
+      const parsed = Number(raw)
+      if (!Number.isNaN(parsed)) setSelectedCheckId(parsed)
     }
+    // 최초 1회만
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 1) Stage별 요약
+  const summary = useApi((signal) => qcApi.getQualityResultSummary(signal), [])
+
+  // 2) 검증 실행 내역 (stage 필터)
+  const checks = useApi(
+    (signal) =>
+      qcApi.getQualityCheckLogs(
+        { stage: selectedStage ?? undefined, page: 1, size: PAGE_SIZE },
+        signal,
+      ),
+    [selectedStage],
+  )
+
+  // 3) 지표별 결과 (완료 check 선택 시)
+  const results = useApi(
+    (signal) =>
+      selectedCheckId == null
+        ? Promise.resolve(null)
+        : qcApi.getQualityResultsByCheckId(selectedCheckId, { page: 1, size: PAGE_SIZE }, signal),
+    [selectedCheckId],
+  )
+
+  const handleStageSelect = (stage: string) => {
+    setSelectedStage((prev) => (prev === stage ? null : stage))
+    setSelectedCheckId(null)
   }
 
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600'
-    if (score >= 80) return 'text-yellow-600'
-    return 'text-red-600'
-  }
-
-  const getScoreBgColor = (score: number) => {
-    if (score >= 90) return 'bg-green-100'
-    if (score >= 80) return 'bg-yellow-100'
-    return 'bg-red-100'
-  }
-
-  const [selectedVerification, setSelectedVerification] = useState(0)
-  const [viewMode, setViewMode] = useState<'current' | 'compare'>('current')
-
-  // 이전 실행 비교 데이터 (각 지표별 이전 3회 실행 점수)
-  const getHistoricalData = (indicators: typeof currentData.datasets[0]['indicators']) => {
-    return indicators.map(indicator => ({
-      ...indicator,
-      history: [
-        { date: '01-13', score: indicator.score - Math.random() * 5 + 2 },
-        { date: '01-12', score: indicator.score - Math.random() * 8 + 3 },
-        { date: '01-11', score: indicator.score - Math.random() * 10 + 4 },
-      ]
-    }))
-  }
-
-  const handleDbChange = (db: keyof typeof dbDetailData) => {
-    setSelectedDb(db)
-    setSelectedDataset(0)
-    setSelectedVerification(0)
-  }
+  const summaryItems = summary.data ?? []
+  const checkItems = checks.data?.items ?? []
+  const metricItems = results.data?.items ?? []
 
   return (
     <div className="flex-1 flex flex-col">
@@ -278,40 +147,52 @@ export default function QualityResultsPage() {
           </p>
         </div>
 
-        {/* DB Selection Cards - Compact */}
-        <div className="grid grid-cols-4 gap-2">
-          {dbList.map((db) => {
-            const data = dbDetailData[db]
-            const isSelected = selectedDb === db
-            return (
-              <div
-                key={db}
-                className={`p-2.5 rounded-lg border-2 cursor-pointer transition-all ${
-                  isSelected
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                }`}
-                onClick={() => handleDbChange(db)}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{db}</span>
-                  <span className={`text-lg font-bold ${getScoreColor(data.avgScore)}`}>
-                    {data.avgScore}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-muted-foreground">
-                    {'대상 데이터 '}{data.datasetCount}{'개'}
-                  </span>
-                  {data.trend === 'up' ? (
-                    <TrendingUp className="w-3 h-3 text-green-600" />
-                  ) : (
-                    <TrendingDown className="w-3 h-3 text-red-600" />
-                  )}
-                </div>
-              </div>
-            )
-          })}
+        {/* Stage Summary Cards */}
+        <div>
+          {summary.loading || summary.error || summaryItems.length === 0 ? (
+            <Card>
+              <CardContent className="p-0">
+                <StatusBlock
+                  loading={summary.loading}
+                  error={summary.error}
+                  empty={summaryItems.length === 0}
+                  emptyMessage="요약 데이터가 없습니다."
+                  onRetry={summary.refetch}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {summaryItems.map((item) => {
+                const isSelected = selectedStage === item.stage
+                return (
+                  <div
+                    key={item.stage}
+                    className={`p-2.5 rounded-lg border-2 cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                    }`}
+                    onClick={() => handleStageSelect(item.stage)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">
+                        {STAGE_LABEL[item.stage] ?? item.stage}
+                      </span>
+                      <span className={`text-lg font-bold ${getScoreColor(item.score)}`}>
+                        {item.score}
+                      </span>
+                    </div>
+                    <div className="mt-0.5">
+                      <span className="text-xs text-muted-foreground">
+                        {'지표 수 '}{item.metricCount}{'개'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Verification History Table */}
@@ -319,264 +200,182 @@ export default function QualityResultsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">{selectedDb}{' 검증 실행 내역'}</CardTitle>
-                <CardDescription className="text-xs">{'검증 내역을 선택하여 결과를 확인하세요'}</CardDescription>
+                <CardTitle className="text-base">
+                  {selectedStage ? `${STAGE_LABEL[selectedStage] ?? selectedStage} ` : ''}
+                  {'검증 실행 내역'}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {'완료된 검증을 선택하여 지표별 결과를 확인하세요'}
+                </CardDescription>
               </div>
+              {selectedStage && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => handleStageSelect(selectedStage)}
+                >
+                  {'전체 보기'}
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <table className="w-full text-xs">
-              <thead className="border-b bg-muted/30">
-                <tr>
-                  <th className="text-left p-2 font-medium">{'번호'}</th>
-                  <th className="text-left p-2 font-medium">{'실행자'}</th>
-                  <th className="text-left p-2 font-medium">{'시작 일시'}</th>
-                  <th className="text-left p-2 font-medium">{'종료 일시'}</th>
-                  <th className="text-left p-2 font-medium">{'상태'}</th>
-                  <th className="text-left p-2 font-medium">{'점수'}</th>
-                  <th className="text-left p-2 font-medium">{'리포트'}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { id: 1, executor: '홍길동', startedAt: '2024-01-15 14:30', endedAt: '2024-01-15 14:45', status: '완료', score: 91.9 },
-                  { id: 2, executor: '김철수', startedAt: '2024-01-14 10:00', endedAt: '2024-01-14 10:22', status: '완료', score: 89.5 },
-                  { id: 3, executor: '이영희', startedAt: '2024-01-13 16:30', endedAt: '2024-01-13 16:48', status: '완료', score: 95.2 },
-                  { id: 4, executor: '박민수', startedAt: '2024-01-12 09:00', endedAt: '2024-01-12 09:18', status: '완료', score: 87.3 },
-                  { id: 5, executor: '홍길동', startedAt: '2024-01-11 14:00', endedAt: '2024-01-11 14:15', status: '오류', score: 0 },
-                ].map((row, idx) => (
-                  <tr 
-                    key={idx} 
-                    className={`border-b cursor-pointer transition-all ${
-                      selectedVerification === idx 
-                        ? 'bg-primary/10 border-l-2 border-l-primary' 
-                        : 'hover:bg-muted/30'
-                    }`}
-                    onClick={() => setSelectedVerification(idx)}
-                  >
-                    <td className="p-2">{row.id}</td>
-                    <td className="p-2">{row.executor}</td>
-                    <td className="p-2 font-mono">{row.startedAt}</td>
-                    <td className="p-2 font-mono">{row.endedAt}</td>
-                    <td className="p-2">
-                      <Badge 
-                        variant={row.status === '완료' ? 'secondary' : 'destructive'} 
-                        className={`text-xs ${row.status === '완료' ? 'bg-green-100 text-green-800' : ''}`}
-                      >
-                        {row.status}
-                      </Badge>
-                    </td>
-                    <td className="p-2">
-                      <span className={`font-bold ${row.score >= 90 ? 'text-green-600' : row.score >= 80 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {row.score > 0 ? row.score : '-'}
-                      </span>
-                    </td>
-                    <td className="p-2">
-                      {row.status === '완료' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-6 text-xs gap-1"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            alert(`검증 ${row.id} 리포트 PDF 다운로드`)
-                          }}
-                        >
-                          <FileDown className="w-3 h-3" />
-                          {'PDF'}
-                        </Button>
-                      )}
-                    </td>
+            {checks.loading || checks.error || checkItems.length === 0 ? (
+              <StatusBlock
+                loading={checks.loading}
+                error={checks.error}
+                empty={checkItems.length === 0}
+                emptyMessage="검증 실행 내역이 없습니다."
+                onRetry={checks.refetch}
+              />
+            ) : (
+              <table className="w-full text-xs">
+                <thead className="border-b bg-muted/30">
+                  <tr>
+                    <th className="text-left p-2 font-medium">{'번호'}</th>
+                    <th className="text-left p-2 font-medium">{'실행자'}</th>
+                    <th className="text-left p-2 font-medium">{'시작 일시'}</th>
+                    <th className="text-left p-2 font-medium">{'종료 일시'}</th>
+                    <th className="text-left p-2 font-medium">{'상태'}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {checkItems.map((row, idx) => {
+                    const completed = row.checkStatus === 1
+                    const isSelected = selectedCheckId === row.checkId
+                    return (
+                      <tr
+                        key={row.checkId}
+                        className={`border-b transition-all ${
+                          completed ? 'cursor-pointer' : 'cursor-default opacity-70'
+                        } ${
+                          isSelected
+                            ? 'bg-primary/10 border-l-2 border-l-primary'
+                            : completed
+                              ? 'hover:bg-muted/30'
+                              : ''
+                        }`}
+                        onClick={() => {
+                          if (completed) setSelectedCheckId(row.checkId)
+                        }}
+                      >
+                        <td className="p-2">{idx + 1}</td>
+                        <td className="p-2">{row.checkStatusFstWrt || '-'}</td>
+                        <td className="p-2 font-mono">{formatDatetime(row.checkStartDatetime)}</td>
+                        <td className="p-2 font-mono">{formatDatetime(row.checkEndDatetime)}</td>
+                        <td className="p-2">{getStatusBadge(row.checkStatus)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
           </CardContent>
         </Card>
 
-        {/* Selected DB Dashboard */}
-        <div className="grid grid-cols-3 gap-4">
-          {/* Dataset Selection Card */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Database className="w-4 h-4" />
-                {selectedDb} {'대상 데이터'}
-              </CardTitle>
-              <CardDescription className="text-xs">
-                {'데이터를 선택하여 지표별 점수를 확인하세요'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {currentData.datasets.map((dataset, idx) => (
-                <div
-                  key={idx}
-                  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
-                    selectedDataset === idx
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/30'
-                  }`}
-                  onClick={() => setSelectedDataset(idx)}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">{dataset.name}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-sm font-bold ${getScoreColor(dataset.score)}`}>
-                        {dataset.score}
-                      </span>
-                      {getStatusIcon(dataset.status)}
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">
-                    <span>{dataset.lastRun}</span>
-                    <span className="text-muted-foreground/70">{'|'}</span>
-                    <span>{dataset.duration}</span>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+        {/* Metric Results for Selected Check */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Database className="w-4 h-4" />
+              {'지표별 결과'}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {selectedCheckId == null
+                ? '완료된 검증을 선택하면 지표별 결과가 표시됩니다'
+                : `검증 #${selectedCheckId}`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {selectedCheckId == null ? (
+              <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                {'위 표에서 완료된 검증을 선택하세요.'}
+              </div>
+            ) : results.loading || results.error || metricItems.length === 0 ? (
+              <StatusBlock
+                loading={results.loading}
+                error={results.error}
+                empty={metricItems.length === 0}
+                emptyMessage="해당 검증의 지표 결과가 없습니다."
+                onRetry={results.refetch}
+              />
+            ) : (
+              <div className="space-y-3">
+                {metricItems.map((metric) => {
+                  const failed = metric.notApplicable === 1
+                  return (
+                    <div
+                      key={metric.metricId}
+                      className="p-3 rounded-lg border bg-muted/20"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium">{metric.metricNameKor}</span>
+                            <Badge variant="outline" className="text-[10px]">
+                              {metric.category}
+                            </Badge>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {metric.metricLevel}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {failed ? (
+                            <span className="text-xs font-bold text-red-600">{'실행 실패'}</span>
+                          ) : (
+                            <span className={`text-sm font-bold ${getScoreColor(metric.passRate)}`}>
+                              {Number(metric.passRate.toFixed(1))}
+                            </span>
+                          )}
+                          {getMetricStatusIcon(metric)}
+                        </div>
+                      </div>
 
-          {/* Indicator Scores for Selected Dataset */}
-          <Card className="col-span-2">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">{'지표별 점수'}</CardTitle>
-                  <CardDescription className="text-xs">
-                    {currentDataset.name}
-                  </CardDescription>
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant={viewMode === 'current' ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => setViewMode('current')}
-                  >
-                    {'현재 실행'}
-                  </Button>
-                  <Button
-                    variant={viewMode === 'compare' ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => setViewMode('compare')}
-                  >
-                    {'이전 비교'}
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {viewMode === 'current' ? (
-                <div className="space-y-3 max-h-[180px] overflow-y-auto pr-2">
-                  {currentDataset.indicators.map((indicator, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs">{indicator.name}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${getScoreColor(indicator.score)}`}>
-                              {indicator.score}
+                      {failed ? (
+                        <p className="text-xs text-red-600/80 mt-2">
+                          {metric.notApplicableReason || '사유 없음'}
+                        </p>
+                      ) : (
+                        <div className="mt-2 space-y-1.5">
+                          <Progress value={metric.passRate} className="h-1.5" />
+                          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                            <span className="text-green-600">
+                              {'통과 '}{metric.numPassedRows.toLocaleString()}
                             </span>
-                            {getStatusIcon(indicator.status)}
+                            <span className="text-red-600">
+                              {'위반 '}{metric.numViolatedRows.toLocaleString()}
+                            </span>
+                            <span>
+                              {'전체 '}{metric.numDenominatorRows.toLocaleString()}
+                            </span>
                           </div>
                         </div>
-                        <Progress value={indicator.score} className="h-1.5" />
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4 max-h-[360px] overflow-y-auto pr-2">
-                  {getHistoricalData(currentDataset.indicators).map((indicator, idx) => {
-                    const chartData = [
-                      ...indicator.history.reverse().map(h => ({ date: h.date, score: Number(h.score.toFixed(1)) })),
-                      { date: '현재', score: indicator.score }
-                    ]
-                    const diff = indicator.score - indicator.history[indicator.history.length - 1].score
-                    
-                    return (
-                      <div key={idx} className="p-3 rounded border bg-muted/20">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium">{indicator.name}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${getScoreColor(indicator.score)}`}>
-                              {indicator.score}
-                            </span>
-                            <span className={`text-xs flex items-center gap-0.5 ${diff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {diff >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                              {diff >= 0 ? '+' : ''}{diff.toFixed(1)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-16">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-                              <XAxis 
-                                dataKey="date" 
-                                tick={{ fontSize: 9 }} 
-                                axisLine={false}
-                                tickLine={false}
-                              />
-                              <YAxis 
-                                domain={[60, 100]} 
-                                hide 
-                              />
-                              <Tooltip 
-                                contentStyle={{ fontSize: '11px', padding: '4px 8px' }}
-                                formatter={(value: number) => [`${value}점`, '점수']}
-                              />
-                              <ReferenceLine y={90} stroke="#22c55e" strokeDasharray="3 3" strokeOpacity={0.5} />
-                              <ReferenceLine y={80} stroke="#eab308" strokeDasharray="3 3" strokeOpacity={0.5} />
-                              <Line 
-                                type="monotone" 
-                                dataKey="score" 
-                                stroke="hsl(var(--primary))"
-                                strokeWidth={2}
-                                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 3 }}
-                                activeDot={{ r: 5, fill: 'hsl(var(--primary))' }}
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-              
-              {/* Summary Stats */}
-              <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t">
-                <div className="text-center p-2 rounded bg-muted/50">
-                  <div className={`text-lg font-bold ${getScoreColor(currentDataset.score)}`}>
-                    {currentDataset.score}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">{'평균 점수'}</div>
-                </div>
-                <div className="text-center p-2 rounded bg-green-50">
-                  <div className="text-lg font-bold text-green-600">
-                    {currentDataset.indicators.filter(i => i.status === '통과').length}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">{'통과'}</div>
-                </div>
-                <div className="text-center p-2 rounded bg-yellow-50">
-                  <div className="text-lg font-bold text-yellow-600">
-                    {currentDataset.indicators.filter(i => i.status === '경고').length}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">{'경고'}</div>
-                </div>
-                <div className="text-center p-2 rounded bg-red-50">
-                  <div className="text-lg font-bold text-red-600">
-                    {currentDataset.indicators.filter(i => i.status === '실패').length}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">{'실패'}</div>
-                </div>
+                  )
+                })}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
+  )
+}
+
+export default function QualityResultsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          {'불러오는 중...'}
+        </div>
+      }
+    >
+      <QualityResultsContent />
+    </Suspense>
   )
 }
