@@ -1,0 +1,71 @@
+'use client'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ApiError } from '@/lib/api/client'
+
+interface UseApiState<T> {
+  data: T | null
+  loading: boolean
+  error: string | null
+}
+
+/**
+ * 데이터 조회 훅 — 마운트/deps 변경 시 fetcher 실행.
+ * fetcher는 AbortSignal을 받아 언마운트 시 요청을 취소한다.
+ *
+ *   const { data, loading, error, refetch } = useApi(
+ *     (signal) => qcApi.getTables({ page }, signal),
+ *     [page],
+ *   )
+ */
+export function useApi<T>(
+  fetcher: (signal: AbortSignal) => Promise<T>,
+  deps: React.DependencyList = [],
+) {
+  const [state, setState] = useState<UseApiState<T>>({
+    data: null,
+    loading: true,
+    error: null,
+  })
+
+  // fetcher 최신값 유지 (deps에 fetcher를 넣지 않기 위함)
+  const fetcherRef = useRef(fetcher)
+  fetcherRef.current = fetcher
+
+  const run = useCallback((signal: AbortSignal) => {
+    setState((s) => ({ ...s, loading: true, error: null }))
+    fetcherRef.current(signal)
+      .then((data) => {
+        if (!signal.aborted) setState({ data, loading: false, error: null })
+      })
+      .catch((err) => {
+        if (signal.aborted) return
+        // 세션 만료/미인증(401) → 로그인 화면으로
+        if (
+          err instanceof ApiError &&
+          err.status === 401 &&
+          typeof window !== 'undefined' &&
+          window.location.pathname !== '/'
+        ) {
+          window.location.replace('/')
+          return
+        }
+        const message =
+          err instanceof ApiError ? err.message : '데이터를 불러오지 못했습니다.'
+        setState({ data: null, loading: false, error: message })
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const [reloadKey, setReloadKey] = useState(0)
+  const refetch = useCallback(() => setReloadKey((k) => k + 1), [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    run(controller.signal)
+    return () => controller.abort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps, reloadKey])
+
+  return { ...state, refetch }
+}
