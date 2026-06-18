@@ -22,3 +22,12 @@ tsconfig.tsbuildinfo
 
 # 내부 명세 자료 (지표/품질검증 원본 엑셀 — 저장소 공유 금지)
 docs/spec/
+
+# API 명세 (Swagger/OpenAPI — 저장소 공유 금지)
+docs/api/
+
+# 내부 협의/회신 정리 자료 (저장소 공유 금지)
+docs/notes/
+
+# 내부 참고자료 (IP/계정 등 민감 정보 포함 — 저장소 공유 금지)
+docs/reference/
