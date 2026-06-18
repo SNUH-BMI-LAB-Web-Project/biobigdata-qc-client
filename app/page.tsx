@@ -1,22 +1,33 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Database, Lock, User } from 'lucide-react'
+import { Database, Lock, User, Loader2 } from 'lucide-react'
+import { authApi, ApiError } from '@/lib/api'
 
 export default function LoginPage() {
   const router = useRouter()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // UI만 구현하므로 바로 대시보드로 이동
-    router.push('/dashboard')
+    setError(null)
+    setLoading(true)
+    try {
+      await authApi.login({ mberId: username, password })
+      router.push('/dashboard')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : '로그인에 실패했습니다.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -69,10 +80,22 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
+              {error && (
+                <p className="text-sm text-red-600 text-center">{error}</p>
+              )}
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 로그인
               </Button>
             </form>
+
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              아직 계정이 없으신가요?{' '}
+              <Link href="/signup" className="text-primary font-medium hover:underline">
+                회원가입
+              </Link>
+            </p>
           </CardContent>
         </Card>
 

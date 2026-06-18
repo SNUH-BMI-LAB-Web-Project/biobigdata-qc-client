@@ -5,16 +5,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Save, BarChart3, Bell, Users, Shield } from 'lucide-react'
+import { Save, BarChart3, Bell, Users, Shield, Loader2, KeyRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useApi } from '@/hooks/use-api'
+import { authApi, memberApi, ApiError } from '@/lib/api'
 
 type SettingSection = 'quality-score' | 'notifications' | 'users' | 'permissions' | 'security'
+
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: '관리자',
+  MANAGER: '관리 권한',
+  VIEWER: '조회 권한',
+}
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingSection>('quality-score')
   const [excellent, setExcellent] = useState(95)
   const [good, setGood] = useState(85)
   const [fair, setFair] = useState(75)
+
+  // 현재 로그인 사용자
+  const { data: me, loading: meLoading, error: meError } = useApi(
+    (signal) => authApi.me(signal),
+    [],
+  )
+
+  // 비밀번호 변경 폼 상태
+  const [oldPassword, setOldPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [pwSubmitting, setPwSubmitting] = useState(false)
+  const [pwError, setPwError] = useState<string | null>(null)
+  const [pwSuccess, setPwSuccess] = useState(false)
 
   const settingSections = [
     { id: 'quality-score' as SettingSection, name: '대시보드 품질 점수 기준', icon: BarChart3 },
@@ -24,8 +46,40 @@ export default function SettingsPage() {
     { id: 'security' as SettingSection, name: '보안 설정', icon: Shield },
   ]
 
+  // 품질 점수 기준은 백엔드 엔드포인트가 없어 로컬 상태로만 유지된다.
   const handleSave = () => {
-    alert('설정이 저장되었습니다.')
+    alert('설정이 저장되었습니다. (현재 로컬에만 적용됩니다)')
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPwError(null)
+    setPwSuccess(false)
+
+    if (newPassword.length < 8 || newPassword.length > 50) {
+      setPwError('새 비밀번호는 8자 이상 50자 이하여야 합니다.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.')
+      return
+    }
+
+    setPwSubmitting(true)
+    try {
+      await memberApi.changePassword({ oldPassword, newPassword })
+      setPwSuccess(true)
+      setOldPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      alert('비밀번호가 변경되었습니다.')
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : '비밀번호 변경에 실패했습니다.'
+      setPwError(message)
+    } finally {
+      setPwSubmitting(false)
+    }
   }
 
   return (
@@ -232,7 +286,7 @@ export default function SettingsPage() {
               <div className="mb-6">
                 <h1 className="text-2xl font-bold">지표DB 권한 관리</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  사용자별 지표DB 접근 권한 설정
+                  사용자별 지표DB 접근 권한 설정 (관리자 페이지 연동 예정)
                 </p>
               </div>
 
@@ -240,7 +294,8 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle className="text-base">사용자 권한 설정</CardTitle>
                   <CardDescription className="text-sm">
-                    각 사용자의 지표DB 관리 권한을 설정합니다
+                    각 사용자의 지표DB 관리 권한을 설정합니다 — 현재는 예시 데이터이며,
+                    실제 사용자/권한 관리는 별도 관리자 페이지에서 처리됩니다.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -293,13 +348,121 @@ export default function SettingsPage() {
               <div className="mb-6">
                 <h1 className="text-2xl font-bold">보안 설정</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  시스템 보안 및 접근 제어 설정
+                  계정 정보 확인 및 비밀번호 변경
                 </p>
               </div>
+
+              {/* 계정 정보 */}
+              <Card className="mb-4">
+                <CardHeader>
+                  <CardTitle className="text-base">계정 정보</CardTitle>
+                  <CardDescription className="text-sm">
+                    현재 로그인한 사용자 정보입니다
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {meLoading ? (
+                    <div className="flex items-center justify-center py-6 text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      <span className="text-sm">불러오는 중...</span>
+                    </div>
+                  ) : meError ? (
+                    <p className="text-sm text-red-600 py-4">{meError}</p>
+                  ) : me ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/30">
+                        <span className="text-muted-foreground">아이디</span>
+                        <span className="font-medium">{me.mberId}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/30">
+                        <span className="text-muted-foreground">이름</span>
+                        <span className="font-medium">{me.mberNm}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/30">
+                        <span className="text-muted-foreground">이메일</span>
+                        <span className="font-medium">{me.mberEmailAdres}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/30">
+                        <span className="text-muted-foreground">소속</span>
+                        <span className="font-medium">{me.aflcoNm}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded bg-muted/30">
+                        <span className="text-muted-foreground">권한</span>
+                        <span className="font-medium">{ROLE_LABEL[me.role] ?? me.role}</span>
+                      </div>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+
+              {/* 비밀번호 변경 */}
               <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>보안 설정 기능이 곧 추가됩니다</p>
+                <CardHeader>
+                  <CardTitle className="text-base">비밀번호 변경</CardTitle>
+                  <CardDescription className="text-sm">
+                    안전한 계정 관리를 위해 주기적으로 비밀번호를 변경하세요 (8~50자)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="oldPassword" className="text-sm font-medium">
+                        현재 비밀번호
+                      </Label>
+                      <Input
+                        id="oldPassword"
+                        type="password"
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                        autoComplete="current-password"
+                        className="max-w-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword" className="text-sm font-medium">
+                        새 비밀번호
+                      </Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        autoComplete="new-password"
+                        className="max-w-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                        새 비밀번호 확인
+                      </Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        autoComplete="new-password"
+                        className="max-w-sm"
+                      />
+                    </div>
+
+                    {pwError && (
+                      <p className="text-sm text-red-600">{pwError}</p>
+                    )}
+                    {pwSuccess && (
+                      <p className="text-sm text-green-600">비밀번호가 변경되었습니다.</p>
+                    )}
+
+                    <div className="pt-2">
+                      <Button type="submit" disabled={pwSubmitting} className="gap-2">
+                        {pwSubmitting ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <KeyRound className="w-4 h-4" />
+                        )}
+                        비밀번호 변경
+                      </Button>
+                    </div>
+                  </form>
                 </CardContent>
               </Card>
             </>

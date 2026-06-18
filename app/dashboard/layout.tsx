@@ -5,13 +5,20 @@ import { Button } from '@/components/ui/button'
 import { Database, LogOut, User, LayoutDashboard, Table, Settings, BarChart3, ChevronDown, ChevronRight, ClipboardCheck, FileBarChart } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { authApi } from '@/lib/api'
+import { AuthGuard } from '@/components/auth-guard'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [isResultsOpen, setIsResultsOpen] = useState(true)
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authApi.logout()
+    } catch {
+      // 로그아웃 실패해도 로그인 화면으로 이동
+    }
     router.push('/')
   }
 
@@ -37,6 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ]
 
   return (
+    <AuthGuard>
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Top Header */}
       <header className="border-b bg-card flex-shrink-0">
@@ -191,5 +199,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 }
