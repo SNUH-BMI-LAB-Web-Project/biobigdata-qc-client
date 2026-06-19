@@ -18,14 +18,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
-import { authApi, memberApi, ApiError } from '@/lib/api'
-import type { Role } from '@/lib/api'
-
-const ROLE_LABEL: Record<Role, string> = {
-  ADMIN: '관리자',
-  MANAGER: '품질관리자',
-  VIEWER: '조회자',
-}
+import { authApi, memberApi, ApiError, ROLE_LABEL } from '@/lib/api'
 
 export default function ProfilePage() {
   const router = useRouter()

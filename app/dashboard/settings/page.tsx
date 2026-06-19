@@ -8,15 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Save, BarChart3, Bell, Users, Shield, Loader2, KeyRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useApi } from '@/hooks/use-api'
-import { authApi, memberApi, ApiError } from '@/lib/api'
+import { authApi, memberApi, ApiError, ROLE_LABEL } from '@/lib/api'
 
 type SettingSection = 'quality-score' | 'notifications' | 'users' | 'permissions' | 'security'
-
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: '관리자',
-  MANAGER: '관리 권한',
-  VIEWER: '조회 권한',
-}
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingSection>('quality-score')

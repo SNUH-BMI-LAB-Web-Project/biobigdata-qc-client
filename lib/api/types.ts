@@ -281,6 +281,13 @@ export interface DqAchillesResultDistResponse {
 }
 
 // ── 공통 헬퍼 ──────────────────────────────────────────────────
+/** 역할(role) 코드 → 한글 라벨 */
+export const ROLE_LABEL: Record<Role, string> = {
+  ADMIN: '관리자',
+  MANAGER: '매니저',
+  VIEWER: '뷰어',
+}
+
 /** check_status 코드 → 한글 라벨 */
 export const CHECK_STATUS_LABEL: Record<CheckStatus, string> = {
   0: '진행중',

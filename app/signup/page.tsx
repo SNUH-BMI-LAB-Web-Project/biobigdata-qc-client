@@ -289,8 +289,8 @@ export default function SignupPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="VIEWER">VIEWER (조회)</SelectItem>
-                    <SelectItem value="MANAGER">MANAGER (관리)</SelectItem>
+                    <SelectItem value="VIEWER">뷰어</SelectItem>
+                    <SelectItem value="MANAGER">매니저</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
