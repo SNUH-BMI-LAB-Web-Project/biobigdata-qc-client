@@ -51,7 +51,7 @@ export function useApi<T>(
           return
         }
         const message =
-          err instanceof ApiError ? err.message : '데이터를 불러오지 못했습니다.'
+          err instanceof ApiError ? err.message : '오류가 발생했습니다.'
         setState({ data: null, loading: false, error: message })
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps

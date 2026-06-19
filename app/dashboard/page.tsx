@@ -13,7 +13,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Switch } from '@/components/ui/switch'
 
 import {
   Database,
@@ -151,7 +150,6 @@ export default function QualityVerificationPage() {
   const [selectedDb, setSelectedDb] = useState<string>('')
   const [selectedSubStage, setSelectedSubStage] = useState<string>('')
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>([])
-  const [statisticsDetailLevel, setStatisticsDetailLevel] = useState<'simple' | 'detailed'>('simple')
   const [expandedRows, setExpandedRows] = useState<number[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [submitting, setSubmitting] = useState(false)
@@ -335,7 +333,6 @@ export default function QualityVerificationPage() {
                 <div className="space-y-2">
                   {indicatorTypes.map((indicator) => {
                     const Icon = indicator.icon
-                    const isStatistics = indicator.id === 'stats'
                     const isSelected = selectedIndicators.includes(indicator.id)
                     return (
                       <div
@@ -351,16 +348,6 @@ export default function QualityVerificationPage() {
                         />
                         <Icon className="w-4 h-4 text-muted-foreground" />
                         <p className="text-sm font-medium flex-1">{indicator.name}</p>
-                        {isStatistics && isSelected && (
-                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                            <span className={`text-xs ${statisticsDetailLevel === 'simple' ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>{'간단'}</span>
-                            <Switch
-                              checked={statisticsDetailLevel === 'detailed'}
-                              onCheckedChange={(checked) => setStatisticsDetailLevel(checked ? 'detailed' : 'simple')}
-                            />
-                            <span className={`text-xs ${statisticsDetailLevel === 'detailed' ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>{'상세'}</span>
-                          </div>
-                        )}
                       </div>
                     )
                   })}

@@ -88,11 +88,50 @@ function StatusBlock({
   return null
 }
 
+// 공용 페이지네이션 (이전/다음)
+function Pager({
+  page,
+  totalPages,
+  onChange,
+}: {
+  page: number
+  totalPages: number
+  onChange: (p: number) => void
+}) {
+  if (totalPages <= 1) return null
+  return (
+    <div className="flex items-center justify-between px-3 py-2 border-t">
+      <span className="text-xs text-muted-foreground">{page}{' / '}{totalPages}</span>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+        >
+          {'이전'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          disabled={page >= totalPages}
+          onClick={() => onChange(page + 1)}
+        >
+          {'다음'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function QualityResultsContent() {
   const searchParams = useSearchParams()
 
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [selectedCheckId, setSelectedCheckId] = useState<number | null>(null)
+  const [checksPage, setChecksPage] = useState(1)
 
   // 딥링크: ?checkId=123 → 마운트 시 선택
   useEffect(() => {
@@ -112,10 +151,10 @@ function QualityResultsContent() {
   const checks = useApi(
     (signal) =>
       qcApi.getQualityCheckLogs(
-        { stage: selectedStage ?? undefined, page: 1, size: PAGE_SIZE },
+        { stage: selectedStage ?? undefined, page: checksPage, size: PAGE_SIZE },
         signal,
       ),
-    [selectedStage],
+    [selectedStage, checksPage],
   )
 
   // 3) 지표별 결과 (완료 check 선택 시)
@@ -130,6 +169,7 @@ function QualityResultsContent() {
   const handleStageSelect = (stage: string) => {
     setSelectedStage((prev) => (prev === stage ? null : stage))
     setSelectedCheckId(null)
+    setChecksPage(1)
   }
 
   const summaryItems = summary.data ?? []
@@ -260,7 +300,7 @@ function QualityResultsContent() {
                           if (completed) setSelectedCheckId(row.checkId)
                         }}
                       >
-                        <td className="p-2">{idx + 1}</td>
+                        <td className="p-2">{(checksPage - 1) * PAGE_SIZE + idx + 1}</td>
                         <td className="p-2">{row.checkStatusFstWrt || '-'}</td>
                         <td className="p-2 font-mono">{formatDatetime(row.checkStartDatetime)}</td>
                         <td className="p-2 font-mono">{formatDatetime(row.checkEndDatetime)}</td>
@@ -271,6 +311,11 @@ function QualityResultsContent() {
                 </tbody>
               </table>
             )}
+            <Pager
+              page={checks.data?.page ?? checksPage}
+              totalPages={checks.data?.totalPages ?? 1}
+              onChange={setChecksPage}
+            />
           </CardContent>
         </Card>
 

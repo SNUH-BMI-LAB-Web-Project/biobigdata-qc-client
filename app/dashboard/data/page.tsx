@@ -300,6 +300,13 @@ function StatisticsResults({ checkId }: { checkId: number }) {
     [checkId],
   )
 
+  // 단순값은 API가 전체 목록을 반환하므로 클라이언트 페이징
+  const [countPage, setCountPage] = useState(1)
+  useEffect(() => setCountPage(1), [checkId])
+  const countData = (countApi.data as DqAchillesResultResponse[]) ?? []
+  const countTotalPages = Math.max(1, Math.ceil(countData.length / PAGE_SIZE))
+  const pagedCount = countData.slice((countPage - 1) * PAGE_SIZE, countPage * PAGE_SIZE)
+
   return (
     <div className="space-y-4">
       {/* 단순값 (distribution=0) */}
@@ -330,7 +337,7 @@ function StatisticsResults({ checkId }: { checkId: number }) {
                 </tr>
               </thead>
               <tbody>
-                {(countApi.data as DqAchillesResultResponse[]).map((row, idx) => (
+                {pagedCount.map((row, idx) => (
                   <tr key={`${row.analysisId}-${idx}`} className="border-b hover:bg-muted/30">
                     <td className="p-2 font-mono">{row.analysisId}</td>
                     <td className="p-2">{stratumKey(row)}</td>
@@ -339,6 +346,31 @@ function StatisticsResults({ checkId }: { checkId: number }) {
                 ))}
               </tbody>
             </table>
+          )}
+          {countTotalPages > 1 && (
+            <div className="flex items-center justify-end gap-2 p-2 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={countPage <= 1}
+                onClick={() => setCountPage((p) => Math.max(1, p - 1))}
+              >
+                {'이전'}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {countPage} / {countTotalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={countPage >= countTotalPages}
+                onClick={() => setCountPage((p) => Math.min(countTotalPages, p + 1))}
+              >
+                {'다음'}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
