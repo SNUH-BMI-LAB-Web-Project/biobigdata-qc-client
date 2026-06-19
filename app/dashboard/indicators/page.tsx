@@ -585,7 +585,12 @@ function QualityMetricsTab() {
                     </TableCell>
                     <TableCell className="text-xs font-medium">{item.metricNameKor}</TableCell>
                     <TableCell className="text-xs font-mono text-muted-foreground">
-                      {item.tableNames?.join(', ') || '-'}
+                      <div
+                        className="max-w-[260px] truncate"
+                        title={item.tableNames?.join(', ') || ''}
+                      >
+                        {item.tableNames?.join(', ') || '-'}
+                      </div>
                     </TableCell>
                     {stageKeys.map((s) => {
                       const score = item.stageScores?.[s]
