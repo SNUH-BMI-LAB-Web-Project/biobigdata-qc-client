@@ -2,7 +2,6 @@
 
 import { AlertCircle, CheckCircle, XCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import type { DqQualityResultResponse } from '@/lib/api'
 import { getScoreColor, isFiniteNumber } from './quality-result-utils'
 
@@ -50,7 +49,12 @@ export function MetricResultCard({ metric }: { metric: DqQualityResultResponse }
         <p className="text-xs text-red-600/80 mt-2">{metric.notApplicableReason || '사유 없음'}</p>
       ) : (
         <div className="mt-2 space-y-1.5">
-          <Progress value={metric.passRate ?? 0} className="h-1.5" />
+          <div className="bg-primary/20 h-1.5 w-full overflow-hidden rounded-full">
+            <div
+              className="bg-primary h-full rounded-full transition-all"
+              style={{ width: `${Math.max(0, Math.min(100, metric.passRate ?? 0))}%` }}
+            />
+          </div>
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
             <span className="text-green-600">
               {'통과 '}

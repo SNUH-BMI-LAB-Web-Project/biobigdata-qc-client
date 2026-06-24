@@ -1,13 +1,7 @@
 'use client'
 
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from '@/components/ui/empty'
-import { Spinner } from '@/components/ui/spinner'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
@@ -24,7 +18,7 @@ interface AsyncStateBlockProps {
 export function LoadingBlock({ message = '불러오는 중...' }: { message?: string }) {
   return (
     <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-      <Spinner />
+      <Loader2 className="size-4 animate-spin" aria-label="로딩 중" />
       {message}
     </div>
   )
@@ -43,11 +37,9 @@ export function ErrorBlock({ message, onRetry }: { message: string; onRetry: () 
 
 export function EmptyBlock({ message }: { message: string }) {
   return (
-    <Empty className="border-0 py-10 md:p-10">
-      <EmptyHeader>
-        <EmptyTitle className="text-sm font-medium">{message}</EmptyTitle>
-      </EmptyHeader>
-    </Empty>
+    <div className="flex items-center justify-center py-10 text-center text-sm text-muted-foreground">
+      {message}
+    </div>
   )
 }
 
@@ -80,7 +72,7 @@ export function TableStateRow({
     return (
       <TableRow>
         <TableCell colSpan={colSpan} className="py-10 text-center">
-          <Spinner className="mx-auto size-5 text-muted-foreground" />
+          <Loader2 className="mx-auto size-5 animate-spin text-muted-foreground" aria-label="로딩 중" />
         </TableCell>
       </TableRow>
     )
@@ -103,11 +95,7 @@ export function TableStateRow({
     return (
       <TableRow>
         <TableCell colSpan={colSpan} className="py-10 text-center text-sm text-muted-foreground">
-          <Empty className="border-0 py-0 md:p-0">
-            <EmptyHeader>
-              <EmptyDescription>{emptyMessage}</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          {emptyMessage}
         </TableCell>
       </TableRow>
     )
