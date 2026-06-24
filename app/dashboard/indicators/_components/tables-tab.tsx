@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,7 @@ import { useDebounced } from '@/hooks/use-debounced'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { TablePagerHeader } from '@/components/pager'
+import { AddTableDialog } from './add-table-dialog'
 import { RequiredInfoTooltip } from './required-info-tooltip'
 import { TableRowGroup } from './table-row-group'
 import type { DqTableResponse, PageResult } from '@/lib/api'
@@ -21,6 +23,7 @@ export function TablesTab() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [expandedTableId, setExpandedTableId] = useState<string | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
   const keyword = useDebounced(searchTerm)
 
   const { data, isInitialLoading, isRefetching, error, refetch } = useApi(
@@ -75,7 +78,13 @@ export function TablesTab() {
           />
           {'미사용 포함'}
         </label>
+        <Button className="gap-1.5 whitespace-nowrap" onClick={() => setAddOpen(true)}>
+          <Plus className="w-4 h-4" />
+          {'테이블 추가'}
+        </Button>
       </div>
+
+      <AddTableDialog open={addOpen} onOpenChange={setAddOpen} onCreated={refetch} />
 
       <Card>
         <TablePagerHeader

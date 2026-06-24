@@ -4,14 +4,15 @@ import { useState } from 'react'
 import { Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
+import { placeholderApi } from '@/lib/api/placeholder'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { TablePagerHeader } from '@/components/pager'
+import { ActiveToggleCell } from './active-toggle-cell'
 import { isY } from './indicator-utils'
 import type { DqStatisticsMetricResponse, PageResult } from '@/lib/api'
 
@@ -115,7 +116,11 @@ export function StatsTab() {
                         {stat.createdAt}
                       </TableCell>
                       <TableCell className="text-left align-top">
-                        <ActiveStatusCell active={isY(stat.isActive)} />
+                        <ActiveToggleCell
+                          active={isY(stat.isActive)}
+                          label={`통계지표 ${stat.siId}`}
+                          onSave={(next) => placeholderApi.setStatisticsMetricActive(stat.siId, next)}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
@@ -125,17 +130,6 @@ export function StatsTab() {
           </RefreshingContent>
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-function ActiveStatusCell({ active }: { active: boolean }) {
-  return (
-    <div className="flex items-center justify-start gap-2">
-      <Checkbox checked={active} disabled />
-      <span className={`text-xs ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
-        {active ? '활성' : '비활성'}
-      </span>
     </div>
   )
 }

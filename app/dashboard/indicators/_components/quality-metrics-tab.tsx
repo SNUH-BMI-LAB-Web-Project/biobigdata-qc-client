@@ -8,12 +8,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Checkbox } from '@/components/ui/checkbox'
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
+import { placeholderApi } from '@/lib/api/placeholder'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { TablePagerHeader } from '@/components/pager'
+import { ActiveToggleCell } from './active-toggle-cell'
 import { isY, metricLevelLabel, QUALITY_CATEGORIES, scoreColor, stageDbLabel } from './indicator-utils'
 import type { DqQualityMetricResponse, PageResult } from '@/lib/api'
 
@@ -191,19 +192,12 @@ const QualityMetricRow = memo(function QualityMetricRow({
         {item.createdAt}
       </TableCell>
       <TableCell className="text-left">
-        <ActiveStatusCell active={isY(item.isActive)} />
+        <ActiveToggleCell
+          active={isY(item.isActive)}
+          label={`품질지표 ${item.metricId}`}
+          onSave={(next) => placeholderApi.setQualityMetricActive(item.metricId, next)}
+        />
       </TableCell>
     </TableRow>
   )
 })
-
-function ActiveStatusCell({ active }: { active: boolean }) {
-  return (
-    <div className="flex items-center justify-start gap-2">
-      <Checkbox checked={active} disabled />
-      <span className={`text-xs ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
-        {active ? '활성' : '비활성'}
-      </span>
-    </div>
-  )
-}
