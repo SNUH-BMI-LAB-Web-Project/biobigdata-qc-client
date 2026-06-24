@@ -18,7 +18,6 @@ out
 
 # Env (필요한 .env 만 별도로 COPY)
 .env*
-!.env.example
 
 # Claude / Docs / 운영
 CLAUDE.md

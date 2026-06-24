@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Database, Lock, User, Mail, Building2, BadgeCheck, Loader2, CheckCircle2, XCircle } from 'lucide-react'
-import { memberApi, ApiError } from '@/lib/api'
+import { ApiError, generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import type { Role } from '@/lib/api'
 
 type IdCheck = 'idle' | 'checking' | 'available' | 'duplicate'
@@ -48,7 +48,11 @@ export default function SignupPage() {
     if (!idValid) return
     setIdCheck('checking')
     try {
-      await memberApi.checkId(mberId)
+      await unwrapGeneratedResult(
+        await generatedApi.GET('/api/members/check-id', {
+          params: { query: { mberId } },
+        }),
+      )
       setIdCheck('available')
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) setIdCheck('duplicate')
@@ -78,14 +82,18 @@ export default function SignupPage() {
 
     setSubmitting(true)
     try {
-      await memberApi.signup({
-        mberId,
-        password,
-        mberNm,
-        mberEmailAdres: mberEmailAdres || undefined,
-        aflcoNm: aflcoNm || undefined,
-        role,
-      })
+      await unwrapGeneratedResult(
+        await generatedApi.POST('/api/members/signup', {
+          body: {
+            mberId,
+            password,
+            mberNm,
+            mberEmailAdres: mberEmailAdres || undefined,
+            aflcoNm: aflcoNm || undefined,
+            role,
+          },
+        }),
+      )
       setDone(true)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '회원가입에 실패했습니다.')

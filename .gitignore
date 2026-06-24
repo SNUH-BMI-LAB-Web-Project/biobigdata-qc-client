@@ -31,3 +31,6 @@ docs/notes/
 
 # 내부 참고자료 (IP/계정 등 민감 정보 포함 — 저장소 공유 금지)
 docs/reference/
+
+# Docker 이미지 산출물 (배포용 tar — 커밋 금지)
+*.tar

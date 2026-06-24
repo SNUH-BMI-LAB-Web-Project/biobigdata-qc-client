@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Database, Lock, User, Loader2 } from 'lucide-react'
-import { authApi, ApiError } from '@/lib/api'
+import { ApiError, generatedApi, unwrapGeneratedResult } from '@/lib/api'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -22,7 +22,11 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
     try {
-      await authApi.login({ mberId: username, password })
+      await unwrapGeneratedResult(
+        await generatedApi.POST('/api/auth/login', {
+          body: { mberId: username, password },
+        }),
+      )
       router.push('/dashboard')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '로그인에 실패했습니다.')

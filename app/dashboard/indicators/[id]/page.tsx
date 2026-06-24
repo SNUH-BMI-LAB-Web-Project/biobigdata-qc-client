@@ -17,8 +17,13 @@ import {
 } from '@/components/ui/table'
 import { ArrowLeft, ArrowUpDown, Loader2 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
-import { qcApi, STAGE_LABEL } from '@/lib/api'
-import type { FieldCheckItem } from '@/lib/api'
+import { STAGE_LABEL, generatedApi, unwrapGeneratedResult } from '@/lib/api'
+import { CompactPager } from '../../_components/pager'
+import type {
+  DqQualityMetricDetailResponse,
+  FieldCheckItem,
+  PageResult,
+} from '@/lib/api'
 
 const PAGE_SIZE = 20
 
@@ -29,6 +34,9 @@ const isActiveFlag = (value: string) => {
 }
 
 // 점수 색상: >=90 green, 80~90 orange, <80 red
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+
 const getScoreColor = (score: number) => {
   if (score >= 90) return 'text-green-600'
   if (score >= 80) return 'text-orange-600'
@@ -61,7 +69,16 @@ export default function IndicatorDetailPage() {
     loading: detailLoading,
     error: detailError,
     refetch: refetchDetail,
-  } = useApi((signal) => qcApi.getQualityMetricDetail(metricId, signal), [metricId])
+  } = useApi(
+    async (signal) =>
+      unwrapGeneratedResult<DqQualityMetricDetailResponse>(
+        await generatedApi.GET('/api/qc/quality-metrics/{metricId}', {
+          params: { path: { metricId } },
+          signal,
+        }),
+      ),
+    [metricId],
+  )
 
   // ── 적용 대상 컬럼 ──────────────────────────────────────────
   const isActiveParam =
@@ -73,17 +90,21 @@ export default function IndicatorDetailPage() {
     error: checksError,
     refetch: refetchChecks,
   } = useApi(
-    (signal) =>
-      qcApi.getQualityMetricChecks(
-        metricId,
-        {
-          page,
-          size: PAGE_SIZE,
-          isActive: isActiveParam,
-          tableName: tableFilter || undefined,
-          fieldName: columnFilter || undefined,
-        },
-        signal,
+    async (signal) =>
+      unwrapGeneratedResult<PageResult<FieldCheckItem>>(
+        await generatedApi.GET('/api/qc/quality-metrics/{metricId}/checks', {
+          params: {
+            path: { metricId },
+            query: {
+              page,
+              size: PAGE_SIZE,
+              isActive: isActiveParam,
+              tableName: tableFilter || undefined,
+              fieldName: columnFilter || undefined,
+            },
+          },
+          signal,
+        }),
       ),
     [metricId, page, isActiveParam, tableFilter, columnFilter],
   )
@@ -200,8 +221,8 @@ export default function IndicatorDetailPage() {
                   <span className="text-muted-foreground">
                     {STAGE_LABEL[stage] ?? stage}:
                   </span>
-                  <span className={`font-bold ${getScoreColor(score)}`}>
-                    {score.toFixed(1)}
+                  <span className={`font-bold ${isFiniteNumber(score) ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                    {isFiniteNumber(score) ? score.toFixed(1) : '-'}
                   </span>
                 </div>
               ))}
@@ -355,23 +376,8 @@ export default function IndicatorDetailPage() {
                 <span className="text-muted-foreground">
                   총 {checksPage.totalCount}건 · {checksPage.page}/{checksPage.totalPages} 페이지
                 </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1 || checksLoading}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    이전
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= checksPage.totalPages || checksLoading}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    다음
-                  </Button>
+                <div className={checksLoading ? 'pointer-events-none opacity-60' : undefined}>
+                  <CompactPager page={page} totalPages={checksPage.totalPages} onChange={setPage} />
                 </div>
               </div>
             )}

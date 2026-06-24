@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { authApi } from '@/lib/api'
+import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
 
 /**
  * 로그인 가드 — 마운트 시 세션(/api/auth/me)을 확인한다.
@@ -16,8 +16,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true
-    authApi
-      .me()
+    generatedApi
+      .GET('/api/auth/me')
+      .then(unwrapGeneratedResult)
       .then(() => {
         if (active) setStatus('authed')
       })
