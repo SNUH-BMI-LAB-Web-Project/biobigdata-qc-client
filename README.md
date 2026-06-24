@@ -73,7 +73,7 @@
 
 ## 5. 아키텍처
 
-### 5.1 디렉터리 구조
+### 5.1 디렉터리 구조 (컴포넌트 배치 규칙: **여러 페이지 재사용 → `components/`**, **단일 페이지 전용 → 해당 라우트 `_components/`**)
 ```
 app/
   layout.tsx                 # 루트 레이아웃
@@ -82,22 +82,44 @@ app/
   api/[...path]/route.ts     # 백엔드 프록시(서버)
   dashboard/
     layout.tsx               # AuthGuard + DashboardShell (최소)
-    page.tsx                 # 페이지는 뷰 컴포넌트만 import (최소화)
-    _components/             # 대시보드 공통 컴포넌트
-      dashboard-shell.tsx       # 헤더+사이드바+계정모달 (공통 레이아웃)
-      account-dialog.tsx        # 계정 모달(비밀번호 변경/회원탈퇴)
-      quality-score-popover.tsx # 품질 점수 기준 팝오버(커서 위치 표시)
-      async-state.tsx           # 로딩/에러/빈상태 + 새로고침 중 행 유지 래퍼
-      pager.tsx                 # 공통 페이지네이션 헤더
-      check-status-badge.tsx    # 상태 뱃지
-      verification-*.tsx        # 품질검증 실행 화면 구성요소
-      execution-detail-row.tsx
-    quality-results/_components/  # 품질 결과 화면 구성요소
-    data/_components/             # 통계 결과 화면 구성요소(차트/포맷 포함)
-    indicators/_components/       # 지표DB 탭/표/행/툴팁 구성요소
-components/
-  ui/*                       # 실제 사용하는 shadcn 프리미티브만 유지(미사용분 정리됨)
-  auth-guard.tsx             # 미인증 시 로그인으로 리다이렉트
+    page.tsx                 # 뷰 컴포넌트만 import (최소화)
+    _components/             # ▷ 대시보드(품질검증 실행) 단일 페이지 전용
+      quality-verification-view.tsx   # 화면 오케스트레이션(상태)
+      verification-selection-panel.tsx# 검증 대상 선택 패널 + 실행 버튼
+      verification-history-card.tsx   # 검증 현황 표(카드)
+      execution-detail-row.tsx        # 행 펼침 상세
+      verification-config.ts          # DB/서브단계/지표유형 상수
+    quality-results/_components/      # ▷ 데이터 품질 결과 전용
+      quality-results-view.tsx        # 오케스트레이션(상태)
+      stage-summary-cards.tsx         # 단계별 점수 카드
+      checks-table.tsx                # 검증 실행 내역 표
+      metric-results.tsx              # 지표별 결과 목록
+      metric-result-card.tsx          # 지표 1건 카드
+      quality-result-utils.ts         # 점수색/포맷 헬퍼
+    data/_components/                 # ▷ 데이터 통계 결과 전용
+      data-statistics-result-view.tsx # 오케스트레이션(상태)
+      db-count-cards.tsx              # DB별 검증 건수 카드
+      statistics-history-table.tsx    # 통계 검증 실행 내역 표
+      statistics-results.tsx          # 단순값/분포 결과
+      distribution-results.tsx        # 분포 차트+표
+      statistics-format.ts            # 숫자/날짜 포맷
+    indicators/_components/           # ▷ 지표DB 관리 전용
+      indicators-view.tsx             # 탭 컨테이너
+      tables-tab.tsx / quality-metrics-tab.tsx / stats-tab.tsx
+      table-row-group.tsx / fields-panel.tsx / required-info-tooltip.tsx
+      indicator-utils.ts
+components/                  # ▷ 여러 페이지 공통(재사용)
+  layout/                       # 레이아웃 chrome (모든 대시보드 페이지 공통)
+    dashboard-shell.tsx           # 헤더+사이드바+계정모달 조합, 로그인/로그아웃
+    dashboard-header.tsx          # 헤더(로고·계정·로그아웃)
+    dashboard-sidebar.tsx         # 사이드바(내비 + 점수 팝오버)
+    account-dialog.tsx            # 계정 모달(비밀번호 변경/회원탈퇴)
+    quality-score-popover.tsx     # 품질 점수 기준 팝오버(커서 위치 표시)
+  async-state.tsx             # 로딩/에러/빈상태 + 새로고침 중 행 유지 래퍼
+  pager.tsx                   # 공통 페이지네이션(헤더/컴팩트)
+  check-status-badge.tsx      # 검증 상태 뱃지
+  auth-guard.tsx              # 미인증 시 로그인으로 리다이렉트
+  ui/*                        # shadcn 프리미티브(공유 디자인 시스템, 실사용분만 유지)
 hooks/
   use-api.ts                 # 데이터 조회 훅(SWR 라이트)
   use-debounced.ts           # 입력 디바운스
@@ -111,10 +133,11 @@ lib/
 ```
 
 ### 5.2 컴포넌트 설계 원칙
-- **페이지 파일은 최소화** — 라우트 `page.tsx`는 해당 뷰 컴포넌트를 import만 합니다.
-- **헤더/사이드바는 공통 셸**(`DashboardShell`)로 분리, 레이아웃에서 한 번만 렌더.
-- **카드·표·뱃지·모달 등 UI 요소는 기능별 컴포넌트**로 분리하고, 그 컴포넌트가 자체적으로 shadcn UI 프리미티브를 조합합니다(별도 UI 래퍼 레이어를 두지 않음).
-- 공통 재사용물(`async-state`, `pager`, `check-status-badge`)은 대시보드 `_components`에 둡니다.
+- **페이지 파일은 최소화** — 라우트 `page.tsx`는 해당 뷰 컴포넌트를 import만 한다.
+- **배치 기준** — 여러 페이지에서 재사용하면 **공통 `components/`**, 한 페이지에서만 쓰면 **그 라우트의 `_components/`**.
+- **헤더·사이드바는 공통 컴포넌트**(`components/layout/`)로 분리하고 셸이 조합한다.
+- **카드는 카드, 표는 표, 모달은 모달**처럼 화면 요소 단위로 잘게 나눈다. 한 페이지 기능을 하나의 거대 컴포넌트로 뭉치지 않는다(뷰 컴포넌트는 상태 오케스트레이션만 담당).
+- **별도 UI 래퍼 레이어를 새로 만들지 않는다.** 기능 컴포넌트가 `components/ui/*`(공유 디자인 시스템) 프리미티브를 직접 조합한다.
 
 ### 5.3 데이터 흐름
 ```
