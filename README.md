@@ -191,16 +191,54 @@ pnpm lint         # ESLint
 
 ---
 
-## 8. 빌드 & 배포 (Docker)
+## 8. 인프라 & 배포 (NCP)
+
+### 8.1 운영 환경 구성
+운영은 **NCP(Naver Cloud Platform) 서버 1대**에서 **Docker Compose**로 전체 스택을 구동합니다. (단일 호스트, 컨테이너 네트워크로 상호 통신)
+
+| 컨테이너 | 역할 | 포트(호스트→컨테이너) |
+|----------|------|----------------------|
+| `gukba-big` | **이 프로젝트(웹 클라이언트, Next standalone)** | 8887 → 3000 |
+| `biobigdata-qc-server` | 백엔드 QC 서버(REST/OpenAPI) | 8081 → 8080 |
+| `airflow-apiserver` | Airflow REST API | 8080 |
+| `airflow-scheduler` / `worker` / `triggerer` / `dag-processor` | Airflow 실행 엔진 | (내부) |
+| `airflow-postgres` / `airflow-redis` | Airflow 메타DB / 브로커 | (내부) |
+| `mysql` / `cdm-postgres` / `qc_metrics-postgres` / `biko-oracle` | 도메인 데이터/메타 저장소 | 3306 / 5532 / 5533 / 25029 |
+| `cloudbeaver` | DB 관리 콘솔 | 8978 |
+
+> 즉 **웹 → (Next 프록시) → QC 서버 → Airflow** 순으로 연결되며, 모두 같은 NCP 호스트에 떠 있습니다.
+
+### 8.2 Airflow / DAG (검증 실행의 실체)
+- 화면의 **"품질검증 실행"** 은 백엔드에 `POST /api/qc/quality-metrics`(품질) · `POST /api/qc/statistics-metrics`(통계)를 보내고, 백엔드가 **Airflow DAG를 트리거**합니다.
+- DAG가 단계(stage)·서브단계별로 검증/통계 작업을 수행하고 결과를 DB에 적재 → 화면의 **품질/통계 결과**에서 조회합니다.
+- 검증 상태(`check_status`)는 DAG 실행 상태(진행중/완료/오류/중단)를 반영합니다.
+- **DAG ID가 바뀌면** 백엔드의 DAG 트리거 대상(환경변수/설정)을 함께 갱신해야 합니다. (웹 클라이언트는 DAG ID를 직접 알지 못하고 백엔드 엔드포인트만 호출)
+
+### 8.3 배포 절차 (NCP 서버에서)
+운영 서버는 **출발지 IP 화이트리스트**가 적용돼, **허용된 IP에서만** SSH 접속·배포 작업이 가능합니다. (사번/공개키 등록 후 화이트리스트에 IP가 등록돼야 접속됨 — IP가 바뀌면 재등록 필요)
 
 ```bash
-docker compose up -d --build      # gukba-big 컨테이너 기동 (호스트 8887)
-```
-- 멀티스테이지(Dockerfile): `deps → builder(pnpm build, standalone) → runner(node server.js)`.
-- compose의 `BACKEND_URL`은 기본 `host.docker.internal:8081`(컨테이너→호스트). 운영에선 실제 백엔드 주소로 주입.
-- 헬스체크: 30초 간격 `GET /`.
+# 1) 허용된 IP에서 운영 서버 SSH 접속
+ssh <user>@<ncp-host>          # 예: ssh biko-qms
 
-> 서버 접속/방화벽: 운영 서버는 출발 IP 화이트리스트 기반 SSH 접근. 클라이언트 컨테이너는 서버에서 `docker compose`로 운영됩니다.
+# 2) 최신 소스 반영
+cd <배포 경로>/biobigdata-qc-client
+git pull
+
+# 3) 클라이언트 컨테이너만 재빌드·기동 (전체 스택 중 web 서비스)
+docker compose up -d --build web   # 또는 docker compose up -d --build
+
+# 4) 상태 확인
+docker compose ps
+docker compose logs -f web
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8887/   # 200 기대
+```
+- 이미지: `gukba-big:latest` (멀티스테이지 `deps → builder(pnpm build, standalone) → runner(node server.js)`).
+- `BACKEND_URL`은 compose 환경변수로 주입 — 같은 호스트의 QC 서버를 가리킴(기본 `host.docker.internal:8081`).
+- 헬스체크: 30초 간격 `GET /`. `docker compose ps`에서 `healthy` 확인.
+- 롤백: 직전 커밋으로 `git checkout <sha>` 후 재빌드, 또는 이전 이미지 태그로 교체.
+
+> ⚠️ **허용 IP에서만 작업 가능**: SSH·배포·서버 점검은 화이트리스트에 등록된 IP에서만 됩니다. 재택/외부망 등 IP가 바뀌면 먼저 IP 재등록을 요청해야 합니다.
 
 ---
 
@@ -219,3 +257,4 @@ docker compose up -d --build      # gukba-big 컨테이너 기동 (호스트 888
 - 모든 화면 텍스트/도메인 용어는 한국어 운영 환경 기준입니다.
 - 표는 페이지 간 컬럼 폭 일관성을 위해 `table-fixed` + 명시 폭을 사용합니다(긴 텍스트는 말줄임/줄바꿈 처리).
 - shadcn `TableCell`은 기본 `whitespace-nowrap`이므로, 줄바꿈이 필요한 셀은 `whitespace-normal`을 명시합니다.
+- **UI 최소화 원칙**: `components/ui/*`에는 **여러 곳에서 공유되는 프리미티브만** 둡니다(badge·button·card·checkbox·input·label·select·table). 한 곳에서만 쓰는 UI(progress·spinner·empty·tabs·tooltip·dialog·alert-dialog 등)는 별도 파일로 빼지 않고 **소비 컴포넌트 안에 인라인**(필요 시 `@radix-ui/*`를 직접 구성)합니다.
