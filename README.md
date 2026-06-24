@@ -119,8 +119,14 @@
 ```
 app/                                  # Next.js App Router (페이지 = 폴더)
   layout.tsx                          # 전체 공통 레이아웃(폰트/메타)
-  page.tsx                            # 로그인 화면
-  signup/page.tsx                     # 회원가입
+  page.tsx                            # 로그인 → LoginView import만
+  _components/login-view.tsx          # ▷ 로그인 화면(폼+상태)
+  signup/
+    page.tsx                          # 회원가입 → SignupView import만
+    _components/                      # ▷ '회원가입' 페이지 전용
+      signup-view.tsx                   # 폼/완료 화면 전환
+      signup-form.tsx                   # 입력 폼(ID 중복확인·유효성·가입)
+      signup-success.tsx               # 가입 신청 완료 화면
   api/[...path]/route.ts              # ★ 백엔드 프록시(서버 코드) — app 안에 있어야 동작(Next 규칙)
   dashboard/
     layout.tsx                        # 로그인 가드 + 공통 셸만 적용(아주 짧음)
@@ -154,13 +160,20 @@ app/                                  # Next.js App Router (페이지 = 폴더)
       fields-panel.tsx                  # 컬럼 목록 패널
       required-info-tooltip.tsx         # '필수여부' 안내 툴팁
       indicator-utils.ts                # Y/N·등급 등 헬퍼
+    indicators/[id]/_components/      # ▷ '지표 상세' 페이지 전용
+      indicator-detail-view.tsx         # 상세 조회 + 로딩/에러 + 조합
+      metric-summary-header.tsx         # 상단 헤더 카드
+      metric-info-cards.tsx             # 지표 정보 + 단계별 통과율
+      applied-fields-table.tsx          # 적용 대상 테이블/컬럼 표(필터·정렬·페이징)
+      detail-utils.ts                   # 활성판정·점수색 헬퍼
 components/                           # ▷ 여러 페이지 공통(재사용)
-  layout/                               # 화면 틀(모든 대시보드 페이지 공통)
+  layout/                               # 화면 틀(공통)
     dashboard-shell.tsx                   # 헤더+사이드바+계정모달 조합, 로그인/로그아웃
     dashboard-header.tsx                  # 상단 헤더
     dashboard-sidebar.tsx                 # 좌측 사이드바(내비 + 점수 팝오버)
     account-dialog.tsx                    # 계정 모달(비밀번호 변경/회원탈퇴)
     quality-score-popover.tsx             # 품질 점수 기준 팝오버
+    auth-layout.tsx                       # 로그인·회원가입 공통 레이아웃(브랜드 헤더)
   async-state.tsx                       # 로딩/에러/빈상태 + '새로고침 중 행 유지' 래퍼
   pager.tsx                             # 페이지네이션(컴팩트/헤더형)
   check-status-badge.tsx                # 검증 상태 뱃지
