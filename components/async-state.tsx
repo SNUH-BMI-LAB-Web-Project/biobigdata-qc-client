@@ -24,7 +24,7 @@ export function LoadingBlock({ message = '불러오는 중...' }: { message?: st
   )
 }
 
-export function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm">
       <p className="text-red-600">{message}</p>
