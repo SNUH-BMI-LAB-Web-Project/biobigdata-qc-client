@@ -28,8 +28,6 @@
 
 ## 2. 도메인 용어 정리
 
-이 분야를 처음 보는 사람을 위해 화면 곳곳에 나오는 용어를 정리합니다.
-
 ### 2.1 DB 단계 (stage)
 데이터가 흐르는 순서대로의 저장소 구분입니다.
 
@@ -283,24 +281,3 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8887/   # 200 기대
 - Dockerfile: 멀티스테이지 `deps → builder(pnpm build, standalone) → runner(node server.js)`, 베이스 `node:22-alpine`.
 - 빌드 시 `pnpm install --frozen-lockfile` 사용 → **`package.json`을 바꾸면 `pnpm-lock.yaml`도 같이 커밋**해야 빌드가 깨지지 않습니다.
 - `.dockerignore`가 `*.md`, `CLAUDE.md`, `.claude` 등을 제외하므로 **문서·CLAUDE.md는 배포 이미지에 포함되지 않습니다.**
-
----
-
-## 9. 알려진 제약 / 백엔드 대기 항목
-
-백엔드 OpenAPI에 **쓰기(생성/수정) 엔드포인트가 없는** 기능은 의도적으로 **조회 전용**입니다.
-- **지표 활성/비활성**: 현재 표시만(비활성 체크박스). 수정하려면 백엔드에 `PATCH .../active` 류 필요.
-- **테이블/컬럼 추가**: 백엔드 `POST /api/qc/tables` 부재로 미제공.
-- **대시보드 품질 점수 기준**: 조회 전용 상수.
-
-백엔드가 해당 API를 추가하면 `pnpm api:gen` 후 UI를 활성화하면 됩니다.
-
----
-
-## 10. 코딩 관례 (유지보수 시 주의)
-
-- 화면 텍스트/도메인 용어는 한국어 운영 환경 기준.
-- 표는 페이지 간 컬럼 폭 일관성을 위해 `table-fixed` + 명시 폭. 긴 텍스트는 말줄임/줄바꿈.
-- shadcn `TableCell`은 기본 `whitespace-nowrap`이라, 줄바꿈이 필요한 셀은 `whitespace-normal`을 명시.
-- 번호 컬럼은 가운데, 그 외 데이터/뱃지 컬럼은 좌측 정렬로 통일.
-- 라벨/상수는 `@/lib/api`(STAGE_LABEL 등), `@/lib/quality-score`에 모아두고 복붙하지 않음.
