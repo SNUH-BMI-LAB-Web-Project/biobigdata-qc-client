@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import { RefreshingContent, TableStateRow } from '../../_components/async-state'
-import { TablePagerHeader } from '../../_components/pager'
+import { RefreshingContent, TableStateRow } from '@/components/async-state'
+import { TablePagerHeader } from '@/components/pager'
 import { isY } from './indicator-utils'
 import type { DqStatisticsMetricResponse, PageResult } from '@/lib/api'
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi } from '@/hooks/use-api'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import { RefreshingContent } from '../../_components/async-state'
+import { RefreshingContent } from '@/components/async-state'
 import { isY } from './indicator-utils'
 import type { DqFieldResponse, PageResult } from '@/lib/api'
 

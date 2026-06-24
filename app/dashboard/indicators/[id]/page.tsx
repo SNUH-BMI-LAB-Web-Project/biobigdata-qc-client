@@ -18,7 +18,7 @@ import {
 import { ArrowLeft, ArrowUpDown, Loader2 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { STAGE_LABEL, generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import { CompactPager } from '../../_components/pager'
+import { CompactPager } from '@/components/pager'
 import type {
   DqQualityMetricDetailResponse,
   FieldCheckItem,

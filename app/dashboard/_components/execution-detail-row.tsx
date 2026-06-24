@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useApi } from '@/hooks/use-api'
 import { STAGE_LABEL, generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import { CheckStatusBadge } from './check-status-badge'
+import { CheckStatusBadge } from '@/components/check-status-badge'
 import type { CheckExecutionDetailResponse } from '@/lib/api'
 
 function getScoreColor(score: number) {
