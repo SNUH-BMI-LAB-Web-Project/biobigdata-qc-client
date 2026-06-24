@@ -1,0 +1,1 @@
+# Next.js 정적 에셋 폴더 (현재 비어 있음). Docker runner의 COPY public 대상이라 폴더 자체는 유지한다.
