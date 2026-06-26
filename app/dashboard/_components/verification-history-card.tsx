@@ -92,7 +92,7 @@ export function VerificationHistoryCard({
                   <Fragment key={row.checkId}>
                     <ExecutionRow
                       row={row}
-                      rowNumber={(page - 1) * EXECUTIONS_PAGE_SIZE + index + 1}
+                      rowNumber={row.checkId}
                       expanded={expandedRows.includes(row.checkId)}
                       onToggle={() => onToggleRow(row.checkId)}
                     />

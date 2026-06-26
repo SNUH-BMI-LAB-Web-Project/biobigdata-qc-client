@@ -69,8 +69,8 @@ export function MetricResults({ checkId }: { checkId: number | null }) {
           />
         ) : (
           <RefreshingContent isRefetching={results.isRefetching} className="space-y-3">
-            {items.map((metric) => (
-              <MetricResultCard key={metric.metricId} metric={metric} />
+            {items.map((metric, idx) => (
+              <MetricResultCard key={`${metric.metricId}-${idx}`} metric={metric} />
             ))}
           </RefreshingContent>
         )}

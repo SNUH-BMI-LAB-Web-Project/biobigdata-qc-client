@@ -58,15 +58,15 @@ export function MetricResultCard({ metric }: { metric: DqQualityResultResponse }
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
             <span className="text-green-600">
               {'통과 '}
-              {metric.numPassedRows.toLocaleString()}
+              {metric.numPassedRows?.toLocaleString() ?? '-'}
             </span>
             <span className="text-red-600">
               {'위반 '}
-              {metric.numViolatedRows.toLocaleString()}
+              {metric.numViolatedRows?.toLocaleString() ?? '-'}
             </span>
             <span>
               {'전체 '}
-              {metric.numDenominatorRows.toLocaleString()}
+              {metric.numDenominatorRows?.toLocaleString() ?? '-'}
             </span>
           </div>
         </div>
