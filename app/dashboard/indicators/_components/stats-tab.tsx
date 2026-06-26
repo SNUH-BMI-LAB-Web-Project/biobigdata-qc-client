@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import { placeholderApi } from '@/lib/api/placeholder'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { TablePagerHeader } from '@/components/pager'
 import { ActiveToggleCell } from './active-toggle-cell'
@@ -119,7 +118,14 @@ export function StatsTab() {
                         <ActiveToggleCell
                           active={isY(stat.isActive)}
                           label={`통계지표 ${stat.siId}`}
-                          onSave={(next) => placeholderApi.setStatisticsMetricActive(stat.siId, next)}
+                          onSave={async (next) => {
+            await unwrapGeneratedResult(
+              await generatedApi.PATCH('/api/qc/statistics-metrics/{siId}/activation', {
+                params: { path: { siId: stat.siId } },
+                body: { isActive: next ? 'Y' : 'N' },
+              }),
+            )
+          }}
                         />
                       </TableCell>
                     </TableRow>

@@ -15,8 +15,6 @@ import {
 } from '@/components/ui/select'
 import { useApi } from '@/hooks/use-api'
 import { ApiError, generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import { placeholderApi } from '@/lib/api/placeholder'
-import type { DqFieldCreateRequest, DqTableCreateRequest } from '@/lib/api/placeholder'
 import type { DqFieldResponse, DqTableResponse, PageResult, Stage } from '@/lib/api'
 
 const OVERLAY_CLASS =
@@ -37,24 +35,26 @@ const REQUIRED_OPTIONS = [
 ]
 
 const TIBERO_TYPES = [
-  'VARCHAR(255)',
-  'VARCHAR(1000)',
-  'VARCHAR(4000)',
-  'CHAR(1)',
+  'VARCHAR2',
+  'NVARCHAR2',
+  'CHAR',
+  'NCHAR',
   'NUMBER',
-  'NUMBER(10)',
-  'NUMBER(19)',
+  'INTEGER',
   'FLOAT',
   'DATE',
   'TIMESTAMP',
   'CLOB',
+  'NCLOB',
   'BLOB',
-]
+  'RAW',
+] as const
+type TiberoType = (typeof TIBERO_TYPES)[number]
 
 interface ColumnDraft {
   key: string
   fieldName: string
-  datatype: string
+  datatype: TiberoType
   isRequired: 'Y' | 'N'
   isPk: 'Y' | 'N'
   isFk: 'Y' | 'N'
@@ -68,7 +68,7 @@ interface ColumnDraft {
 const newColumn = (key: string): ColumnDraft => ({
   key,
   fieldName: '',
-  datatype: 'VARCHAR(255)',
+  datatype: 'VARCHAR2',
   isRequired: 'N',
   isPk: 'N',
   isFk: 'N',
@@ -176,28 +176,36 @@ export function AddTableDialog({
     setError(null)
     setSubmitting(true)
 
-    const body: DqTableCreateRequest = {
-      tableName: tableName.trim(),
-      stage: stage as Stage,
-      tableRequired,
-      tableDescription: tableDescription.trim() || undefined,
-      isEnable: 'Y',
-      fields: columns.map<DqFieldCreateRequest>((c) => ({
-        fieldName: c.fieldName.trim(),
-        datatype: c.datatype,
-        isRequired: c.isRequired,
-        isPk: c.isPk,
-        isFk: c.isFk,
-        fkTableName: c.isFk === 'Y' ? c.fkTableName : undefined,
-        fkFieldName: c.isFk === 'Y' ? c.fkFieldName : undefined,
-        isEnable: 'Y',
-        fieldDescription: c.fieldDescription.trim() || undefined,
-        fieldDescriptionDetail: c.fieldDescriptionDetail.trim() || undefined,
-      })),
-    }
-
     try {
-      await placeholderApi.createTable(body)
+      const table = await unwrapGeneratedResult<DqTableResponse>(
+        await generatedApi.POST('/api/qc/tables', {
+          body: {
+            tableName: tableName.trim(),
+            stage: stage as 'LINK' | 'PREP' | 'INTG' | 'OPEN',
+            tableRequired: tableRequired as 'Y' | 'R' | 'R2' | 'O',
+            tableDescription: tableDescription.trim() || undefined,
+          },
+        }),
+      )
+      const tableId = table.tableId!
+      for (const c of columns) {
+        await unwrapGeneratedResult(
+          await generatedApi.POST('/api/qc/tables/{tableId}/fields', {
+            params: { path: { tableId } },
+            body: {
+              fieldName: c.fieldName.trim(),
+              datatype: c.datatype,
+              isRequired: c.isRequired,
+              isPk: c.isPk,
+              isFk: c.isFk,
+              fkTableName: c.isFk === 'Y' ? c.fkTableName : undefined,
+              fkFieldName: c.isFk === 'Y' ? c.fkFieldName : undefined,
+              fieldDescription: c.fieldDescription.trim() || undefined,
+              fieldDescriptionDetail: c.fieldDescriptionDetail.trim() || undefined,
+            },
+          }),
+        )
+      }
       alert('테이블이 추가되었습니다.')
       reset()
       onOpenChange(false)
@@ -352,7 +360,7 @@ export function AddTableDialog({
                           <ColumnSelect
                             label="타입"
                             value={col.datatype}
-                            onChange={(v) => patchColumn(col.key, { datatype: v })}
+                            onChange={(v) => patchColumn(col.key, { datatype: v as TiberoType })}
                             options={TIBERO_TYPES.map((t) => ({ value: t, label: t }))}
                             mono
                           />

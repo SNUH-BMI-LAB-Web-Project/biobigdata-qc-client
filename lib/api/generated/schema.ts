@@ -71,6 +71,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DQ 테이블 목록 조회 */
+        get: operations["getDqTableList"];
+        put?: never;
+        /**
+         * DQ 테이블 생성
+         * @description 단계(LINK/PREP/INTG/OPEN)와 필수여부(Y/R/R2/O)를 지정해 DQ 테이블을 생성한다. 사용 여부는 자동으로 Y로 설정된다.
+         */
+        post: operations["createDqTable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/tables/{tableId}/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DQ 필드 목록 조회 */
+        get: operations["getDqFieldList"];
+        put?: never;
+        /**
+         * DQ 필드 생성
+         * @description 테이블 내 필드명 중복 체크 후 생성한다. 사용 여부는 자동으로 Y로 설정된다.
+         */
+        post: operations["createDqField"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qc/statistics-metrics": {
         parameters: {
             query?: never;
@@ -268,38 +310,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/qc/tables": {
+    "/api/qc/statistics-metrics/{siId}/activation": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** DQ 테이블 목록 조회 */
-        get: operations["getDqTableList"];
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * 통계 지표 활성/비활성 토글
+         * @description isActive 값을 Y/N으로 지정해 통계 지표의 활성 여부를 변경한다.
+         */
+        patch: operations["updateDqStatisticsMetricActivation"];
         trace?: never;
     };
-    "/api/qc/tables/{tableId}/fields": {
+    "/api/qc/quality-metrics/{metricId}/activation": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** DQ 필드 목록 조회 */
-        get: operations["getDqFieldList"];
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * 품질 지표 활성/비활성 토글
+         * @description isActive 값을 Y/N으로 지정해 품질 지표의 활성 여부를 변경한다.
+         */
+        patch: operations["updateDqQualityMetricActivation"];
         trace?: never;
     };
     "/api/qc/statistics-results/checks": {
@@ -309,7 +357,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 통계 검증 실행 내역 목록 조회 */
+        /**
+         * 통계 검증 실행 내역 목록 조회
+         * @description subStage(preview_open / main_open)로 사전개방·본개방 필터링 가능. 대소문자 무관.
+         */
         get: operations["getStatisticsCheckLogs"];
         put?: never;
         post?: never;
@@ -400,7 +451,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 품질 검증 실행 내역 목록 조회 */
+        /**
+         * 품질 검증 실행 내역 목록 조회
+         * @description subStage(preview_open / main_open)로 사전개방·본개방 필터링 가능. 대소문자 무관.
+         */
         get: operations["getQualityCheckLogs"];
         put?: never;
         post?: never;
@@ -468,7 +522,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 검증 현황 목록 조회 */
+        /**
+         * 검증 현황 목록 조회
+         * @description subStage(preview_open / main_open)로 사전개방·본개방 필터링 가능. 대소문자 무관.
+         */
         get: operations["getCheckExecutionList"];
         put?: never;
         post?: never;
@@ -671,6 +728,111 @@ export interface components {
              */
             mberSttus: string;
         };
+        /** @description DQ 테이블 생성 요청 */
+        CreateDqTableRequest: {
+            /** @description 테이블명 */
+            tableName: string;
+            /**
+             * @description 단계
+             * @enum {string}
+             */
+            stage: "LINK" | "PREP" | "INTG" | "OPEN";
+            /**
+             * @description 필수 여부
+             * @enum {string}
+             */
+            tableRequired: "Y" | "R" | "R2" | "O";
+            /** @description 테이블 설명 (선택) */
+            tableDescription?: string;
+        };
+        ApiResponseDqTableResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["DqTableResponse"];
+        };
+        /** @description DQ 테이블 정보 */
+        DqTableResponse: {
+            /** @description 테이블 ID */
+            tableId?: string;
+            /** @description 테이블명 */
+            tableName?: string;
+            /** @description 단계 */
+            stage?: string;
+            /** @description 데이터 카테고리 */
+            dataCategory?: string;
+            /** @description 필수 여부 */
+            tableRequired?: string;
+            /** @description 테이블 설명 */
+            tableDescription?: string;
+            /** @description 활성화 여부 */
+            isEnable?: string;
+        };
+        /** @description DQ 필드 생성 요청 */
+        CreateDqFieldRequest: {
+            /** @description 필드명 (테이블 내 중복 불가) */
+            fieldName: string;
+            /**
+             * @description Tibero 기준 데이터 타입
+             * @enum {string}
+             */
+            datatype: "VARCHAR2" | "NVARCHAR2" | "CHAR" | "NCHAR" | "NUMBER" | "INTEGER" | "FLOAT" | "DATE" | "TIMESTAMP" | "CLOB" | "NCLOB" | "BLOB" | "RAW";
+            /**
+             * @description 필수 여부
+             * @enum {string}
+             */
+            isRequired: "Y" | "N";
+            /**
+             * @description PK 여부
+             * @enum {string}
+             */
+            isPk: "Y" | "N";
+            /**
+             * @description FK 여부 (기본값 N)
+             * @default N
+             * @enum {string}
+             */
+            isFk: "Y" | "N";
+            /** @description FK 참조 테이블 ID (isFk=Y 일 때 필수, DQ_Table 목록에서 선택) */
+            fkTableName?: string;
+            /** @description FK 참조 필드명 (isFk=Y 일 때 필수, 참조 테이블의 필드 목록에서 선택) */
+            fkFieldName?: string;
+            /** @description 필드 설명 (선택) */
+            fieldDescription?: string;
+            /** @description 필드 상세 설명 (선택) */
+            fieldDescriptionDetail?: string;
+        };
+        ApiResponseDqFieldResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["DqFieldResponse"];
+        };
+        /** @description DQ 필드 정보 */
+        DqFieldResponse: {
+            /** @description 필드 ID */
+            fieldId?: string;
+            /** @description 필드명 */
+            fieldName?: string;
+            /** @description 필드 설명 */
+            fieldDescription?: string;
+            /** @description 필드 상세 설명 */
+            fieldDescriptionDetail?: string;
+            /** @description 데이터 타입 */
+            datatype?: string;
+            /** @description 필수 여부 */
+            isRequired?: string;
+            /** @description PK 여부 */
+            isPk?: string;
+            /** @description FK 여부 */
+            isFk?: string;
+            /** @description FK 테이블명 */
+            fkTableName?: string;
+            /** @description FK 필드명 */
+            fkFieldName?: string;
+            /** @description 활성화 여부 */
+            isEnable?: string;
+        };
         /** @description DAG 실행 요청 */
         DagRunRequest: {
             /**
@@ -811,28 +973,19 @@ export interface components {
              */
             role: "ADMIN" | "MANAGER" | "VIEWER";
         };
+        /** @description 활성/비활성 토글 요청 */
+        UpdateActivationRequest: {
+            /**
+             * @description 활성화 여부
+             * @enum {string}
+             */
+            isActive: "Y" | "N";
+        };
         ApiResponsePageResultDqTableResponse: {
             success?: boolean;
             code?: string;
             message?: string;
             data?: components["schemas"]["PageResultDqTableResponse"];
-        };
-        /** @description DQ 테이블 정보 */
-        DqTableResponse: {
-            /** @description 테이블 ID */
-            tableId?: string;
-            /** @description 테이블명 */
-            tableName?: string;
-            /** @description 단계 */
-            stage?: string;
-            /** @description 데이터 카테고리 */
-            dataCategory?: string;
-            /** @description 필수 여부 */
-            tableRequired?: string;
-            /** @description 테이블 설명 */
-            tableDescription?: string;
-            /** @description 활성화 여부 */
-            isEnable?: string;
         };
         /** @description 페이지네이션 응답 */
         PageResultDqTableResponse: {
@@ -864,31 +1017,6 @@ export interface components {
             code?: string;
             message?: string;
             data?: components["schemas"]["PageResultDqFieldResponse"];
-        };
-        /** @description DQ 필드 정보 */
-        DqFieldResponse: {
-            /** @description 필드 ID */
-            fieldId?: string;
-            /** @description 필드명 */
-            fieldName?: string;
-            /** @description 필드 설명 */
-            fieldDescription?: string;
-            /** @description 필드 상세 설명 */
-            fieldDescriptionDetail?: string;
-            /** @description 데이터 타입 */
-            datatype?: string;
-            /** @description 필수 여부 */
-            isRequired?: string;
-            /** @description PK 여부 */
-            isPk?: string;
-            /** @description FK 여부 */
-            isFk?: string;
-            /** @description FK 테이블명 */
-            fkTableName?: string;
-            /** @description FK 필드명 */
-            fkFieldName?: string;
-            /** @description 활성화 여부 */
-            isEnable?: string;
         };
         /** @description 페이지네이션 응답 */
         PageResultDqFieldResponse: {
@@ -1709,6 +1837,107 @@ export interface operations {
             };
         };
     };
+    getDqTableList: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                dataCategory?: string;
+                includeDisabled?: boolean;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultDqTableResponse"];
+                };
+            };
+        };
+    };
+    createDqTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDqTableRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDqTableResponse"];
+                };
+            };
+        };
+    };
+    getDqFieldList: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                tableId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultDqFieldResponse"];
+                };
+            };
+        };
+    };
+    createDqField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tableId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDqFieldRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDqFieldResponse"];
+                };
+            };
+        };
+    };
     getDqStatisticsMetricList: {
         parameters: {
             query?: {
@@ -2018,20 +2247,20 @@ export interface operations {
             };
         };
     };
-    getDqTableList: {
+    updateDqStatisticsMetricActivation: {
         parameters: {
-            query?: {
-                keyword?: string;
-                dataCategory?: string;
-                includeDisabled?: boolean;
-                page?: number;
-                size?: number;
-            };
+            query?: never;
             header?: never;
-            path?: never;
+            path: {
+                siId: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateActivationRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -2039,24 +2268,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponsePageResultDqTableResponse"];
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
     };
-    getDqFieldList: {
+    updateDqQualityMetricActivation: {
         parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-            };
+            query?: never;
             header?: never;
             path: {
-                tableId: string;
+                metricId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateActivationRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -2064,7 +2294,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponsePageResultDqFieldResponse"];
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
@@ -2073,6 +2303,7 @@ export interface operations {
         parameters: {
             query?: {
                 stage?: string;
+                subStage?: string;
                 page?: number;
                 size?: number;
             };
@@ -2190,6 +2421,7 @@ export interface operations {
         parameters: {
             query?: {
                 stage?: string;
+                subStage?: string;
                 page?: number;
                 size?: number;
             };
@@ -2288,6 +2520,7 @@ export interface operations {
     getCheckExecutionList: {
         parameters: {
             query?: {
+                subStage?: string;
                 page?: number;
                 size?: number;
             };

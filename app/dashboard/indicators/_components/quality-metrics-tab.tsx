@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import { placeholderApi } from '@/lib/api/placeholder'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { TablePagerHeader } from '@/components/pager'
 import { ActiveToggleCell } from './active-toggle-cell'
@@ -195,7 +194,14 @@ const QualityMetricRow = memo(function QualityMetricRow({
         <ActiveToggleCell
           active={isY(item.isActive)}
           label={`품질지표 ${item.metricId}`}
-          onSave={(next) => placeholderApi.setQualityMetricActive(item.metricId, next)}
+          onSave={async (next) => {
+            await unwrapGeneratedResult(
+              await generatedApi.PATCH('/api/qc/quality-metrics/{metricId}/activation', {
+                params: { path: { metricId: item.metricId } },
+                body: { isActive: next ? 'Y' : 'N' },
+              }),
+            )
+          }}
         />
       </TableCell>
     </TableRow>
