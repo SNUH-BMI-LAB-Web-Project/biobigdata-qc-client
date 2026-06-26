@@ -252,7 +252,8 @@ pnpm lint         # 린트
 | CloudBeaver(DB 콘솔) | http://175.106.96.71:8978 |
 
 - 운영 서버는 **NCP**에 있으며, **SSH·웹 접속 모두 허용된(화이트리스트) 출발지 IP에서만** 가능합니다. IP가 바뀌면 재등록해야 합니다.
-- 서버 SSH 접속 계정·배포 경로 등 구체적인 접근/권한 정보는 보안상 저장소에 두지 않습니다(담당자에게 문의).
+- **SSH 접속**: `ssh kunminpark@175.106.96.71` (계정명 `kunminpark`, SSH config alias `biko-qms`).
+- **배포 경로**: `/home/kunminpark/biobigdata-qc-client` (여기서 `git pull` 후 `docker compose up -d --build`).
 
 ### 8.1 운영 구성 — NCP 서버 1대에서 Docker Compose로 전체 스택 구동
 | 컨테이너 | 역할 | 포트(호스트→컨테이너) |
