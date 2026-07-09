@@ -1,7 +1,5 @@
 import { STAGE_LABEL } from '@/lib/api'
 
-export const QUALITY_CATEGORIES = ['완전성', '정합성', '타당성']
-
 export const stageDbLabel = (stage: string): string => STAGE_LABEL[stage] ?? stage
 
 export const isY = (value: string | undefined | null): boolean =>

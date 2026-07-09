@@ -45,6 +45,7 @@ export type RolePermissionsResponse = Schema<'RolePermissionsResponse'>
 export type RolePermissionsUpdateRequest = Schema<'RolePermissionsUpdateRequest'>
 export type DagRunRequest = components['schemas']['DagRunRequest']
 export type DagRunResponse = Schema<'DagRunResponse'>
+export type CreateDqTableRequest = components['schemas']['CreateDqTableRequest']
 export type DqTableResponse = Schema<'DqTableResponse'>
 export type DqFieldResponse = Schema<'DqFieldResponse'>
 export type DqQualityMetricResponse = Schema<'DqQualityMetricResponse'>

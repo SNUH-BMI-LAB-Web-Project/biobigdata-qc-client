@@ -14,8 +14,11 @@ import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { TablePagerHeader } from '@/components/pager'
 import { ActiveToggleCell } from './active-toggle-cell'
-import { isY, metricLevelLabel, QUALITY_CATEGORIES, scoreColor, stageDbLabel } from './indicator-utils'
+import { isY, metricLevelLabel, scoreColor, stageDbLabel } from './indicator-utils'
 import type { DqQualityMetricResponse, PageResult } from '@/lib/api'
+
+// 항상 노출하는 DB(단계) 열 — 데이터에 없더라도 통합/개방까지 4개를 고정 표시한다.
+const STAGE_COLUMNS = ['LINK', 'PREP', 'INTG', 'OPEN'] as const
 
 export function QualityMetricsTab() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -43,9 +46,25 @@ export function QualityMetricsTab() {
   )
 
   const metrics = useMemo(() => data?.items ?? [], [data?.items])
-  const stageKeys = useMemo(
-    () => Array.from(new Set(metrics.flatMap((metric) => Object.keys(metric.stageScores ?? {})))),
-    [metrics],
+  const stageKeys = useMemo(() => [...STAGE_COLUMNS], [])
+
+  // 차원(카테고리) 옵션은 실제 지표 데이터에서 도출 — 하드코딩 목록이 백엔드 값과 어긋나 필터 결과가 비는 문제 방지
+  const categoriesApi = useApi(
+    async (signal) =>
+      unwrapGeneratedResult<PageResult<DqQualityMetricResponse>>(
+        await generatedApi.GET('/api/qc/quality-metrics', {
+          params: { query: { page: 1, size: 500 } },
+          signal,
+        }),
+      ),
+    [],
+  )
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set((categoriesApi.data?.items ?? []).map((m) => m.category).filter(Boolean)),
+      ).sort(),
+    [categoriesApi.data],
   )
 
   return (
@@ -75,7 +94,7 @@ export function QualityMetricsTab() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{'전체 차원'}</SelectItem>
-            {QUALITY_CATEGORIES.map((category) => (
+            {categoryOptions.map((category) => (
               <SelectItem key={category} value={category}>
                 {category}
               </SelectItem>

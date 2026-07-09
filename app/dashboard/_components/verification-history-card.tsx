@@ -167,7 +167,10 @@ function ExecutionRow({
             className="h-6 text-xs gap-1"
             onClick={(e) => {
               e.stopPropagation()
-              window.location.href = `/dashboard/quality-results?checkId=${row.checkId}`
+              // 지표 유형에 따라 결과 화면 분기 — 통계지표(achilles)는 데이터 통계 결과, 그 외는 품질 결과
+              const resultPath =
+                row.checkType === 'achilles' ? '/dashboard/data' : '/dashboard/quality-results'
+              window.location.href = `${resultPath}?checkId=${row.checkId}`
             }}
           >
             <ExternalLink className="w-3 h-3" />

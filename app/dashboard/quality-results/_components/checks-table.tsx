@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Database } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AsyncStateBlock, RefreshingContent } from '@/components/async-state'
@@ -50,9 +51,10 @@ export function ChecksTable({ selectedStage, selectedCheckId, onSelectCheck }: C
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Database className="w-4 h-4" />
               {selectedStage ? `${STAGE_LABEL[selectedStage] ?? selectedStage} ` : ''}
-              {'검증 실행 내역'}
+              {'품질 검증 실행 내역'}
             </CardTitle>
             <CardDescription className="text-xs">
               {'완료된 검증을 선택하여 지표별 결과를 확인하세요'}

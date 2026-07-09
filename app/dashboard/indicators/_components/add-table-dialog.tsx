@@ -15,7 +15,13 @@ import {
 } from '@/components/ui/select'
 import { useApi } from '@/hooks/use-api'
 import { ApiError, generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import type { DqFieldResponse, DqTableResponse, PageResult, Stage } from '@/lib/api'
+import type {
+  CreateDqTableRequest,
+  DqFieldResponse,
+  DqTableResponse,
+  PageResult,
+  Stage,
+} from '@/lib/api'
 
 const OVERLAY_CLASS =
   'fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0'
@@ -26,6 +32,19 @@ const STAGE_OPTIONS: { value: Stage; label: string }[] = [
   { value: 'INTG', label: '통합' },
   { value: 'OPEN', label: '개방' },
 ]
+
+// 백엔드에서 null 불가 — 지정된 목록 중 하나를 선택해 전송한다.
+const DATA_CATEGORY_OPTIONS = [
+  '1차생성_모집관리(RCM)',
+  '1차생성_문검진(HEALTH)',
+  '1차생성_문검진(RCM)',
+  '1차생성_회귀질환(eCRF)',
+  '1차생성_기초임상(KR-CDI)',
+  '1차생성_기초임상(CDM)',
+  '2차연계_의무기록(PHR)',
+  '2차연계_공공데이터',
+  '2차연계_PGHD',
+] as const
 
 const REQUIRED_OPTIONS = [
   { value: 'Y', label: 'Y (필수)' },
@@ -97,6 +116,7 @@ export function AddTableDialog({
 
   const [tableName, setTableName] = useState('')
   const [stage, setStage] = useState<Stage | ''>('')
+  const [dataCategory, setDataCategory] = useState('')
   const [tableRequired, setTableRequired] = useState('')
   const [tableDescription, setTableDescription] = useState('')
   const [columns, setColumns] = useState<ColumnDraft[]>([])
@@ -104,11 +124,12 @@ export function AddTableDialog({
   const [error, setError] = useState<string | null>(null)
 
   const dirty =
-    tableName || stage || tableRequired || tableDescription || columns.length > 0
+    tableName || stage || dataCategory || tableRequired || tableDescription || columns.length > 0
 
   const reset = () => {
     setTableName('')
     setStage('')
+    setDataCategory('')
     setTableRequired('')
     setTableDescription('')
     setColumns([])
@@ -157,6 +178,7 @@ export function AddTableDialog({
   const validate = (): string | null => {
     if (!tableName.trim()) return '테이블명을 입력하세요.'
     if (!stage) return '단계를 선택하세요.'
+    if (!dataCategory) return '데이터 카테고리를 선택하세요.'
     if (!tableRequired) return '필수여부를 선택하세요.'
     for (const c of columns) {
       if (!c.fieldName.trim()) return '컬럼명을 입력하세요.'
@@ -182,9 +204,10 @@ export function AddTableDialog({
           body: {
             tableName: tableName.trim(),
             stage: stage as 'LINK' | 'PREP' | 'INTG' | 'OPEN',
+            dataCategory,
             tableRequired: tableRequired as 'Y' | 'R' | 'R2' | 'O',
             tableDescription: tableDescription.trim() || undefined,
-          },
+          } as CreateDqTableRequest,
         }),
       )
       const tableId = table.tableId!
@@ -288,6 +311,24 @@ export function AddTableDialog({
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  데이터 카테고리
+                  <RequiredMark />
+                </Label>
+                <Select value={dataCategory || undefined} onValueChange={setDataCategory}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="데이터 카테고리 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DATA_CATEGORY_OPTIONS.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">설명 (선택)</Label>
