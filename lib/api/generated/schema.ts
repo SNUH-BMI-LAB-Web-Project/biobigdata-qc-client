@@ -544,7 +544,7 @@ export interface paths {
         };
         /**
          * 검증 현황 상세 조회
-         * @description CHECK_ID에 해당하는 모든 실행 로그를 반환합니다. 각 행은 세부 단계(stage), 시작 시간(HH:mm), 종료 시간(HH:mm)을 포함합니다.
+         * @description CHECK_ID에 해당하는 실행 로그를 반환합니다. 시작 시간(HH:mm), 종료 시간(HH:mm)을 포함합니다.
          */
         get: operations["getCheckExecutionDetail"];
         put?: never;
@@ -737,6 +737,11 @@ export interface components {
              * @enum {string}
              */
             stage: "LINK" | "PREP" | "INTG" | "OPEN";
+            /**
+             * @description 데이터 카테고리
+             * @enum {string}
+             */
+            dataCategory: "1차생성_모집관리(RCM)" | "1차생성_문검진(HEALTH)" | "1차생성_문검진(RCM)" | "1차생성_희귀질환(eCRF)" | "1차생성_기초임상(KR-CDI)" | "1차생성_기초임상(CDM)" | "2차연계_의무기록(PHR)" | "2차연계_공공데이터" | "2차연계_PGHD";
             /**
              * @description 필수 여부
              * @enum {string}
@@ -1596,8 +1601,6 @@ export interface components {
         };
         /** @description CHECK_ID 기준 stage별 검증 상세 */
         CheckExecutionDetailResponse: {
-            /** @description 검증 단계 */
-            stage?: string;
             /**
              * Format: int64
              * @description 실행된 품질검사 쿼리 수

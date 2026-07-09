@@ -3,7 +3,7 @@
 import { Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useApi } from '@/hooks/use-api'
-import { STAGE_LABEL, generatedApi, unwrapGeneratedResult } from '@/lib/api'
+import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import { CheckStatusBadge } from '@/components/check-status-badge'
 import type { CheckExecutionDetailResponse } from '@/lib/api'
 
@@ -41,19 +41,16 @@ export function ExecutionDetailRow({ checkId }: { checkId: number }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground mb-2">{'단계별 상세'}</p>
+      <p className="text-xs font-medium text-muted-foreground mb-2">{'검증 실행 상세'}</p>
       {data.map((detail, index) => (
-        <div key={`${detail.stage}-${index}`} className="p-3 rounded-md border bg-background">
+        <div key={index} className="p-3 rounded-md border bg-background">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Badge variant="secondary" className="text-xs font-medium">
-                {STAGE_LABEL[detail.stage] ?? detail.stage}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
                 {'쿼리 '}
-                {detail.queryCount}
+                {detail.queryCount ?? 0}
                 {'개'}
-              </span>
+              </Badge>
             </div>
             <div className="flex items-center gap-4">
               <Timestamp label="시작" value={detail.checkStartDatetime} />

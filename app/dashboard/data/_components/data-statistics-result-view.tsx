@@ -2,7 +2,8 @@
 
 import { Suspense, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Card, CardContent } from '@/components/ui/card'
+import { Database } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyBlock, LoadingBlock } from '@/components/async-state'
 import { DbCountCards } from './db-count-cards'
 import { StatisticsHistoryTable } from './statistics-history-table'
@@ -45,8 +46,17 @@ function DataStatisticsResultContent() {
 
         {selectedCheckId === null ? (
           <Card>
-            <CardContent className="pt-6">
-              <EmptyBlock message="위 내역에서 완료된 검증을 선택하면 통계 결과가 표시됩니다." />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                {'지표별 결과'}
+              </CardTitle>
+              <CardDescription className="text-xs">
+                {'완료된 검증을 선택하면 지표별 결과가 표시됩니다'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EmptyBlock message="위 내역에서 완료된 검증을 선택하세요." />
             </CardContent>
           </Card>
         ) : (

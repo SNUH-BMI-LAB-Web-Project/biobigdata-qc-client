@@ -33,18 +33,20 @@ const STAGE_OPTIONS: { value: Stage; label: string }[] = [
   { value: 'OPEN', label: '개방' },
 ]
 
-// 백엔드에서 null 불가 — 지정된 목록 중 하나를 선택해 전송한다.
+// 백엔드에서 null 불가 — 스키마 enum 값 중 하나를 선택해 전송한다.
+// (satisfies로 백엔드 enum과 불일치 시 컴파일 에러가 나도록 고정)
+type DataCategory = NonNullable<CreateDqTableRequest['dataCategory']>
 const DATA_CATEGORY_OPTIONS = [
   '1차생성_모집관리(RCM)',
   '1차생성_문검진(HEALTH)',
   '1차생성_문검진(RCM)',
-  '1차생성_회귀질환(eCRF)',
+  '1차생성_희귀질환(eCRF)',
   '1차생성_기초임상(KR-CDI)',
   '1차생성_기초임상(CDM)',
   '2차연계_의무기록(PHR)',
   '2차연계_공공데이터',
   '2차연계_PGHD',
-] as const
+] as const satisfies readonly DataCategory[]
 
 const REQUIRED_OPTIONS = [
   { value: 'Y', label: 'Y (필수)' },
@@ -204,10 +206,10 @@ export function AddTableDialog({
           body: {
             tableName: tableName.trim(),
             stage: stage as 'LINK' | 'PREP' | 'INTG' | 'OPEN',
-            dataCategory,
+            dataCategory: dataCategory as DataCategory,
             tableRequired: tableRequired as 'Y' | 'R' | 'R2' | 'O',
             tableDescription: tableDescription.trim() || undefined,
-          } as CreateDqTableRequest,
+          },
         }),
       )
       const tableId = table.tableId!
