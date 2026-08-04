@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: gukba-big:latest
-    container_name: gukba-big
+    image: biobigdata-qc-client:latest
+    container_name: biobigdata-qc-client
     restart: unless-stopped
     ports:
       - "${HOST_PORT:-8887}:3000"

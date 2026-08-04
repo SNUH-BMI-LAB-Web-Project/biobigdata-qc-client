@@ -257,7 +257,7 @@ pnpm lint         # 린트
 ### 8.1 운영 구성 — NCP 서버 1대에서 Docker Compose로 전체 스택 구동
 | 컨테이너 | 역할 | 포트(호스트→컨테이너) |
 |----------|------|----------------------|
-| `gukba-big` | **이 웹 클라이언트** (Next standalone) | 8887 → 3000 |
+| `biobigdata-qc-client` | **이 웹 클라이언트** (Next standalone) | 8887 → 3000 |
 | `biobigdata-qc-server` | 백엔드 QC 서버(REST/OpenAPI) | 8081 → 8080 |
 | `airflow-apiserver` 외 (scheduler/worker/triggerer/dag-processor) | Airflow 검증 실행 엔진 | 8080 등 |
 | `airflow-postgres` / `airflow-redis` | Airflow 메타DB / 브로커 | 내부 |
@@ -283,7 +283,7 @@ cd <배포경로>/biobigdata-qc-client
 git pull
 
 # 3) 웹 컨테이너 재빌드·기동
-docker compose up -d --build web      # 이미지 gukba-big:latest
+docker compose up -d --build web      # 이미지 biobigdata-qc-client:latest
 
 # 4) 확인
 docker compose ps                      # healthy 확인
