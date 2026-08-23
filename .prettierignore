@@ -1,0 +1,7 @@
+.next
+out
+build
+node_modules
+lib/api/generated/schema.ts
+pnpm-lock.yaml
+tsconfig.json
