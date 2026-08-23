@@ -37,6 +37,12 @@ export type Stage = NonNullable<
 export type SubStage = NonNullable<
   components['schemas']['DagRunRequest']['targetSubStage']
 >
+export type VerificationScope = NonNullable<
+  components['schemas']['DagRunRequest']['scope']
+>
+export type MetricLevel = NonNullable<
+  components['schemas']['DagRunRequest']['metricLevel']
+>
 export type CheckStatus = 0 | 1 | 2 | 3
 
 export type LoginRequest = Schema<'LoginRequest'>
@@ -59,6 +65,8 @@ export type DqQualityMetricResponse = Schema<'DqQualityMetricResponse'>
 export type DqQualityMetricDetailResponse =
   Schema<'DqQualityMetricDetailResponse'>
 export type FieldCheckItem = Schema<'FieldCheckItem'>
+export type CheckPickerItemResponse = Schema<'CheckPickerItemResponse'>
+export type MetricPickerItemResponse = Schema<'MetricPickerItemResponse'>
 export type DqStatisticsMetricResponse = Schema<'DqStatisticsMetricResponse'>
 export type DqAchillesAnalysisResponse = Schema<'DqAchillesAnalysisResponse'>
 export type DqCheckLogResponse = Schema<'DqCheckLogResponse'> & {

@@ -8,6 +8,10 @@ import {
   VERIFICATION_DATABASES,
 } from './verification-config'
 import { VerificationHistoryCard } from './verification-history-card'
+import {
+  VerificationScopeDialog,
+  type ScopeSelection,
+} from './verification-scope-dialog'
 import { VerificationSelectionPanel } from './verification-selection-panel'
 import type {
   CheckExecutionResponse,
@@ -20,10 +24,11 @@ import type {
 export function QualityVerificationView() {
   const [selectedDb, setSelectedDb] = useState('')
   const [selectedSubStage, setSelectedSubStage] = useState('')
-  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([])
+  const [selectedIndicator, setSelectedIndicator] = useState('')
   const [expandedRows, setExpandedRows] = useState<number[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [submitting, setSubmitting] = useState(false)
+  const [scopeDialogOpen, setScopeDialogOpen] = useState(false)
 
   const {
     data: executionsPage,
@@ -48,23 +53,16 @@ export function QualityVerificationView() {
   )
   const requiresSubStage = selectedDbInfo?.requiresSubStage ?? false
   const hasRunningVerification = executions.some((row) => row.checkStatus === 0)
+  const isQuality = selectedIndicator === 'quality'
   const canExecute =
     !!selectedDb &&
-    selectedIndicators.length > 0 &&
+    !!selectedIndicator &&
     (!requiresSubStage || !!selectedSubStage)
 
   const handleDbChange = (dbId: string) => {
     setSelectedDb(dbId)
     setSelectedSubStage('')
-    setSelectedIndicators([])
-  }
-
-  const toggleIndicator = (indicatorId: string) => {
-    setSelectedIndicators((prev) =>
-      prev.includes(indicatorId)
-        ? prev.filter((id) => id !== indicatorId)
-        : [...prev, indicatorId],
-    )
+    setSelectedIndicator('')
   }
 
   const toggleRow = (rowId: number) => {
@@ -75,42 +73,74 @@ export function QualityVerificationView() {
     )
   }
 
-  const handleExecute = async () => {
+  const buildBaseBody = (): DagRunRequest => ({
+    targetStage: selectedDb as Stage,
+    ...(requiresSubStage
+      ? { targetSubStage: selectedSubStage as DagRunRequest['targetSubStage'] }
+      : {}),
+  })
+
+  const handleExecute = () => {
     if (hasRunningVerification) {
       alert('이전 검증이 실행 중입니다. 완료된 후 다시 실행해 주세요.')
       return
     }
     if (!canExecute || submitting) return
 
-    const body: DagRunRequest = {
-      targetStage: selectedDb as Stage,
-      ...(requiresSubStage
-        ? {
-            targetSubStage: selectedSubStage as DagRunRequest['targetSubStage'],
-          }
-        : {}),
+    // 품질지표만 범위를 세분화할 수 있다. 통계지표는 전체 검증만 지원.
+    if (isQuality) {
+      setScopeDialogOpen(true)
+      return
     }
+    void runStats()
+  }
+
+  const runStats = async () => {
+    setSubmitting(true)
+    try {
+      await generatedApi
+        .POST('/api/qc/statistics-metrics', { body: buildBaseBody() })
+        .then((result) => unwrapGeneratedResult<DagRunResponse>(result))
+      alert('검증이 시작되었습니다.')
+      setCurrentPage(1)
+      refetch()
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : '검증 실행에 실패했습니다.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const runQuality = async (selection: ScopeSelection) => {
+    const baseBody = buildBaseBody()
+    const body: DagRunRequest =
+      selection.scope === 'ALL'
+        ? { ...baseBody, scope: 'ALL' }
+        : {
+            ...baseBody,
+            scope: 'METRIC',
+            metricLevel: selection.metricLevel,
+            metricIds: selection.metricIds,
+            metricCheckIds: selection.metricCheckIds,
+          }
 
     setSubmitting(true)
     try {
-      const tasks: Promise<unknown>[] = []
-      if (selectedIndicators.includes('quality')) {
-        tasks.push(
-          generatedApi
-            .POST('/api/qc/quality-metrics', { body })
-            .then((result) => unwrapGeneratedResult<DagRunResponse>(result)),
-        )
-      }
-      if (selectedIndicators.includes('stats')) {
-        tasks.push(
-          generatedApi
-            .POST('/api/qc/statistics-metrics', { body })
-            .then((result) => unwrapGeneratedResult<DagRunResponse>(result)),
-        )
-      }
+      // 지표 단위와 세부지표 단위는 DAG가 달라 최대 2건이 돌아온다.
+      const runs = await generatedApi
+        .POST('/api/qc/quality-metrics', { body })
+        .then((result) => unwrapGeneratedResult<DagRunResponse[]>(result))
 
-      await Promise.all(tasks)
-      alert('검증이 시작되었습니다.')
+      const failed = runs.filter((run) => run.state === 'failed').length
+      if (failed === runs.length) {
+        alert('검증 실행에 실패했습니다.')
+        return
+      }
+      alert(
+        failed === 0
+          ? '검증이 시작되었습니다.'
+          : `${runs.length - failed}/${runs.length}건 실행 시작. ${failed}건 실패했습니다.`,
+      )
       setCurrentPage(1)
       refetch()
     } catch (err) {
@@ -127,14 +157,14 @@ export function QualityVerificationView() {
         <VerificationSelectionPanel
           selectedDb={selectedDb}
           selectedSubStage={selectedSubStage}
-          selectedIndicators={selectedIndicators}
+          selectedIndicator={selectedIndicator}
           requiresSubStage={requiresSubStage}
           hasRunningVerification={hasRunningVerification}
           submitting={submitting}
           canExecute={canExecute}
           onDbChange={handleDbChange}
           onSubStageChange={setSelectedSubStage}
-          onIndicatorToggle={toggleIndicator}
+          onIndicatorChange={setSelectedIndicator}
           onExecute={handleExecute}
         />
         <VerificationHistoryCard
@@ -151,6 +181,14 @@ export function QualityVerificationView() {
           onToggleRow={toggleRow}
         />
       </main>
+
+      <VerificationScopeDialog
+        open={scopeDialogOpen}
+        onOpenChange={setScopeDialogOpen}
+        targetStage={selectedDb as Stage}
+        targetSubStage={requiresSubStage ? selectedSubStage : undefined}
+        onConfirm={(selection) => void runQuality(selection)}
+      />
     </div>
   )
 }

@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   VERIFICATION_DATABASES,
   VERIFICATION_INDICATOR_TYPES,
@@ -19,32 +18,35 @@ import {
 interface VerificationSelectionPanelProps {
   selectedDb: string
   selectedSubStage: string
-  selectedIndicators: string[]
+  selectedIndicator: string
   requiresSubStage: boolean
   hasRunningVerification: boolean
   submitting: boolean
   canExecute: boolean
   onDbChange: (dbId: string) => void
   onSubStageChange: (subStage: string) => void
-  onIndicatorToggle: (indicatorId: string) => void
+  onIndicatorChange: (indicatorId: string) => void
   onExecute: () => void
 }
 
 export function VerificationSelectionPanel({
   selectedDb,
   selectedSubStage,
-  selectedIndicators,
+  selectedIndicator,
   requiresSubStage,
   hasRunningVerification,
   submitting,
   canExecute,
   onDbChange,
   onSubStageChange,
-  onIndicatorToggle,
+  onIndicatorChange,
   onExecute,
 }: VerificationSelectionPanelProps) {
   const selectedDbInfo = VERIFICATION_DATABASES.find(
     (db) => db.id === selectedDb,
+  )
+  const indicatorInfo = VERIFICATION_INDICATOR_TYPES.find(
+    (type) => type.id === selectedIndicator,
   )
 
   return (
@@ -62,21 +64,13 @@ export function VerificationSelectionPanel({
         <CardContent>
           <div className="space-y-2">
             {VERIFICATION_DATABASES.map((db) => (
-              <button
+              <SelectionOption
                 key={db.id}
-                type="button"
-                className={`w-full text-left p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                  selectedDb === db.id
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                }`}
+                selected={selectedDb === db.id}
+                label={db.name}
+                description={db.description}
                 onClick={() => onDbChange(db.id)}
-              >
-                <span className="block font-medium text-sm">{db.name}</span>
-                <span className="block text-xs text-muted-foreground mt-0.5">
-                  {db.description}
-                </span>
-              </button>
+              />
             ))}
           </div>
         </CardContent>
@@ -100,22 +94,12 @@ export function VerificationSelectionPanel({
           ) : (
             <div className="space-y-2">
               {VERIFICATION_SUB_STAGES.map((subStage) => (
-                <div
-                  role="button"
+                <SelectionOption
                   key={subStage.id}
-                  className={`flex w-full items-center gap-2 p-3 rounded-md border-2 cursor-pointer transition-all ${
-                    selectedSubStage === subStage.id
-                      ? 'bg-primary/10 border-primary'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                  }`}
+                  selected={selectedSubStage === subStage.id}
+                  label={subStage.name}
                   onClick={() => onSubStageChange(subStage.id)}
-                >
-                  <Checkbox
-                    checked={selectedSubStage === subStage.id}
-                    onCheckedChange={() => onSubStageChange(subStage.id)}
-                  />
-                  <span className="text-sm">{subStage.name}</span>
-                </div>
+                />
               ))}
             </div>
           )}
@@ -129,7 +113,7 @@ export function VerificationSelectionPanel({
             {'3. 검증 지표 유형'}
           </CardTitle>
           <CardDescription className="text-xs">
-            {'실행할 지표 유형을 선택하세요'}
+            {'실행할 지표 유형을 하나 선택하세요'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -142,30 +126,23 @@ export function VerificationSelectionPanel({
             <div className="space-y-2">
               {VERIFICATION_INDICATOR_TYPES.map((indicator) => {
                 const Icon = indicator.icon
-                const selected = selectedIndicators.includes(indicator.id)
                 return (
-                  <div
+                  <SelectionOption
                     key={indicator.id}
-                    role="button"
-                    className={`flex w-full items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${
-                      selected
-                        ? 'bg-primary/10 border-primary'
-                        : 'hover:bg-muted/50'
-                    }`}
-                    onClick={() => onIndicatorToggle(indicator.id)}
-                  >
-                    <Checkbox
-                      checked={selected}
-                      onCheckedChange={() => onIndicatorToggle(indicator.id)}
-                    />
-                    <Icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium flex-1 text-left">
-                      {indicator.name}
-                    </span>
-                  </div>
+                    selected={selectedIndicator === indicator.id}
+                    label={indicator.name}
+                    icon={<Icon className="w-4 h-4 text-muted-foreground" />}
+                    onClick={() => onIndicatorChange(indicator.id)}
+                  />
                 )
               })}
             </div>
+          )}
+
+          {selectedIndicator === 'stats' && (
+            <p className="text-xs text-muted-foreground">
+              {'통계지표는 전체 검증만 지원합니다'}
+            </p>
           )}
 
           <div className="pt-3 border-t">
@@ -179,7 +156,7 @@ export function VerificationSelectionPanel({
               ) : (
                 <Play className="w-4 h-4" />
               )}
-              {'선택 항목 검증 실행'}
+              {'검증 실행'}
             </Button>
             {hasRunningVerification && (
               <p className="text-xs text-yellow-600 text-center mt-2">
@@ -192,14 +169,49 @@ export function VerificationSelectionPanel({
                 {requiresSubStage &&
                   ` / ${VERIFICATION_SUB_STAGES.find((stage) => stage.id === selectedSubStage)?.name}`}
                 {' / '}
-                {selectedIndicators.length}
-                {'개 지표'}
+                {indicatorInfo?.name}
               </p>
             )}
           </div>
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function SelectionOption({
+  selected,
+  label,
+  description,
+  icon,
+  onClick,
+}: {
+  selected: boolean
+  label: string
+  description?: string
+  icon?: React.ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={`w-full text-left p-3 rounded-lg border-2 cursor-pointer transition-all ${
+        selected
+          ? 'border-primary bg-primary/10'
+          : 'border-border hover:border-primary/50 hover:bg-muted/50'
+      }`}
+      onClick={onClick}
+    >
+      <span className="flex items-center gap-2">
+        {icon}
+        <span className="font-medium text-sm">{label}</span>
+      </span>
+      {description && (
+        <span className="block text-xs text-muted-foreground mt-0.5">
+          {description}
+        </span>
+      )}
+    </button>
   )
 }
 

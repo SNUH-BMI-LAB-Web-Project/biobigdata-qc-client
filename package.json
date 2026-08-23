@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "api:gen": "openapi-typescript ${OPENAPI_URL:-http://175.106.96.71:8081/v3/api-docs} -o lib/api/generated/schema.ts"
+    "api:gen": "openapi-typescript ${OPENAPI_URL:-http://localhost:8081/v3/api-docs} -o lib/api/generated/schema.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "1.1.15",

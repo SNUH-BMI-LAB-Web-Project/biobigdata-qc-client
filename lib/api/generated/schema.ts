@@ -146,7 +146,7 @@ export interface paths {
         put?: never;
         /**
          * 품질 지표 검증 DAG 실행
-         * @description target_stage, target_sub_stage를 지정해 품질 지표 검증 DAG를 트리거한다. PREP/INTG/OPEN 단계에서는 target_sub_stage(preview_open/main_open)가 필수이다.
+         * @description target_stage, target_sub_stage를 지정해 품질 지표 검증 DAG를 트리거한다. PREP/INTG/OPEN 단계에서는 target_sub_stage(preview_open/main_open)가 필수이다. scope으로 검증 범위(ALL/METRIC)를 지정할 수 있으며, 개방DB(OPEN) 단계는 DAG 미구현으로 501을 반환한다. 지표 단위와 세부지표 단위는 DAG가 달라 최대 2건의 결과가 반환될 수 있다.
          */
         post: operations["triggerQualityDagRun"];
         delete?: never;
@@ -515,6 +515,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/quality-metrics/picker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 지표 선택 목록 조회
+         * @description 검증 범위 선택 모달의 지표 단위 피커에서 사용. metricLevel(TABLE/FIELD/CONCEPT)은 필수이며 해당 세분화 단위의 지표를 페이징 없이 전부 반환한다. keyword는 지표 ID, 세부지표 ID, 지표명(한글)만 검색한다.
+         */
+        get: operations["getMetricPickerList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-metrics/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 세부지표(체크) 선택 목록 조회
+         * @description 검증 범위 선택 모달에서 지표를 펼쳤을 때 사용. 해당 지표의 세부지표를 페이징 없이 전부 반환한다.
+         */
+        get: operations["getCheckPickerList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qc/executions": {
         parameters: {
             query?: never;
@@ -841,17 +881,33 @@ export interface components {
         /** @description DAG 실행 요청 */
         DagRunRequest: {
             /**
-             * @description 실행 대상 데이터 단계 (필수)
-             * @example LINK
+             * @description 검증 대상 단계
+             * @example PREP
              * @enum {string}
              */
-            targetStage: "LINK" | "COLL" | "PREP" | "INTG" | "OPEN" | "LINK" | "PREP" | "INTG" | "OPEN";
+            targetStage: "LINK" | "COLL" | "PREP" | "INTG" | "OPEN";
             /**
-             * @description 실행 대상 서브 단계. PREP/INTG/OPEN 단계에서는 필수, LINK 단계에서는 선택.
+             * @description 개방 하위 단계 (PREP/INTG/OPEN에서 필수)
              * @example preview_open
              * @enum {string}
              */
             targetSubStage?: "preview_open" | "main_open";
+            /**
+             * @description 품질지표 검증 범위 (품질지표 실행에만 사용, 통계지표는 무시됨). 미지정 시 ALL로 취급.
+             * @example ALL
+             * @enum {string}
+             */
+            scope?: "ALL" | "METRIC";
+            /**
+             * @description scope=METRIC일 때 선택한 세분화 단위. 한 요청은 한 단위만 다루며, metricCheckIds가 있으면 필수.
+             * @example TABLE
+             * @enum {string}
+             */
+            metricLevel?: "TABLE" | "FIELD" | "CONCEPT";
+            /** @description scope=METRIC일 때 통째로 실행할 지표 ID 목록. metricCheckIds와 함께 보낼 수 있으며, 둘 다 비어 있으면 오류. */
+            metricIds?: string[];
+            /** @description scope=METRIC일 때 실행할 세부지표(체크) ID 목록. metricLevel과 함께 by_check DAG로 트리거된다. */
+            metricCheckIds?: string[];
         };
         ApiResponseDagRunResponse: {
             success?: boolean;
@@ -864,6 +920,12 @@ export interface components {
             targetStage?: string;
             state?: string;
             logicalDate?: string;
+        };
+        ApiResponseListDagRunResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["DagRunResponse"][];
         };
         /** @description 회원가입 요청 */
         SignupRequest: {
@@ -1537,6 +1599,38 @@ export interface components {
              */
             totalPages?: number;
         };
+        ApiResponseListMetricPickerItemResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["MetricPickerItemResponse"][];
+        };
+        /** @description 지표 선택 목록 항목 — 검증 범위 선택 모달의 지표 단위 피커에서 사용 */
+        MetricPickerItemResponse: {
+            /** @description 지표 ID */
+            metricId?: string;
+            /** @description 지표명(한글) */
+            metricNameKor?: string;
+            /** @description 품질 차원(카테고리) */
+            category?: string;
+        };
+        ApiResponseListCheckPickerItemResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["CheckPickerItemResponse"][];
+        };
+        /** @description 세부지표(체크) 선택 목록 항목 — 검증 범위 선택 모달의 세부지표 단위 피커에서 사용 */
+        CheckPickerItemResponse: {
+            /** @description 세부지표(체크) ID */
+            checkId?: string;
+            /** @description 부모 지표 ID */
+            metricId?: string;
+            /** @description 테이블명 */
+            tableName?: string;
+            /** @description 컬럼명 (TABLE 레벨은 null) */
+            fieldName?: string;
+        };
         ApiResponsePageResultCheckExecutionResponse: {
             success?: boolean;
             code?: string;
@@ -2032,7 +2126,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseDagRunResponse"];
+                    "*/*": components["schemas"]["ApiResponseListDagRunResponse"];
                 };
             };
         };
@@ -2516,6 +2610,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePageResultFieldCheckItem"];
+                };
+            };
+        };
+    };
+    getMetricPickerList: {
+        parameters: {
+            query: {
+                metricLevel: "TABLE" | "FIELD" | "CONCEPT";
+                stage?: string;
+                keyword?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListMetricPickerItemResponse"];
+                };
+            };
+        };
+    };
+    getCheckPickerList: {
+        parameters: {
+            query: {
+                metricLevel: "TABLE" | "FIELD" | "CONCEPT";
+                metricId: string;
+                stage?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCheckPickerItemResponse"];
                 };
             };
         };
