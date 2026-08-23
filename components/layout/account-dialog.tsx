@@ -10,7 +10,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { ApiError, ROLE_LABEL, generatedApi, unwrapGeneratedResult } from '@/lib/api'
+import {
+  ApiError,
+  ROLE_LABEL,
+  generatedApi,
+  unwrapGeneratedResult,
+} from '@/lib/api'
 import type { LoginResponse } from '@/lib/api'
 
 // 오버레이/콘텐츠 공통 클래스 (Dialog · AlertDialog 공용)
@@ -26,7 +31,12 @@ interface AccountDialogProps {
   onChanged: () => void
 }
 
-export function AccountDialog({ open, onOpenChange, me, onChanged }: AccountDialogProps) {
+export function AccountDialog({
+  open,
+  onOpenChange,
+  me,
+  onChanged,
+}: AccountDialogProps) {
   const router = useRouter()
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -63,7 +73,9 @@ export function AccountDialog({ open, onOpenChange, me, onChanged }: AccountDial
       onChanged()
       alert('비밀번호가 변경되었습니다.')
     } catch (err) {
-      setPasswordError(err instanceof ApiError ? err.message : '비밀번호 변경에 실패했습니다.')
+      setPasswordError(
+        err instanceof ApiError ? err.message : '비밀번호 변경에 실패했습니다.',
+      )
     } finally {
       setPasswordSubmitting(false)
     }
@@ -91,27 +103,63 @@ export function AccountDialog({ open, onOpenChange, me, onChanged }: AccountDial
       <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className={OVERLAY_CLASS} />
-          <DialogPrimitive.Content className={cn(CONTENT_CLASS, 'max-h-[85vh] overflow-y-auto')}>
-            <DialogPrimitive.Title className="text-lg font-semibold">{'계정'}</DialogPrimitive.Title>
+          <DialogPrimitive.Content
+            className={cn(CONTENT_CLASS, 'max-h-[85vh] overflow-y-auto')}
+          >
+            <DialogPrimitive.Title className="text-lg font-semibold">
+              {'계정'}
+            </DialogPrimitive.Title>
             <DialogPrimitive.Description className="sr-only">
               {'계정 정보 확인 및 비밀번호 변경 · 회원 탈퇴'}
             </DialogPrimitive.Description>
 
             <AccountInfo me={me} />
 
-            <form onSubmit={handleChangePassword} className="space-y-3 pt-4 border-t">
+            <form
+              onSubmit={handleChangePassword}
+              className="space-y-3 pt-4 border-t"
+            >
               <p className="text-sm font-semibold">{'비밀번호 변경'}</p>
-              <PasswordField id="oldPassword" label="현재 비밀번호" value={oldPassword} onChange={setOldPassword} autoComplete="current-password" />
-              <PasswordField id="newPassword" label="새 비밀번호 (8~50자)" value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
-              <PasswordField id="confirmPassword" label="새 비밀번호 확인" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
-              {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
+              <PasswordField
+                id="oldPassword"
+                label="현재 비밀번호"
+                value={oldPassword}
+                onChange={setOldPassword}
+                autoComplete="current-password"
+              />
+              <PasswordField
+                id="newPassword"
+                label="새 비밀번호 (8~50자)"
+                value={newPassword}
+                onChange={setNewPassword}
+                autoComplete="new-password"
+              />
+              <PasswordField
+                id="confirmPassword"
+                label="새 비밀번호 확인"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                autoComplete="new-password"
+              />
+              {passwordError && (
+                <p className="text-xs text-destructive">{passwordError}</p>
+              )}
               <Button
                 type="submit"
                 variant="outline"
-                disabled={passwordSubmitting || !oldPassword || !newPassword || !confirmPassword}
+                disabled={
+                  passwordSubmitting ||
+                  !oldPassword ||
+                  !newPassword ||
+                  !confirmPassword
+                }
                 className="w-full gap-2"
               >
-                {passwordSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                {passwordSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <KeyRound className="w-4 h-4" />
+                )}
                 {'비밀번호 변경'}
               </Button>
             </form>
@@ -125,7 +173,11 @@ export function AccountDialog({ open, onOpenChange, me, onChanged }: AccountDial
                 onClick={() => setWithdrawOpen(true)}
                 className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
               >
-                {withdrawing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                {withdrawing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
                 {'회원 탈퇴'}
               </Button>
             </div>
@@ -156,11 +208,15 @@ export function AccountDialog({ open, onOpenChange, me, onChanged }: AccountDial
               {'회원 탈퇴 확인'}
             </AlertDialogPrimitive.Title>
             <AlertDialogPrimitive.Description className="text-sm text-muted-foreground">
-              {'회원 탈퇴를 진행하면 계정이 삭제되며 이 작업은 되돌릴 수 없습니다. 계속하려면 아래에 계정 이메일을 정확히 입력하세요.'}
+              {
+                '회원 탈퇴를 진행하면 계정이 삭제되며 이 작업은 되돌릴 수 없습니다. 계속하려면 아래에 계정 이메일을 정확히 입력하세요.'
+              }
             </AlertDialogPrimitive.Description>
 
             <div className="space-y-2">
-              <Label htmlFor="withdrawEmail" className="text-xs">{'계정 이메일'}</Label>
+              <Label htmlFor="withdrawEmail" className="text-xs">
+                {'계정 이메일'}
+              </Label>
               <Input
                 id="withdrawEmail"
                 value={withdrawEmail}
@@ -171,7 +227,9 @@ export function AccountDialog({ open, onOpenChange, me, onChanged }: AccountDial
               />
               <p className="text-xs text-muted-foreground">
                 {'확인 이메일: '}
-                <span className="font-medium text-foreground">{me?.mberEmailAdres ?? '-'}</span>
+                <span className="font-medium text-foreground">
+                  {me?.mberEmailAdres ?? '-'}
+                </span>
               </p>
             </div>
 
@@ -185,7 +243,11 @@ export function AccountDialog({ open, onOpenChange, me, onChanged }: AccountDial
                 <Button
                   size="sm"
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  disabled={!me?.mberEmailAdres || withdrawEmail.trim() !== me?.mberEmailAdres || withdrawing}
+                  disabled={
+                    !me?.mberEmailAdres ||
+                    withdrawEmail.trim() !== me?.mberEmailAdres ||
+                    withdrawing
+                  }
                   onClick={(e) => {
                     e.preventDefault()
                     handleWithdraw()
@@ -251,7 +313,9 @@ function PasswordField({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs">{label}</Label>
+      <Label htmlFor={id} className="text-xs">
+        {label}
+      </Label>
       <Input
         id={id}
         type="password"

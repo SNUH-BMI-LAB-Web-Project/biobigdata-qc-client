@@ -3,7 +3,13 @@
 import { Suspense, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Database } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { EmptyBlock, LoadingBlock } from '@/components/async-state'
 import { DbCountCards } from './db-count-cards'
 import { StatisticsHistoryTable } from './statistics-history-table'
@@ -19,7 +25,9 @@ function DataStatisticsResultContent() {
   }, [searchParams])
 
   const [stage, setStage] = useState<string>('ALL')
-  const [selectedCheckId, setSelectedCheckId] = useState<number | null>(deepLinkCheckId)
+  const [selectedCheckId, setSelectedCheckId] = useState<number | null>(
+    deepLinkCheckId,
+  )
 
   // DB 카드 클릭 → 단계 필터 토글 (이미 선택된 카드 재클릭 시 전체로)
   const handleSelectStage = (s: string) => {

@@ -30,16 +30,28 @@ export function DashboardHeader({
           </span>
           <span>
             <span className="block text-base font-bold">BIKO-DQM</span>
-            <span className="block text-xs text-muted-foreground">품질관리 대시보드</span>
+            <span className="block text-xs text-muted-foreground">
+              품질관리 대시보드
+            </span>
           </span>
         </button>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onAccountClick} className="gap-2 text-sm h-8">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onAccountClick}
+            className="gap-2 text-sm h-8"
+          >
             <User className="w-3.5 h-3.5" />
             {userName ?? '마이페이지'}
           </Button>
-          <Button variant="ghost" size="sm" onClick={onLogout} className="gap-2 text-sm h-8">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onLogout}
+            className="gap-2 text-sm h-8"
+          >
             <LogOut className="w-3.5 h-3.5" />
             {'로그아웃'}
           </Button>

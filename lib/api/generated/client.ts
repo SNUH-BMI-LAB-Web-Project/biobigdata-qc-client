@@ -37,19 +37,21 @@ export function unwrapGeneratedResponse<T>(
   }
 
   if (payload.success === false) {
-    throw new ApiError(payload.message || '요청이 실패했습니다.', status, payload.code)
+    throw new ApiError(
+      payload.message || '요청이 실패했습니다.',
+      status,
+      payload.code,
+    )
   }
 
   return payload.data as T
 }
 
-export async function unwrapGeneratedResult<T>(
-  result: {
-    data?: unknown
-    error?: ApiEnvelope<unknown> | unknown
-    response: Response
-  },
-): Promise<T> {
+export async function unwrapGeneratedResult<T>(result: {
+  data?: unknown
+  error?: ApiEnvelope<unknown> | unknown
+  response: Response
+}): Promise<T> {
   if (result.error) {
     const message =
       typeof result.error === 'object' &&
@@ -69,7 +71,10 @@ export async function unwrapGeneratedResult<T>(
     throw new ApiError(message, result.response.status, code)
   }
 
-  return unwrapGeneratedResponse(result.data as ApiEnvelope<T> | undefined, result.response.status)
+  return unwrapGeneratedResponse(
+    result.data as ApiEnvelope<T> | undefined,
+    result.response.status,
+  )
 }
 
 export type { paths, components, operations } from './schema'

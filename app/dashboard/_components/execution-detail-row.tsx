@@ -36,12 +36,18 @@ export function ExecutionDetailRow({ checkId }: { checkId: number }) {
 
   if (error) return <div className="text-xs text-red-600 py-3">{error}</div>
   if (!data || data.length === 0) {
-    return <div className="text-xs text-muted-foreground py-3">{'상세 내역이 없습니다.'}</div>
+    return (
+      <div className="text-xs text-muted-foreground py-3">
+        {'상세 내역이 없습니다.'}
+      </div>
+    )
   }
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground mb-2">{'검증 실행 상세'}</p>
+      <p className="text-xs font-medium text-muted-foreground mb-2">
+        {'검증 실행 상세'}
+      </p>
       {data.map((detail, index) => (
         <div key={index} className="p-3 rounded-md border bg-background">
           <div className="flex items-center justify-between">
@@ -57,8 +63,12 @@ export function ExecutionDetailRow({ checkId }: { checkId: number }) {
               <Timestamp label="종료" value={detail.checkEndDatetime} />
               {detail.score !== null && detail.score !== undefined ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{'점수:'}</span>
-                  <span className={`text-sm font-bold ${getScoreColor(detail.score)}`}>
+                  <span className="text-xs text-muted-foreground">
+                    {'점수:'}
+                  </span>
+                  <span
+                    className={`text-sm font-bold ${getScoreColor(detail.score)}`}
+                  >
                     {detail.score}
                   </span>
                 </div>
@@ -73,10 +83,19 @@ export function ExecutionDetailRow({ checkId }: { checkId: number }) {
   )
 }
 
-function Timestamp({ label, value }: { label: string; value: string | null | undefined }) {
+function Timestamp({
+  label,
+  value,
+}: {
+  label: string
+  value: string | null | undefined
+}) {
   return (
     <div className="text-xs text-muted-foreground">
-      <span>{label}{': '}</span>
+      <span>
+        {label}
+        {': '}
+      </span>
       <span className="font-mono">{value || '-'}</span>
     </div>
   )

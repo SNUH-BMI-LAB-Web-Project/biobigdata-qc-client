@@ -18,7 +18,11 @@ interface DistributionResultsProps {
   stratumKey: (row: DqAchillesResultDistResponse) => string
 }
 
-export function DistributionResults({ rows, fmtNum, stratumKey }: DistributionResultsProps) {
+export function DistributionResults({
+  rows,
+  fmtNum,
+  stratumKey,
+}: DistributionResultsProps) {
   const chartData = useMemo(
     () =>
       rows.map((row, idx) => {
@@ -43,7 +47,10 @@ export function DistributionResults({ rows, fmtNum, stratumKey }: DistributionRe
     <div className="space-y-4">
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+          <BarChart
+            data={chartData}
+            margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          >
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
             <XAxis
               dataKey="name"
@@ -55,7 +62,11 @@ export function DistributionResults({ rows, fmtNum, stratumKey }: DistributionRe
             />
             <YAxis tick={{ fontSize: 9 }} />
             <Tooltip contentStyle={{ fontSize: '11px', padding: '4px 8px' }} />
-            <Bar dataKey="min" name="최소" fill="hsl(var(--muted-foreground))" />
+            <Bar
+              dataKey="min"
+              name="최소"
+              fill="hsl(var(--muted-foreground))"
+            />
             <Bar dataKey="avg" name="평균" fill="hsl(var(--primary))" />
             <Bar dataKey="median" name="중앙값" fill="#3b82f6" />
             <Bar dataKey="max" name="최대" fill="#22c55e" />
@@ -83,19 +94,42 @@ export function DistributionResults({ rows, fmtNum, stratumKey }: DistributionRe
           </thead>
           <tbody>
             {rows.map((row, idx) => (
-              <tr key={`${row.analysisId}-${idx}`} className="border-b hover:bg-muted/30">
+              <tr
+                key={`${row.analysisId}-${idx}`}
+                className="border-b hover:bg-muted/30"
+              >
                 <td className="p-2 font-mono">{row.analysisId}</td>
                 <td className="p-2">{stratumKey(row)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.countValue)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.minValue)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.p10Value)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.p25Value)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.medianValue)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.avgValue)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.p75Value)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.p90Value)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.maxValue)}</td>
-                <td className="p-2 text-right font-mono">{fmtNum(row.stdevValue)}</td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.countValue)}
+                </td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.minValue)}
+                </td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.p10Value)}
+                </td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.p25Value)}
+                </td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.medianValue)}
+                </td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.avgValue)}
+                </td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.p75Value)}
+                </td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.p90Value)}
+                </td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.maxValue)}
+                </td>
+                <td className="p-2 text-right font-mono">
+                  {fmtNum(row.stdevValue)}
+                </td>
               </tr>
             ))}
           </tbody>

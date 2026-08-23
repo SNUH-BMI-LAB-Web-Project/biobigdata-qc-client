@@ -16,7 +16,10 @@ interface StageSummaryCardsProps {
 }
 
 /** 단계(DB)별 품질 점수 요약 카드 — 클릭으로 검증 내역을 단계 필터링한다. */
-export function StageSummaryCards({ selectedStage, onSelectStage }: StageSummaryCardsProps) {
+export function StageSummaryCards({
+  selectedStage,
+  onSelectStage,
+}: StageSummaryCardsProps) {
   const summary = useApi(
     async (signal) =>
       unwrapGeneratedResult<DqQualityResultSummaryResponse[]>(
@@ -63,11 +66,19 @@ export function StageSummaryCards({ selectedStage, onSelectStage }: StageSummary
             onClick={() => onSelectStage(stage)}
           >
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{STAGE_LABEL[stage] ?? stage}</span>
+              <span className="text-sm font-medium">
+                {STAGE_LABEL[stage] ?? stage}
+              </span>
               {item ? (
-                <span className={`text-lg font-bold ${getScoreColor(item.score)}`}>{item.score}</span>
+                <span
+                  className={`text-lg font-bold ${getScoreColor(item.score)}`}
+                >
+                  {item.score}
+                </span>
               ) : (
-                <span className="text-lg font-bold text-muted-foreground">{'-'}</span>
+                <span className="text-lg font-bold text-muted-foreground">
+                  {'-'}
+                </span>
               )}
             </div>
             <div className="mt-0.5">

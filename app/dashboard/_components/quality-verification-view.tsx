@@ -25,7 +25,13 @@ export function QualityVerificationView() {
   const [currentPage, setCurrentPage] = useState(1)
   const [submitting, setSubmitting] = useState(false)
 
-  const { data: executionsPage, isInitialLoading, isRefetching, error, refetch } = useApi(
+  const {
+    data: executionsPage,
+    isInitialLoading,
+    isRefetching,
+    error,
+    refetch,
+  } = useApi(
     async (signal) =>
       unwrapGeneratedResult<PageResult<CheckExecutionResponse>>(
         await generatedApi.GET('/api/qc/executions', {
@@ -37,11 +43,15 @@ export function QualityVerificationView() {
   )
 
   const executions = executionsPage?.items ?? []
-  const selectedDbInfo = VERIFICATION_DATABASES.find((db) => db.id === selectedDb)
+  const selectedDbInfo = VERIFICATION_DATABASES.find(
+    (db) => db.id === selectedDb,
+  )
   const requiresSubStage = selectedDbInfo?.requiresSubStage ?? false
   const hasRunningVerification = executions.some((row) => row.checkStatus === 0)
   const canExecute =
-    !!selectedDb && selectedIndicators.length > 0 && (!requiresSubStage || !!selectedSubStage)
+    !!selectedDb &&
+    selectedIndicators.length > 0 &&
+    (!requiresSubStage || !!selectedSubStage)
 
   const handleDbChange = (dbId: string) => {
     setSelectedDb(dbId)
@@ -59,7 +69,9 @@ export function QualityVerificationView() {
 
   const toggleRow = (rowId: number) => {
     setExpandedRows((prev) =>
-      prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId],
+      prev.includes(rowId)
+        ? prev.filter((id) => id !== rowId)
+        : [...prev, rowId],
     )
   }
 
@@ -73,7 +85,9 @@ export function QualityVerificationView() {
     const body: DagRunRequest = {
       targetStage: selectedDb as Stage,
       ...(requiresSubStage
-        ? { targetSubStage: selectedSubStage as DagRunRequest['targetSubStage'] }
+        ? {
+            targetSubStage: selectedSubStage as DagRunRequest['targetSubStage'],
+          }
         : {}),
     }
 

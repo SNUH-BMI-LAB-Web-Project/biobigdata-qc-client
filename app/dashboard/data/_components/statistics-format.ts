@@ -21,7 +21,10 @@ export function stratumKey(row: {
     row.stratum3Name,
     row.stratum4Name,
     row.stratum5Name,
-  ].filter((value) => value !== null && value !== undefined && String(value).trim() !== '')
+  ].filter(
+    (value) =>
+      value !== null && value !== undefined && String(value).trim() !== '',
+  )
 
   return parts.length ? parts.join(' / ') : '-'
 }

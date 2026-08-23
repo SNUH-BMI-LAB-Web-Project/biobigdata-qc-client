@@ -43,16 +43,28 @@ export function QualityScorePopover({ trigger }: QualityScorePopoverProps) {
             transform: 'translateY(-100%)',
           }}
         >
-          <p className="text-sm font-semibold mb-2">{'대시보드 품질 점수 기준'}</p>
+          <p className="text-sm font-semibold mb-2">
+            {'대시보드 품질 점수 기준'}
+          </p>
           <div className="space-y-1.5 text-sm">
-            <ScoreRule colorClass="bg-green-500" label="우수" value={`${QUALITY_SCORE_CRITERIA.excellent}점 이상`} textClass="text-green-600" />
+            <ScoreRule
+              colorClass="bg-green-500"
+              label="우수"
+              value={`${QUALITY_SCORE_CRITERIA.excellent}점 이상`}
+              textClass="text-green-600"
+            />
             <ScoreRule
               colorClass="bg-yellow-500"
               label="양호"
               value={`${QUALITY_SCORE_CRITERIA.good}점 ~ ${QUALITY_SCORE_CRITERIA.excellent - 1}점`}
               textClass="text-yellow-600"
             />
-            <ScoreRule colorClass="bg-red-500" label="보통" value={`${QUALITY_SCORE_CRITERIA.fair}점 미만`} textClass="text-red-600" />
+            <ScoreRule
+              colorClass="bg-red-500"
+              label="보통"
+              value={`${QUALITY_SCORE_CRITERIA.fair}점 미만`}
+              textClass="text-red-600"
+            />
           </div>
         </div>
       )}

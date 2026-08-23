@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
@@ -78,13 +84,20 @@ export function TablesTab() {
           />
           {'미사용 포함'}
         </label>
-        <Button className="gap-1.5 whitespace-nowrap" onClick={() => setAddOpen(true)}>
+        <Button
+          className="gap-1.5 whitespace-nowrap"
+          onClick={() => setAddOpen(true)}
+        >
           <Plus className="w-4 h-4" />
           {'테이블 추가'}
         </Button>
       </div>
 
-      <AddTableDialog open={addOpen} onOpenChange={setAddOpen} onCreated={refetch} />
+      <AddTableDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onCreated={refetch}
+      />
 
       <Card>
         <TablePagerHeader
@@ -106,8 +119,12 @@ export function TablesTab() {
                 <TableRow>
                   <TableHead className="w-8 text-xs" />
                   <TableHead className="w-20 text-xs">{'DB'}</TableHead>
-                  <TableHead className="w-28 whitespace-normal break-words text-xs">{'테이블ID'}</TableHead>
-                  <TableHead className="w-[380px] whitespace-normal break-words text-xs">{'테이블명'}</TableHead>
+                  <TableHead className="w-28 whitespace-normal break-words text-xs">
+                    {'테이블ID'}
+                  </TableHead>
+                  <TableHead className="w-[380px] whitespace-normal break-words text-xs">
+                    {'테이블명'}
+                  </TableHead>
                   <TableHead className="w-20 text-xs">{'단계'}</TableHead>
                   <TableHead className="w-24 text-xs">
                     <span className="inline-flex items-center gap-1">
@@ -115,7 +132,9 @@ export function TablesTab() {
                       <RequiredInfoTooltip />
                     </span>
                   </TableHead>
-                  <TableHead className="w-[360px] whitespace-normal break-words text-xs">{'설명'}</TableHead>
+                  <TableHead className="w-[360px] whitespace-normal break-words text-xs">
+                    {'설명'}
+                  </TableHead>
                   <TableHead className="w-16 text-xs">{'사용'}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -135,7 +154,11 @@ export function TablesTab() {
                       table={table}
                       expanded={expandedTableId === table.tableId}
                       onToggle={() =>
-                        setExpandedTableId(expandedTableId === table.tableId ? null : table.tableId)
+                        setExpandedTableId(
+                          expandedTableId === table.tableId
+                            ? null
+                            : table.tableId,
+                        )
                       }
                     />
                   ))

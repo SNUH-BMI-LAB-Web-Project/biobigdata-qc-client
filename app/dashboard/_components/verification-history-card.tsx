@@ -1,11 +1,30 @@
 'use client'
 
 import { Fragment } from 'react'
-import { ChevronDown, ChevronRight, Clock, ExternalLink, User } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  ExternalLink,
+  User,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { STAGE_LABEL, SUB_STAGE_LABEL, checkTypeLabel } from '@/lib/api'
 import { AsyncStateBlock, RefreshingContent } from '@/components/async-state'
 import { CheckStatusBadge } from '@/components/check-status-badge'
@@ -58,7 +77,11 @@ export function VerificationHistoryCard({
               {'최근 검증 실행 내역 (행을 클릭하여 상세 결과 확인)'}
             </CardDescription>
           </div>
-          <CompactPager page={page} totalPages={totalPages} onChange={onPageChange} />
+          <CompactPager
+            page={page}
+            totalPages={totalPages}
+            onChange={onPageChange}
+          />
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -76,15 +99,21 @@ export function VerificationHistoryCard({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8 text-xs" />
-                  <TableHead className="w-12 text-xs text-center">{'번호'}</TableHead>
+                  <TableHead className="w-12 text-xs text-center">
+                    {'번호'}
+                  </TableHead>
                   <TableHead className="w-28 text-xs">{'DB'}</TableHead>
-                  <TableHead className="w-[260px] text-xs">{'데이터'}</TableHead>
+                  <TableHead className="w-[260px] text-xs">
+                    {'데이터'}
+                  </TableHead>
                   <TableHead className="w-28 text-xs">{'지표 유형'}</TableHead>
                   <TableHead className="w-28 text-xs">{'실행자'}</TableHead>
                   <TableHead className="w-44 text-xs">{'시작 일시'}</TableHead>
                   <TableHead className="w-44 text-xs">{'종료 일시'}</TableHead>
                   <TableHead className="w-20 text-xs">{'상태'}</TableHead>
-                  <TableHead className="w-28 text-right text-xs">{'결과'}</TableHead>
+                  <TableHead className="w-28 text-right text-xs">
+                    {'결과'}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -97,7 +126,10 @@ export function VerificationHistoryCard({
                       onToggle={() => onToggleRow(row.checkId)}
                     />
                     {expandedRows.includes(row.checkId) && (
-                      <TableRow key={`${row.checkId}-detail`} className="bg-muted/30">
+                      <TableRow
+                        key={`${row.checkId}-detail`}
+                        className="bg-muted/30"
+                      >
                         <TableCell colSpan={10} className="p-4">
                           <ExecutionDetailRow checkId={row.checkId} />
                         </TableCell>
@@ -137,7 +169,9 @@ function ExecutionRow({
       <TableCell className="text-center text-xs font-medium text-muted-foreground">
         {rowNumber}
       </TableCell>
-      <TableCell className="text-xs font-medium">{STAGE_LABEL[row.stage] ?? row.stage}</TableCell>
+      <TableCell className="text-xs font-medium">
+        {STAGE_LABEL[row.stage] ?? row.stage}
+      </TableCell>
       <TableCell className="text-xs whitespace-normal break-words">
         {SUB_STAGE_LABEL[row.subStage] ?? (row.subStage || '-')}
       </TableCell>
@@ -154,7 +188,11 @@ function ExecutionRow({
         <DateCell value={row.checkStartDatetime} />
       </TableCell>
       <TableCell className="text-xs">
-        {row.checkEndDatetime ? <DateCell value={row.checkEndDatetime} /> : <span className="text-muted-foreground">-</span>}
+        {row.checkEndDatetime ? (
+          <DateCell value={row.checkEndDatetime} />
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        )}
       </TableCell>
       <TableCell>
         <CheckStatusBadge status={row.checkStatus} />
@@ -169,7 +207,9 @@ function ExecutionRow({
               e.stopPropagation()
               // 지표 유형에 따라 결과 화면 분기 — 통계지표(achilles)는 데이터 통계 결과, 그 외는 품질 결과
               const resultPath =
-                row.checkType === 'achilles' ? '/dashboard/data' : '/dashboard/quality-results'
+                row.checkType === 'achilles'
+                  ? '/dashboard/data'
+                  : '/dashboard/quality-results'
               window.location.href = `${resultPath}?checkId=${row.checkId}`
             }}
           >

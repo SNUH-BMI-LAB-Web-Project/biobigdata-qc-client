@@ -25,7 +25,11 @@ interface TablePagerHeaderProps extends CompactPagerProps {
   onPageSizeChange: (size: number) => void
 }
 
-export function CompactPager({ page, totalPages, onChange }: CompactPagerProps) {
+export function CompactPager({
+  page,
+  totalPages,
+  onChange,
+}: CompactPagerProps) {
   if (totalPages <= 1) return null
 
   return (
@@ -39,7 +43,12 @@ export function CompactPager({ page, totalPages, onChange }: CompactPagerProps) 
       >
         {'이전'}
       </Button>
-      <PageInput key={page} page={page} totalPages={totalPages} onChange={onChange} />
+      <PageInput
+        key={page}
+        page={page}
+        totalPages={totalPages}
+        onChange={onChange}
+      />
       <Button
         variant="outline"
         size="sm"
@@ -111,7 +120,10 @@ export function TablePagerHeader({
         <div className="flex items-center gap-3 text-sm">
           {totalLabel && <span className="font-medium">{totalLabel}</span>}
           <span className="text-muted-foreground">{'페이지당 표시'}</span>
-          <Select value={String(pageSize)} onValueChange={(value) => onPageSizeChange(Number(value))}>
+          <Select
+            value={String(pageSize)}
+            onValueChange={(value) => onPageSizeChange(Number(value))}
+          >
             <SelectTrigger className="h-8 w-[92px] text-sm">
               <SelectValue />
             </SelectTrigger>
@@ -131,7 +143,11 @@ export function TablePagerHeader({
             {totalCount}
             {'개'}
           </span>
-          <CompactPager page={page} totalPages={totalPages} onChange={onChange} />
+          <CompactPager
+            page={page}
+            totalPages={totalPages}
+            onChange={onChange}
+          />
         </div>
       </div>
     </CardHeader>

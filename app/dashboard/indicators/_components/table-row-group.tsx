@@ -52,7 +52,10 @@ export const TableRowGroup = memo(function TableRowGroup({
           </Badge>
         </TableCell>
         <TableCell className="text-left">
-          <Badge variant={requiredVariant(table.tableRequired)} className="text-xs">
+          <Badge
+            variant={requiredVariant(table.tableRequired)}
+            className="text-xs"
+          >
             {table.tableRequired}
           </Badge>
         </TableCell>

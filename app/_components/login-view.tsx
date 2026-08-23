@@ -6,7 +6,13 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Lock, User, Loader2 } from 'lucide-react'
 import { AuthLayout } from '@/components/layout/auth-layout'
 import { ApiError, generatedApi, unwrapGeneratedResult } from '@/lib/api'
@@ -40,7 +46,9 @@ export function LoginView() {
       <Card>
         <CardHeader>
           <CardTitle>로그인</CardTitle>
-          <CardDescription>시스템에 접근하려면 로그인이 필요합니다</CardDescription>
+          <CardDescription>
+            시스템에 접근하려면 로그인이 필요합니다
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -76,7 +84,9 @@ export function LoginView() {
               </div>
             </div>
 
-            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+            {error && (
+              <p className="text-sm text-red-600 text-center">{error}</p>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -86,7 +96,10 @@ export function LoginView() {
 
           <p className="text-center text-sm text-muted-foreground mt-4">
             아직 계정이 없으신가요?{' '}
-            <Link href="/signup" className="text-primary font-medium hover:underline">
+            <Link
+              href="/signup"
+              className="text-primary font-medium hover:underline"
+            >
               회원가입
             </Link>
           </p>

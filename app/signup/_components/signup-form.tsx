@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -12,7 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Lock, User, Mail, Building2, BadgeCheck, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import {
+  Lock,
+  User,
+  Mail,
+  Building2,
+  BadgeCheck,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react'
 import { ApiError, generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import type { Role } from '@/lib/api'
 
@@ -36,21 +51,31 @@ export function SignupForm({ onDone }: { onDone: () => void }) {
   const pwValid = password.length >= 8
   const pwMatch = password === passwordConfirm && passwordConfirm.length > 0
   const canSubmit =
-    idValid && pwValid && pwMatch && mberNm.trim().length > 0 && idCheck === 'available'
+    idValid &&
+    pwValid &&
+    pwMatch &&
+    mberNm.trim().length > 0 &&
+    idCheck === 'available'
 
   const handleCheckId = async () => {
     if (!idValid) return
     setIdCheck('checking')
     try {
       await unwrapGeneratedResult(
-        await generatedApi.GET('/api/members/check-id', { params: { query: { mberId } } }),
+        await generatedApi.GET('/api/members/check-id', {
+          params: { query: { mberId } },
+        }),
       )
       setIdCheck('available')
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) setIdCheck('duplicate')
       else {
         setIdCheck('idle')
-        setError(err instanceof ApiError ? err.message : 'ID 확인 중 오류가 발생했습니다.')
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : 'ID 확인 중 오류가 발생했습니다.',
+        )
       }
     }
   }
@@ -88,7 +113,9 @@ export function SignupForm({ onDone }: { onDone: () => void }) {
       )
       onDone()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : '회원가입에 실패했습니다.')
+      setError(
+        err instanceof ApiError ? err.message : '회원가입에 실패했습니다.',
+      )
       setSubmitting(false)
     }
   }
@@ -128,7 +155,11 @@ export function SignupForm({ onDone }: { onDone: () => void }) {
                 onClick={handleCheckId}
                 disabled={!idValid || idCheck === 'checking'}
               >
-                {idCheck === 'checking' ? <Loader2 className="w-4 h-4 animate-spin" /> : '중복확인'}
+                {idCheck === 'checking' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  '중복확인'
+                )}
               </Button>
             </div>
             {idCheck === 'available' && (
@@ -144,7 +175,9 @@ export function SignupForm({ onDone }: { onDone: () => void }) {
               </p>
             )}
             {mberId.length > 0 && !idValid && (
-              <p className="text-xs text-muted-foreground">회원ID는 4자 이상이어야 합니다</p>
+              <p className="text-xs text-muted-foreground">
+                회원ID는 4자 이상이어야 합니다
+              </p>
             )}
           </div>
 
@@ -167,7 +200,9 @@ export function SignupForm({ onDone }: { onDone: () => void }) {
               />
             </div>
             {password.length > 0 && !pwValid && (
-              <p className="text-xs text-muted-foreground">비밀번호는 8자 이상이어야 합니다</p>
+              <p className="text-xs text-muted-foreground">
+                비밀번호는 8자 이상이어야 합니다
+              </p>
             )}
           </div>
 
@@ -189,7 +224,9 @@ export function SignupForm({ onDone }: { onDone: () => void }) {
               />
             </div>
             {passwordConfirm.length > 0 && !pwMatch && (
-              <p className="text-xs text-red-600">비밀번호가 일치하지 않습니다</p>
+              <p className="text-xs text-red-600">
+                비밀번호가 일치하지 않습니다
+              </p>
             )}
           </div>
 
@@ -261,7 +298,11 @@ export function SignupForm({ onDone }: { onDone: () => void }) {
 
           {error && <p className="text-sm text-red-600 text-center">{error}</p>}
 
-          <Button type="submit" className="w-full" disabled={!canSubmit || submitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={!canSubmit || submitting}
+          >
             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             가입 신청
           </Button>

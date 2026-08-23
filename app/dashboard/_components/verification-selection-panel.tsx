@@ -2,7 +2,13 @@
 
 import { Database, FileCheck, Loader2, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   VERIFICATION_DATABASES,
@@ -37,7 +43,9 @@ export function VerificationSelectionPanel({
   onIndicatorToggle,
   onExecute,
 }: VerificationSelectionPanelProps) {
-  const selectedDbInfo = VERIFICATION_DATABASES.find((db) => db.id === selectedDb)
+  const selectedDbInfo = VERIFICATION_DATABASES.find(
+    (db) => db.id === selectedDb,
+  )
 
   return (
     <div className="grid grid-cols-3 gap-4">
@@ -47,7 +55,9 @@ export function VerificationSelectionPanel({
             <Database className="w-4 h-4" />
             {'1. 검증 대상 DB'}
           </CardTitle>
-          <CardDescription className="text-xs">{'검증할 데이터베이스를 선택하세요'}</CardDescription>
+          <CardDescription className="text-xs">
+            {'검증할 데이터베이스를 선택하세요'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -63,7 +73,9 @@ export function VerificationSelectionPanel({
                 onClick={() => onDbChange(db.id)}
               >
                 <span className="block font-medium text-sm">{db.name}</span>
-                <span className="block text-xs text-muted-foreground mt-0.5">{db.description}</span>
+                <span className="block text-xs text-muted-foreground mt-0.5">
+                  {db.description}
+                </span>
               </button>
             ))}
           </div>
@@ -76,7 +88,9 @@ export function VerificationSelectionPanel({
             <FileCheck className="w-4 h-4" />
             {'2. 검증 대상 데이터'}
           </CardTitle>
-          <CardDescription className="text-xs">{'사전 개방 / 본 개방을 선택하세요'}</CardDescription>
+          <CardDescription className="text-xs">
+            {'사전 개방 / 본 개방을 선택하세요'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {!selectedDb ? (
@@ -86,8 +100,8 @@ export function VerificationSelectionPanel({
           ) : (
             <div className="space-y-2">
               {VERIFICATION_SUB_STAGES.map((subStage) => (
-                <button
-                  type="button"
+                <div
+                  role="button"
                   key={subStage.id}
                   className={`flex w-full items-center gap-2 p-3 rounded-md border-2 cursor-pointer transition-all ${
                     selectedSubStage === subStage.id
@@ -96,9 +110,12 @@ export function VerificationSelectionPanel({
                   }`}
                   onClick={() => onSubStageChange(subStage.id)}
                 >
-                  <Checkbox checked={selectedSubStage === subStage.id} onCheckedChange={() => onSubStageChange(subStage.id)} />
+                  <Checkbox
+                    checked={selectedSubStage === subStage.id}
+                    onCheckedChange={() => onSubStageChange(subStage.id)}
+                  />
                   <span className="text-sm">{subStage.name}</span>
-                </button>
+                </div>
               ))}
             </div>
           )}
@@ -111,29 +128,41 @@ export function VerificationSelectionPanel({
             <FileCheck className="w-4 h-4" />
             {'3. 검증 지표 유형'}
           </CardTitle>
-          <CardDescription className="text-xs">{'실행할 지표 유형을 선택하세요'}</CardDescription>
+          <CardDescription className="text-xs">
+            {'실행할 지표 유형을 선택하세요'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {!selectedDb || (requiresSubStage && !selectedSubStage) ? (
-            <SelectionEmpty message="먼저 검증 대상 DB / 데이터를 선택하세요" compact />
+            <SelectionEmpty
+              message="먼저 검증 대상 DB / 데이터를 선택하세요"
+              compact
+            />
           ) : (
             <div className="space-y-2">
               {VERIFICATION_INDICATOR_TYPES.map((indicator) => {
                 const Icon = indicator.icon
                 const selected = selectedIndicators.includes(indicator.id)
                 return (
-                  <button
+                  <div
                     key={indicator.id}
-                    type="button"
+                    role="button"
                     className={`flex w-full items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${
-                      selected ? 'bg-primary/10 border-primary' : 'hover:bg-muted/50'
+                      selected
+                        ? 'bg-primary/10 border-primary'
+                        : 'hover:bg-muted/50'
                     }`}
                     onClick={() => onIndicatorToggle(indicator.id)}
                   >
-                    <Checkbox checked={selected} onCheckedChange={() => onIndicatorToggle(indicator.id)} />
+                    <Checkbox
+                      checked={selected}
+                      onCheckedChange={() => onIndicatorToggle(indicator.id)}
+                    />
                     <Icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium flex-1 text-left">{indicator.name}</span>
-                  </button>
+                    <span className="text-sm font-medium flex-1 text-left">
+                      {indicator.name}
+                    </span>
+                  </div>
                 )
               })}
             </div>
@@ -145,7 +174,11 @@ export function VerificationSelectionPanel({
               disabled={!canExecute || hasRunningVerification || submitting}
               onClick={onExecute}
             >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              {submitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
               {'선택 항목 검증 실행'}
             </Button>
             {hasRunningVerification && (
@@ -156,7 +189,8 @@ export function VerificationSelectionPanel({
             {canExecute && !hasRunningVerification && (
               <p className="text-xs text-muted-foreground text-center mt-2">
                 {selectedDbInfo?.name}
-                {requiresSubStage && ` / ${VERIFICATION_SUB_STAGES.find((stage) => stage.id === selectedSubStage)?.name}`}
+                {requiresSubStage &&
+                  ` / ${VERIFICATION_SUB_STAGES.find((stage) => stage.id === selectedSubStage)?.name}`}
                 {' / '}
                 {selectedIndicators.length}
                 {'개 지표'}
@@ -169,9 +203,17 @@ export function VerificationSelectionPanel({
   )
 }
 
-function SelectionEmpty({ message, compact = false }: { message: string; compact?: boolean }) {
+function SelectionEmpty({
+  message,
+  compact = false,
+}: {
+  message: string
+  compact?: boolean
+}) {
   return (
-    <div className={`text-sm text-muted-foreground text-center ${compact ? 'py-2' : 'py-4'}`}>
+    <div
+      className={`text-sm text-muted-foreground text-center ${compact ? 'py-2' : 'py-4'}`}
+    >
       {message}
     </div>
   )

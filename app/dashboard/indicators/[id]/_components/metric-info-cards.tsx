@@ -5,7 +5,11 @@ import type { DqQualityMetricDetailResponse } from '@/lib/api'
 import { getScoreColor, isFiniteNumber } from './detail-utils'
 
 /** 지표 정보 + 단계별 통과율 (좌우 2개 카드) */
-export function MetricInfoCards({ detail }: { detail: DqQualityMetricDetailResponse }) {
+export function MetricInfoCards({
+  detail,
+}: {
+  detail: DqQualityMetricDetailResponse
+}) {
   const stageEntries = Object.entries(detail.stageScores ?? {})
 
   return (
@@ -31,10 +35,14 @@ export function MetricInfoCards({ detail }: { detail: DqQualityMetricDetailRespo
           <CardTitle className="text-sm">단계별 검증 통과율</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          {stageEntries.length === 0 && <p className="text-muted-foreground">검증 결과가 없습니다.</p>}
+          {stageEntries.length === 0 && (
+            <p className="text-muted-foreground">검증 결과가 없습니다.</p>
+          )}
           {stageEntries.map(([stage, score]) => (
             <div key={stage} className="flex justify-between">
-              <span className="text-muted-foreground">{STAGE_LABEL[stage] ?? stage}:</span>
+              <span className="text-muted-foreground">
+                {STAGE_LABEL[stage] ?? stage}:
+              </span>
               <span
                 className={`font-bold ${isFiniteNumber(score) ? getScoreColor(score) : 'text-muted-foreground'}`}
               >

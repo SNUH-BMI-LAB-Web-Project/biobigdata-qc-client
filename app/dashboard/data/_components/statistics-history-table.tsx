@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { Database } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AsyncStateBlock, RefreshingContent } from '@/components/async-state'
 import { CompactPager } from '@/components/pager'
@@ -41,7 +47,13 @@ export function StatisticsHistoryTable({
     async (signal) =>
       unwrapGeneratedResult<PageResult<DqCheckLogResponse>>(
         await generatedApi.GET('/api/qc/statistics-results/checks', {
-          params: { query: { stage: stage === 'ALL' ? undefined : stage, page, size: LOGS_PAGE_SIZE } },
+          params: {
+            query: {
+              stage: stage === 'ALL' ? undefined : stage,
+              page,
+              size: LOGS_PAGE_SIZE,
+            },
+          },
           signal,
         }),
       ),
@@ -90,10 +102,16 @@ export function StatisticsHistoryTable({
                   <th className="text-center p-2 font-medium w-14">{'번호'}</th>
                   <th className="text-left p-2 font-medium w-24">{'DB'}</th>
                   <th className="text-left p-2 font-medium w-40">{'데이터'}</th>
-                  <th className="text-left p-2 font-medium w-24">{'지표 유형'}</th>
+                  <th className="text-left p-2 font-medium w-24">
+                    {'지표 유형'}
+                  </th>
                   <th className="text-left p-2 font-medium w-28">{'실행자'}</th>
-                  <th className="text-left p-2 font-medium w-44">{'시작 일시'}</th>
-                  <th className="text-left p-2 font-medium w-44">{'종료 일시'}</th>
+                  <th className="text-left p-2 font-medium w-44">
+                    {'시작 일시'}
+                  </th>
+                  <th className="text-left p-2 font-medium w-44">
+                    {'종료 일시'}
+                  </th>
                   <th className="text-left p-2 font-medium w-20">{'상태'}</th>
                 </tr>
               </thead>
@@ -117,19 +135,31 @@ export function StatisticsHistoryTable({
                         if (isCompleted) onSelectCheck(row.checkId)
                       }}
                     >
-                      <td className="p-2 text-center">{(page - 1) * LOGS_PAGE_SIZE + idx + 1}</td>
-                      <td className="p-2">{STAGE_LABEL[row.stage] ?? row.stage}</td>
+                      <td className="p-2 text-center">
+                        {(page - 1) * LOGS_PAGE_SIZE + idx + 1}
+                      </td>
+                      <td className="p-2">
+                        {STAGE_LABEL[row.stage] ?? row.stage}
+                      </td>
                       <td className="p-2 whitespace-normal break-words">
-                        {row.subStage ? SUB_STAGE_LABEL[row.subStage] ?? row.subStage : '-'}
+                        {row.subStage
+                          ? (SUB_STAGE_LABEL[row.subStage] ?? row.subStage)
+                          : '-'}
                       </td>
                       <td className="p-2">
                         <Badge variant="outline" className="text-[10px]">
                           {checkTypeLabel(row.checkType)}
                         </Badge>
                       </td>
-                      <td className="p-2 whitespace-normal break-all">{row.checkStatusFstWrt || '-'}</td>
-                      <td className="p-2 font-mono">{fmtDate(row.checkStartDatetime)}</td>
-                      <td className="p-2 font-mono">{fmtDate(row.checkEndDatetime)}</td>
+                      <td className="p-2 whitespace-normal break-all">
+                        {row.checkStatusFstWrt || '-'}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {fmtDate(row.checkStartDatetime)}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {fmtDate(row.checkEndDatetime)}
+                      </td>
                       <td className="p-2">
                         <CheckStatusBadge status={row.checkStatus} />
                       </td>

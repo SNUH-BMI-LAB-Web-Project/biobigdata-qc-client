@@ -126,7 +126,12 @@ export function AddTableDialog({
   const [error, setError] = useState<string | null>(null)
 
   const dirty =
-    tableName || stage || dataCategory || tableRequired || tableDescription || columns.length > 0
+    tableName ||
+    stage ||
+    dataCategory ||
+    tableRequired ||
+    tableDescription ||
+    columns.length > 0
 
   const reset = () => {
     setTableName('')
@@ -144,13 +149,19 @@ export function AddTableDialog({
       return
     }
     if (submitting) return
-    if (dirty && !window.confirm('작성 중인 내용이 사라집니다. 닫으시겠습니까?')) return
+    if (
+      dirty &&
+      !window.confirm('작성 중인 내용이 사라집니다. 닫으시겠습니까?')
+    )
+      return
     reset()
     onOpenChange(false)
   }
 
   const patchColumn = (key: string, patch: Partial<ColumnDraft>) =>
-    setColumns((cols) => cols.map((c) => (c.key === key ? { ...c, ...patch } : c)))
+    setColumns((cols) =>
+      cols.map((c) => (c.key === key ? { ...c, ...patch } : c)),
+    )
 
   // FK 참조 테이블 후보 — FK 컬럼이 있을 때만 한 번 조회
   const anyFk = columns.some((c) => c.isFk === 'Y')
@@ -226,7 +237,8 @@ export function AddTableDialog({
               fkTableName: c.isFk === 'Y' ? c.fkTableName : undefined,
               fkFieldName: c.isFk === 'Y' ? c.fkFieldName : undefined,
               fieldDescription: c.fieldDescription.trim() || undefined,
-              fieldDescriptionDetail: c.fieldDescriptionDetail.trim() || undefined,
+              fieldDescriptionDetail:
+                c.fieldDescriptionDetail.trim() || undefined,
             },
           }),
         )
@@ -236,7 +248,9 @@ export function AddTableDialog({
       onOpenChange(false)
       onCreated()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : '테이블 추가에 실패했습니다.')
+      setError(
+        err instanceof ApiError ? err.message : '테이블 추가에 실패했습니다.',
+      )
     } finally {
       setSubmitting(false)
     }
@@ -248,7 +262,9 @@ export function AddTableDialog({
         <DialogPrimitive.Overlay className={OVERLAY_CLASS} />
         <DialogPrimitive.Content className="bg-background fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border shadow-lg sm:max-w-4xl">
           <div className="px-6 pt-6 pb-4">
-            <DialogPrimitive.Title className="text-lg font-semibold">테이블 추가</DialogPrimitive.Title>
+            <DialogPrimitive.Title className="text-lg font-semibold">
+              테이블 추가
+            </DialogPrimitive.Title>
             <DialogPrimitive.Description className="sr-only">
               원천 테이블과 컬럼을 생성합니다.
             </DialogPrimitive.Description>
@@ -282,7 +298,10 @@ export function AddTableDialog({
                     단계
                     <RequiredMark />
                   </Label>
-                  <Select value={stage || undefined} onValueChange={(v) => setStage(v as Stage)}>
+                  <Select
+                    value={stage || undefined}
+                    onValueChange={(v) => setStage(v as Stage)}
+                  >
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder="단계 선택" />
                     </SelectTrigger>
@@ -300,7 +319,10 @@ export function AddTableDialog({
                     필수여부
                     <RequiredMark />
                   </Label>
-                  <Select value={tableRequired || undefined} onValueChange={setTableRequired}>
+                  <Select
+                    value={tableRequired || undefined}
+                    onValueChange={setTableRequired}
+                  >
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder="필수여부 선택" />
                     </SelectTrigger>
@@ -319,7 +341,10 @@ export function AddTableDialog({
                   데이터 카테고리
                   <RequiredMark />
                 </Label>
-                <Select value={dataCategory || undefined} onValueChange={setDataCategory}>
+                <Select
+                  value={dataCategory || undefined}
+                  onValueChange={setDataCategory}
+                >
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="데이터 카테고리 선택" />
                   </SelectTrigger>
@@ -346,13 +371,17 @@ export function AddTableDialog({
             {/* 컬럼 목록 */}
             <div className="space-y-2 mt-2">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">컬럼 ({columns.length}개)</Label>
+                <Label className="text-sm font-semibold">
+                  컬럼 ({columns.length}개)
+                </Label>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="h-8 gap-1 text-xs"
-                  onClick={() => setColumns((c) => [...c, newColumn(nextKey())])}
+                  onClick={() =>
+                    setColumns((c) => [...c, newColumn(nextKey())])
+                  }
                 >
                   <Plus className="w-3.5 h-3.5" />
                   컬럼 추가
@@ -370,15 +399,24 @@ export function AddTableDialog({
                       !!col.fieldName.trim() &&
                       duplicateNames.has(col.fieldName.trim().toLowerCase())
                     return (
-                      <div key={col.key} className="p-3 rounded-md border space-y-2">
+                      <div
+                        key={col.key}
+                        className="p-3 rounded-md border space-y-2"
+                      >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-muted-foreground">#컬럼{idx + 1}</span>
+                          <span className="text-xs font-medium text-muted-foreground">
+                            #컬럼{idx + 1}
+                          </span>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             className="h-7 w-7 p-0 text-destructive"
-                            onClick={() => setColumns((c) => c.filter((x) => x.key !== col.key))}
+                            onClick={() =>
+                              setColumns((c) =>
+                                c.filter((x) => x.key !== col.key),
+                              )
+                            }
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -392,10 +430,18 @@ export function AddTableDialog({
                           </Label>
                           <Input
                             value={col.fieldName}
-                            onChange={(e) => patchColumn(col.key, { fieldName: e.target.value })}
+                            onChange={(e) =>
+                              patchColumn(col.key, {
+                                fieldName: e.target.value,
+                              })
+                            }
                             className={`h-8 text-xs font-mono ${isDup ? 'border-destructive' : ''}`}
                           />
-                          {isDup && <p className="text-[10px] text-destructive">중복된 컬럼명</p>}
+                          {isDup && (
+                            <p className="text-[10px] text-destructive">
+                              중복된 컬럼명
+                            </p>
+                          )}
                         </div>
 
                         {/* 타입 / 필수 / PK / FK */}
@@ -403,14 +449,25 @@ export function AddTableDialog({
                           <ColumnSelect
                             label="타입"
                             value={col.datatype}
-                            onChange={(v) => patchColumn(col.key, { datatype: v as TiberoType })}
-                            options={TIBERO_TYPES.map((t) => ({ value: t, label: t }))}
+                            onChange={(v) =>
+                              patchColumn(col.key, {
+                                datatype: v as TiberoType,
+                              })
+                            }
+                            options={TIBERO_TYPES.map((t) => ({
+                              value: t,
+                              label: t,
+                            }))}
                             mono
                           />
                           <ColumnSelect
                             label="필수"
                             value={col.isRequired}
-                            onChange={(v) => patchColumn(col.key, { isRequired: v as 'Y' | 'N' })}
+                            onChange={(v) =>
+                              patchColumn(col.key, {
+                                isRequired: v as 'Y' | 'N',
+                              })
+                            }
                             options={[
                               { value: 'Y', label: 'Y' },
                               { value: 'N', label: 'N' },
@@ -419,7 +476,9 @@ export function AddTableDialog({
                           <ColumnSelect
                             label="PK"
                             value={col.isPk}
-                            onChange={(v) => patchColumn(col.key, { isPk: v as 'Y' | 'N' })}
+                            onChange={(v) =>
+                              patchColumn(col.key, { isPk: v as 'Y' | 'N' })
+                            }
                             options={[
                               { value: 'Y', label: 'Y' },
                               { value: 'N', label: 'None' },
@@ -431,7 +490,13 @@ export function AddTableDialog({
                             onChange={(v) =>
                               patchColumn(col.key, {
                                 isFk: v as 'Y' | 'N',
-                                ...(v === 'N' ? { fkTableId: '', fkTableName: '', fkFieldName: '' } : {}),
+                                ...(v === 'N'
+                                  ? {
+                                      fkTableId: '',
+                                      fkTableName: '',
+                                      fkFieldName: '',
+                                    }
+                                  : {}),
                               })
                             }
                             options={[
@@ -452,19 +517,29 @@ export function AddTableDialog({
 
                         {/* 설명 / 상세설명 */}
                         <div className="space-y-1">
-                          <Label className="text-[11px] text-muted-foreground">설명 (선택)</Label>
+                          <Label className="text-[11px] text-muted-foreground">
+                            설명 (선택)
+                          </Label>
                           <Input
                             value={col.fieldDescription}
-                            onChange={(e) => patchColumn(col.key, { fieldDescription: e.target.value })}
+                            onChange={(e) =>
+                              patchColumn(col.key, {
+                                fieldDescription: e.target.value,
+                              })
+                            }
                             className="h-8 text-xs"
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[11px] text-muted-foreground">상세설명 (선택)</Label>
+                          <Label className="text-[11px] text-muted-foreground">
+                            상세설명 (선택)
+                          </Label>
                           <Input
                             value={col.fieldDescriptionDetail}
                             onChange={(e) =>
-                              patchColumn(col.key, { fieldDescriptionDetail: e.target.value })
+                              patchColumn(col.key, {
+                                fieldDescriptionDetail: e.target.value,
+                              })
                             }
                             className="h-8 text-xs"
                           />
@@ -481,7 +556,12 @@ export function AddTableDialog({
 
           {/* 푸터 */}
           <div className="px-6 py-4 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting} className="gap-2">
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="gap-2"
+            >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               테이블 추가
             </Button>
@@ -514,7 +594,11 @@ function ColumnSelect({
         </SelectTrigger>
         <SelectContent>
           {options.map((o) => (
-            <SelectItem key={o.value} value={o.value} className={`text-xs ${mono ? 'font-mono' : ''}`}>
+            <SelectItem
+              key={o.value}
+              value={o.value}
+              className={`text-xs ${mono ? 'font-mono' : ''}`}
+            >
               {o.label}
             </SelectItem>
           ))}
@@ -541,7 +625,10 @@ function FkReferencePicker({
       column.fkTableId
         ? unwrapGeneratedResult<PageResult<DqFieldResponse>>(
             await generatedApi.GET('/api/qc/tables/{tableId}/fields', {
-              params: { path: { tableId: column.fkTableId }, query: { page: 1, size: 500 } },
+              params: {
+                path: { tableId: column.fkTableId },
+                query: { page: 1, size: 500 },
+              },
               signal,
             }),
           )
@@ -558,11 +645,17 @@ function FkReferencePicker({
           value={column.fkTableId || undefined}
           onValueChange={(tableId) => {
             const t = tables.find((x) => x.tableId === tableId)
-            onChange({ fkTableId: tableId, fkTableName: t?.tableName ?? '', fkFieldName: '' })
+            onChange({
+              fkTableId: tableId,
+              fkTableName: t?.tableName ?? '',
+              fkFieldName: '',
+            })
           }}
         >
           <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder={tablesLoading ? '불러오는 중...' : '테이블 선택'} />
+            <SelectValue
+              placeholder={tablesLoading ? '불러오는 중...' : '테이블 선택'}
+            />
           </SelectTrigger>
           <SelectContent>
             {tables.map((t) => (
@@ -574,7 +667,9 @@ function FkReferencePicker({
         </Select>
       </div>
       <div className="space-y-1">
-        <Label className="text-[11px] text-muted-foreground">참조 컬럼(외래키)</Label>
+        <Label className="text-[11px] text-muted-foreground">
+          참조 컬럼(외래키)
+        </Label>
         <Select
           value={column.fkFieldName || undefined}
           onValueChange={(fieldName) => onChange({ fkFieldName: fieldName })}
@@ -583,13 +678,21 @@ function FkReferencePicker({
           <SelectTrigger className="h-8 text-xs">
             <SelectValue
               placeholder={
-                !column.fkTableId ? '먼저 테이블 선택' : fieldsApi.loading ? '불러오는 중...' : '컬럼 선택'
+                !column.fkTableId
+                  ? '먼저 테이블 선택'
+                  : fieldsApi.loading
+                    ? '불러오는 중...'
+                    : '컬럼 선택'
               }
             />
           </SelectTrigger>
           <SelectContent>
             {fields.map((f) => (
-              <SelectItem key={f.fieldId} value={f.fieldName} className="text-xs">
+              <SelectItem
+                key={f.fieldId}
+                value={f.fieldName}
+                className="text-xs"
+              >
                 {f.fieldName}
               </SelectItem>
             ))}

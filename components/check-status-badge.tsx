@@ -20,7 +20,10 @@ function checkStatusClass(status: CheckStatus): string {
 
 export function CheckStatusBadge({ status }: { status: CheckStatus }) {
   return (
-    <Badge variant="secondary" className={`text-xs ${checkStatusClass(status)}`}>
+    <Badge
+      variant="secondary"
+      className={`text-xs ${checkStatusClass(status)}`}
+    >
       {CHECK_STATUS_LABEL[status] ?? '-'}
     </Badge>
   )

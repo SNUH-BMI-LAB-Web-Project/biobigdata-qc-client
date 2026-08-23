@@ -27,7 +27,11 @@ const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
 ]
 
 const RESULT_NAV_ITEMS: readonly NavItem[] = [
-  { name: '데이터 품질 결과', href: '/dashboard/quality-results', icon: ClipboardCheck },
+  {
+    name: '데이터 품질 결과',
+    href: '/dashboard/quality-results',
+    icon: ClipboardCheck,
+  },
   { name: '데이터 통계 결과', href: '/dashboard/data', icon: FileBarChart },
 ]
 
@@ -128,7 +132,8 @@ function SidebarLink({
       className={cn(
         'w-full justify-start gap-2',
         size === 'sub' ? 'text-xs h-8' : 'text-sm h-9',
-        active && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary',
+        active &&
+          'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary',
       )}
       onClick={onClick}
     >

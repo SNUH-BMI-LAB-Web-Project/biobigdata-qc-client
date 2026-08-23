@@ -14,23 +14,20 @@ interface DbCountCardsProps {
 
 /** DB(단계)별 통계 검증 실행 건수 카드 — 통계 결과엔 요약 API가 없어 stage별 totalCount로 집계 */
 export function DbCountCards({ stage, onSelectStage }: DbCountCardsProps) {
-  const countsApi = useApi(
-    async (signal) => {
-      const entries = await Promise.all(
-        STAGE_CARDS.map(async (s) => {
-          const res = await unwrapGeneratedResult<PageResult<DqCheckLogResponse>>(
-            await generatedApi.GET('/api/qc/statistics-results/checks', {
-              params: { query: { stage: s, page: 1, size: 1 } },
-              signal,
-            }),
-          )
-          return [s, res.totalCount] as const
-        }),
-      )
-      return Object.fromEntries(entries) as Record<string, number>
-    },
-    [],
-  )
+  const countsApi = useApi(async (signal) => {
+    const entries = await Promise.all(
+      STAGE_CARDS.map(async (s) => {
+        const res = await unwrapGeneratedResult<PageResult<DqCheckLogResponse>>(
+          await generatedApi.GET('/api/qc/statistics-results/checks', {
+            params: { query: { stage: s, page: 1, size: 1 } },
+            signal,
+          }),
+        )
+        return [s, res.totalCount] as const
+      }),
+    )
+    return Object.fromEntries(entries) as Record<string, number>
+  }, [])
   const counts = countsApi.data ?? {}
 
   return (
@@ -51,10 +48,14 @@ export function DbCountCards({ stage, onSelectStage }: DbCountCardsProps) {
           >
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{STAGE_LABEL[s] ?? s}</span>
-              <span className="text-lg font-bold">{countsApi.loading ? '-' : count}</span>
+              <span className="text-lg font-bold">
+                {countsApi.loading ? '-' : count}
+              </span>
             </div>
             <div className="mt-0.5">
-              <span className="text-xs text-muted-foreground">{'검증 실행 건수'}</span>
+              <span className="text-xs text-muted-foreground">
+                {'검증 실행 건수'}
+              </span>
             </div>
           </button>
         )

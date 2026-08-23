@@ -17,7 +17,9 @@ function QualityResultsContent() {
   }, [searchParams])
 
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
-  const [selectedCheckId, setSelectedCheckId] = useState<number | null>(deepLinkCheckId)
+  const [selectedCheckId, setSelectedCheckId] = useState<number | null>(
+    deepLinkCheckId,
+  )
 
   const handleSelectStage = (stage: string) => {
     setSelectedStage((prev) => (prev === stage ? null : stage))
@@ -29,10 +31,15 @@ function QualityResultsContent() {
       <main className="container mx-auto px-4 py-4 space-y-4">
         <div>
           <h1 className="text-xl font-bold">{'데이터 품질 결과'}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{'품질지표 검증 결과를 확인합니다'}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {'품질지표 검증 결과를 확인합니다'}
+          </p>
         </div>
 
-        <StageSummaryCards selectedStage={selectedStage} onSelectStage={handleSelectStage} />
+        <StageSummaryCards
+          selectedStage={selectedStage}
+          onSelectStage={handleSelectStage}
+        />
         <ChecksTable
           selectedStage={selectedStage}
           selectedCheckId={selectedCheckId}

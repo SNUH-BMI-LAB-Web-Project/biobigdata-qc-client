@@ -5,7 +5,14 @@ import { Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
@@ -25,7 +32,9 @@ export function StatsTab() {
     async (signal) =>
       unwrapGeneratedResult<PageResult<DqStatisticsMetricResponse>>(
         await generatedApi.GET('/api/qc/statistics-metrics', {
-          params: { query: { keyword: keyword || undefined, page, size: pageSize } },
+          params: {
+            query: { keyword: keyword || undefined, page, size: pageSize },
+          },
           signal,
         }),
       ),
@@ -67,14 +76,26 @@ export function StatsTab() {
             <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-44 whitespace-normal break-all text-xs">{'통계지표 ID'}</TableHead>
+                  <TableHead className="w-44 whitespace-normal break-all text-xs">
+                    {'통계지표 ID'}
+                  </TableHead>
                   <TableHead className="w-16 text-xs">{'단계'}</TableHead>
-                  <TableHead className="w-44 whitespace-normal break-words text-xs">{'지표명'}</TableHead>
-                  <TableHead className="whitespace-normal break-words text-xs">{'설명'}</TableHead>
+                  <TableHead className="w-44 whitespace-normal break-words text-xs">
+                    {'지표명'}
+                  </TableHead>
+                  <TableHead className="whitespace-normal break-words text-xs">
+                    {'설명'}
+                  </TableHead>
                   <TableHead className="w-16 text-xs">{'유형'}</TableHead>
-                  <TableHead className="w-24 whitespace-normal break-words text-xs">{'비고'}</TableHead>
-                  <TableHead className="w-44 whitespace-normal break-words text-xs">{'지표 생성일'}</TableHead>
-                  <TableHead className="w-28 whitespace-normal break-words text-xs">{'활성/비활성'}</TableHead>
+                  <TableHead className="w-24 whitespace-normal break-words text-xs">
+                    {'비고'}
+                  </TableHead>
+                  <TableHead className="w-44 whitespace-normal break-words text-xs">
+                    {'지표 생성일'}
+                  </TableHead>
+                  <TableHead className="w-28 whitespace-normal break-words text-xs">
+                    {'활성/비활성'}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -104,7 +125,10 @@ export function StatsTab() {
                         {stat.siDescription}
                       </TableCell>
                       <TableCell className="text-left align-top">
-                        <Badge variant="secondary" className="text-xs font-mono">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs font-mono"
+                        >
                           {stat.siMetric}
                         </Badge>
                       </TableCell>
@@ -119,13 +143,16 @@ export function StatsTab() {
                           active={isY(stat.isActive)}
                           label={`통계지표 ${stat.siId}`}
                           onSave={async (next) => {
-            await unwrapGeneratedResult(
-              await generatedApi.PATCH('/api/qc/statistics-metrics/{siId}/activation', {
-                params: { path: { siId: stat.siId } },
-                body: { isActive: next ? 'Y' : 'N' },
-              }),
-            )
-          }}
+                            await unwrapGeneratedResult(
+                              await generatedApi.PATCH(
+                                '/api/qc/statistics-metrics/{siId}/activation',
+                                {
+                                  params: { path: { siId: stat.siId } },
+                                  body: { isActive: next ? 'Y' : 'N' },
+                                },
+                              ),
+                            )
+                          }}
                         />
                       </TableCell>
                     </TableRow>

@@ -10,7 +10,9 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             <Database className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-3xl font-bold text-balance">BIKO-DQM</h1>
-          <p className="text-muted-foreground mt-2 text-pretty">의학 데이터베이스 품질관리 시스템</p>
+          <p className="text-muted-foreground mt-2 text-pretty">
+            의학 데이터베이스 품질관리 시스템
+          </p>
         </div>
         {children}
       </div>

@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { Database } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AsyncStateBlock, RefreshingContent } from '@/components/async-state'
 import { CompactPager } from '@/components/pager'
@@ -27,7 +33,11 @@ interface ChecksTableProps {
 }
 
 /** 검증 실행 내역 표 — 완료 건 클릭 시 지표별 결과를 띄운다. */
-export function ChecksTable({ selectedStage, selectedCheckId, onSelectCheck }: ChecksTableProps) {
+export function ChecksTable({
+  selectedStage,
+  selectedCheckId,
+  onSelectCheck,
+}: ChecksTableProps) {
   const [page, setPage] = useState(1)
 
   // 단계 필터가 바뀌면 첫 페이지로
@@ -37,7 +47,13 @@ export function ChecksTable({ selectedStage, selectedCheckId, onSelectCheck }: C
     async (signal) =>
       unwrapGeneratedResult<PageResult<DqCheckLogResponse>>(
         await generatedApi.GET('/api/qc/quality-results/checks', {
-          params: { query: { stage: selectedStage ?? undefined, page, size: CHECKS_PAGE_SIZE } },
+          params: {
+            query: {
+              stage: selectedStage ?? undefined,
+              page,
+              size: CHECKS_PAGE_SIZE,
+            },
+          },
           signal,
         }),
       ),
@@ -53,7 +69,9 @@ export function ChecksTable({ selectedStage, selectedCheckId, onSelectCheck }: C
           <div>
             <CardTitle className="text-base flex items-center gap-2">
               <Database className="w-4 h-4" />
-              {selectedStage ? `${STAGE_LABEL[selectedStage] ?? selectedStage} ` : ''}
+              {selectedStage
+                ? `${STAGE_LABEL[selectedStage] ?? selectedStage} `
+                : ''}
               {'품질 검증 실행 내역'}
             </CardTitle>
             <CardDescription className="text-xs">
@@ -84,10 +102,16 @@ export function ChecksTable({ selectedStage, selectedCheckId, onSelectCheck }: C
                   <th className="text-center p-2 font-medium w-14">{'번호'}</th>
                   <th className="text-left p-2 font-medium w-24">{'DB'}</th>
                   <th className="text-left p-2 font-medium w-40">{'데이터'}</th>
-                  <th className="text-left p-2 font-medium w-24">{'지표 유형'}</th>
+                  <th className="text-left p-2 font-medium w-24">
+                    {'지표 유형'}
+                  </th>
                   <th className="text-left p-2 font-medium w-28">{'실행자'}</th>
-                  <th className="text-left p-2 font-medium w-44">{'시작 일시'}</th>
-                  <th className="text-left p-2 font-medium w-44">{'종료 일시'}</th>
+                  <th className="text-left p-2 font-medium w-44">
+                    {'시작 일시'}
+                  </th>
+                  <th className="text-left p-2 font-medium w-44">
+                    {'종료 일시'}
+                  </th>
                   <th className="text-left p-2 font-medium w-20">{'상태'}</th>
                 </tr>
               </thead>
@@ -99,7 +123,9 @@ export function ChecksTable({ selectedStage, selectedCheckId, onSelectCheck }: C
                     <tr
                       key={row.checkId}
                       className={`border-b transition-all ${
-                        completed ? 'cursor-pointer' : 'cursor-default opacity-70'
+                        completed
+                          ? 'cursor-pointer'
+                          : 'cursor-default opacity-70'
                       } ${
                         isSelected
                           ? 'bg-primary/10 border-l-2 border-l-primary'
@@ -111,19 +137,31 @@ export function ChecksTable({ selectedStage, selectedCheckId, onSelectCheck }: C
                         if (completed) onSelectCheck(row.checkId)
                       }}
                     >
-                      <td className="p-2 text-center">{(page - 1) * CHECKS_PAGE_SIZE + idx + 1}</td>
-                      <td className="p-2">{STAGE_LABEL[row.stage] ?? row.stage}</td>
+                      <td className="p-2 text-center">
+                        {(page - 1) * CHECKS_PAGE_SIZE + idx + 1}
+                      </td>
+                      <td className="p-2">
+                        {STAGE_LABEL[row.stage] ?? row.stage}
+                      </td>
                       <td className="p-2 whitespace-normal break-words">
-                        {row.subStage ? SUB_STAGE_LABEL[row.subStage] ?? row.subStage : '-'}
+                        {row.subStage
+                          ? (SUB_STAGE_LABEL[row.subStage] ?? row.subStage)
+                          : '-'}
                       </td>
                       <td className="p-2">
                         <Badge variant="outline" className="text-[10px]">
                           {checkTypeLabel(row.checkType)}
                         </Badge>
                       </td>
-                      <td className="p-2 whitespace-normal break-all">{row.checkStatusFstWrt || '-'}</td>
-                      <td className="p-2 font-mono">{formatDatetime(row.checkStartDatetime)}</td>
-                      <td className="p-2 font-mono">{formatDatetime(row.checkEndDatetime)}</td>
+                      <td className="p-2 whitespace-normal break-all">
+                        {row.checkStatusFstWrt || '-'}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {formatDatetime(row.checkStartDatetime)}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {formatDatetime(row.checkEndDatetime)}
+                      </td>
                       <td className="p-2">
                         <CheckStatusBadge status={row.checkStatus} />
                       </td>

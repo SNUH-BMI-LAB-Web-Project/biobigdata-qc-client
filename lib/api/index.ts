@@ -15,7 +15,9 @@ export type {
 
 import type { components } from './generated/client'
 
-type Schema<K extends keyof components['schemas']> = Required<components['schemas'][K]>
+type Schema<K extends keyof components['schemas']> = Required<
+  components['schemas'][K]
+>
 
 export interface PageResult<T> {
   items: T[]
@@ -29,8 +31,12 @@ export type Role = NonNullable<components['schemas']['LoginResponse']['role']>
 export type Permission = NonNullable<
   components['schemas']['RolePermissionsResponse']['permissions']
 >[number]
-export type Stage = NonNullable<components['schemas']['DagRunRequest']['targetStage']>
-export type SubStage = NonNullable<components['schemas']['DagRunRequest']['targetSubStage']>
+export type Stage = NonNullable<
+  components['schemas']['DagRunRequest']['targetStage']
+>
+export type SubStage = NonNullable<
+  components['schemas']['DagRunRequest']['targetSubStage']
+>
 export type CheckStatus = 0 | 1 | 2 | 3
 
 export type LoginRequest = Schema<'LoginRequest'>
@@ -42,29 +48,38 @@ export type PasswordChangeRequest = Schema<'PasswordChangeRequest'>
 export type AdminMemberCreateRequest = Schema<'AdminMemberCreateRequest'>
 export type AdminMemberUpdateRequest = Schema<'AdminMemberUpdateRequest'>
 export type RolePermissionsResponse = Schema<'RolePermissionsResponse'>
-export type RolePermissionsUpdateRequest = Schema<'RolePermissionsUpdateRequest'>
+export type RolePermissionsUpdateRequest =
+  Schema<'RolePermissionsUpdateRequest'>
 export type DagRunRequest = components['schemas']['DagRunRequest']
 export type DagRunResponse = Schema<'DagRunResponse'>
 export type CreateDqTableRequest = components['schemas']['CreateDqTableRequest']
 export type DqTableResponse = Schema<'DqTableResponse'>
 export type DqFieldResponse = Schema<'DqFieldResponse'>
 export type DqQualityMetricResponse = Schema<'DqQualityMetricResponse'>
-export type DqQualityMetricDetailResponse = Schema<'DqQualityMetricDetailResponse'>
+export type DqQualityMetricDetailResponse =
+  Schema<'DqQualityMetricDetailResponse'>
 export type FieldCheckItem = Schema<'FieldCheckItem'>
 export type DqStatisticsMetricResponse = Schema<'DqStatisticsMetricResponse'>
 export type DqAchillesAnalysisResponse = Schema<'DqAchillesAnalysisResponse'>
-export type DqCheckLogResponse = Schema<'DqCheckLogResponse'> & { checkStatus: CheckStatus }
-export type CheckExecutionResponse = Schema<'CheckExecutionResponse'> & { checkStatus: CheckStatus }
-export type CheckExecutionDetailResponse = Schema<'CheckExecutionDetailResponse'> & {
+export type DqCheckLogResponse = Schema<'DqCheckLogResponse'> & {
   checkStatus: CheckStatus
-  score: number | null
 }
-export type DqQualityResultSummaryResponse = Schema<'DqQualityResultSummaryResponse'>
+export type CheckExecutionResponse = Schema<'CheckExecutionResponse'> & {
+  checkStatus: CheckStatus
+}
+export type CheckExecutionDetailResponse =
+  Schema<'CheckExecutionDetailResponse'> & {
+    checkStatus: CheckStatus
+    score: number | null
+  }
+export type DqQualityResultSummaryResponse =
+  Schema<'DqQualityResultSummaryResponse'>
 export type DqQualityResultResponse = Schema<'DqQualityResultResponse'> & {
   passRate: number | null
 }
 export type DqAchillesResultResponse = Schema<'DqAchillesResultResponse'>
-export type DqAchillesResultDistResponse = Schema<'DqAchillesResultDistResponse'>
+export type DqAchillesResultDistResponse =
+  Schema<'DqAchillesResultDistResponse'>
 
 export const ROLE_LABEL: Record<Role, string> = {
   ADMIN: '관리자',
@@ -80,7 +95,7 @@ export const CHECK_STATUS_LABEL: Record<CheckStatus, string> = {
 }
 
 export const checkTypeLabel = (checkType: string): string =>
-  ({ quality: '품질지표', achilles: '통계지표' }[checkType] ?? checkType)
+  ({ quality: '품질지표', achilles: '통계지표' })[checkType] ?? checkType
 
 export const STAGE_LABEL: Record<string, string> = {
   LINK: '연계DB',

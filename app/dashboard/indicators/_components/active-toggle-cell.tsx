@@ -42,9 +42,17 @@ export function ActiveToggleCell({
   }
 
   return (
-    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-      <Checkbox checked={active} onCheckedChange={(next) => setPending(!!next)} />
-      <span className={`text-xs ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+    <div
+      className="flex items-center gap-2"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Checkbox
+        checked={active}
+        onCheckedChange={(next) => setPending(!!next)}
+      />
+      <span
+        className={`text-xs ${active ? 'text-foreground' : 'text-muted-foreground'}`}
+      >
         {active ? '활성' : '비활성'}
       </span>
 
@@ -61,7 +69,9 @@ export function ActiveToggleCell({
               {label} 상태 변경
             </AlertDialogPrimitive.Title>
             <AlertDialogPrimitive.Description className="text-sm text-muted-foreground">
-              {label}을(를) <b className="text-foreground">{pending ? '활성' : '비활성'}</b> 상태로 변경하시겠습니까?
+              {label}을(를){' '}
+              <b className="text-foreground">{pending ? '활성' : '비활성'}</b>{' '}
+              상태로 변경하시겠습니까?
             </AlertDialogPrimitive.Description>
             <div className="flex justify-end gap-2">
               <AlertDialogPrimitive.Cancel asChild>

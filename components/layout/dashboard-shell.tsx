@@ -20,7 +20,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   const { data: me, refetch: refetchMe } = useApi(
     async (signal) =>
-      unwrapGeneratedResult<LoginResponse>(await generatedApi.GET('/api/auth/me', { signal })),
+      unwrapGeneratedResult<LoginResponse>(
+        await generatedApi.GET('/api/auth/me', { signal }),
+      ),
     [],
   )
 
@@ -45,7 +47,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <DashboardSidebar />
         <div className="flex-1 overflow-y-auto">{children}</div>
       </div>
-      <AccountDialog open={accountOpen} onOpenChange={setAccountOpen} me={me} onChanged={refetchMe} />
+      <AccountDialog
+        open={accountOpen}
+        onOpenChange={setAccountOpen}
+        me={me}
+        onChanged={refetchMe}
+      />
     </div>
   )
 }

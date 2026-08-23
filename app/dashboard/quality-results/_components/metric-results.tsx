@@ -2,8 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { Database } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AsyncStateBlock, EmptyBlock, RefreshingContent } from '@/components/async-state'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  AsyncStateBlock,
+  EmptyBlock,
+  RefreshingContent,
+} from '@/components/async-state'
 import { CompactPager } from '@/components/pager'
 import { useApi } from '@/hooks/use-api'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
@@ -24,10 +34,16 @@ export function MetricResults({ checkId }: { checkId: number | null }) {
       checkId == null
         ? null
         : unwrapGeneratedResult<PageResult<DqQualityResultResponse>>(
-            await generatedApi.GET('/api/qc/quality-results/checks/{checkId}/metrics', {
-              params: { path: { checkId }, query: { page, size: RESULTS_PAGE_SIZE } },
-              signal,
-            }),
+            await generatedApi.GET(
+              '/api/qc/quality-results/checks/{checkId}/metrics',
+              {
+                params: {
+                  path: { checkId },
+                  query: { page, size: RESULTS_PAGE_SIZE },
+                },
+                signal,
+              },
+            ),
           ),
     [checkId, page],
   )
@@ -44,7 +60,9 @@ export function MetricResults({ checkId }: { checkId: number | null }) {
               {'지표별 결과'}
             </CardTitle>
             <CardDescription className="text-xs">
-              {checkId == null ? '완료된 검증을 선택하면 지표별 결과가 표시됩니다' : `검증 #${checkId}`}
+              {checkId == null
+                ? '완료된 검증을 선택하면 지표별 결과가 표시됩니다'
+                : `검증 #${checkId}`}
             </CardDescription>
           </div>
           {checkId != null && (
@@ -68,9 +86,15 @@ export function MetricResults({ checkId }: { checkId: number | null }) {
             onRetry={results.refetch}
           />
         ) : (
-          <RefreshingContent isRefetching={results.isRefetching} className="space-y-3">
+          <RefreshingContent
+            isRefetching={results.isRefetching}
+            className="space-y-3"
+          >
             {items.map((metric, idx) => (
-              <MetricResultCard key={`${metric.metricId}-${idx}`} metric={metric} />
+              <MetricResultCard
+                key={`${metric.metricId}-${idx}`}
+                metric={metric}
+              />
             ))}
           </RefreshingContent>
         )}

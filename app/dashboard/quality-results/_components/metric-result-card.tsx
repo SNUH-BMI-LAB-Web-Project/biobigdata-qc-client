@@ -6,15 +6,23 @@ import type { DqQualityResultResponse } from '@/lib/api'
 import { getScoreColor, isFiniteNumber } from './quality-result-utils'
 
 function statusIcon(metric: DqQualityResultResponse) {
-  if (metric.notApplicable === 1) return <XCircle className="w-4 h-4 text-red-600" />
-  if (!isFiniteNumber(metric.passRate)) return <AlertCircle className="w-4 h-4 text-muted-foreground" />
-  if (metric.passRate >= 90) return <CheckCircle className="w-4 h-4 text-green-600" />
-  if (metric.passRate >= 80) return <AlertCircle className="w-4 h-4 text-orange-500" />
+  if (metric.notApplicable === 1)
+    return <XCircle className="w-4 h-4 text-red-600" />
+  if (!isFiniteNumber(metric.passRate))
+    return <AlertCircle className="w-4 h-4 text-muted-foreground" />
+  if (metric.passRate >= 90)
+    return <CheckCircle className="w-4 h-4 text-green-600" />
+  if (metric.passRate >= 80)
+    return <AlertCircle className="w-4 h-4 text-orange-500" />
   return <XCircle className="w-4 h-4 text-red-600" />
 }
 
 /** 지표 1건의 통과율/통과·위반 건수 카드 */
-export function MetricResultCard({ metric }: { metric: DqQualityResultResponse }) {
+export function MetricResultCard({
+  metric,
+}: {
+  metric: DqQualityResultResponse
+}) {
   const failed = metric.notApplicable === 1
 
   return (
@@ -33,11 +41,17 @@ export function MetricResultCard({ metric }: { metric: DqQualityResultResponse }
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {failed ? (
-            <span className="text-xs font-bold text-red-600">{'실행 실패'}</span>
+            <span className="text-xs font-bold text-red-600">
+              {'실행 실패'}
+            </span>
           ) : !isFiniteNumber(metric.passRate) ? (
-            <span className="text-sm font-bold text-muted-foreground">{'-'}</span>
+            <span className="text-sm font-bold text-muted-foreground">
+              {'-'}
+            </span>
           ) : (
-            <span className={`text-sm font-bold ${getScoreColor(metric.passRate)}`}>
+            <span
+              className={`text-sm font-bold ${getScoreColor(metric.passRate)}`}
+            >
               {Number(metric.passRate.toFixed(1))}
             </span>
           )}
@@ -46,13 +60,17 @@ export function MetricResultCard({ metric }: { metric: DqQualityResultResponse }
       </div>
 
       {failed ? (
-        <p className="text-xs text-red-600/80 mt-2">{metric.notApplicableReason || '사유 없음'}</p>
+        <p className="text-xs text-red-600/80 mt-2">
+          {metric.notApplicableReason || '사유 없음'}
+        </p>
       ) : (
         <div className="mt-2 space-y-1.5">
           <div className="bg-primary/20 h-1.5 w-full overflow-hidden rounded-full">
             <div
               className="bg-primary h-full rounded-full transition-all"
-              style={{ width: `${Math.max(0, Math.min(100, metric.passRate ?? 0))}%` }}
+              style={{
+                width: `${Math.max(0, Math.min(100, metric.passRate ?? 0))}%`,
+              }}
             />
           </div>
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">

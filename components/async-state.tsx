@@ -15,7 +15,11 @@ interface AsyncStateBlockProps {
   className?: string
 }
 
-export function LoadingBlock({ message = '불러오는 중...' }: { message?: string }) {
+export function LoadingBlock({
+  message = '불러오는 중...',
+}: {
+  message?: string
+}) {
   return (
     <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
       <Loader2 className="size-4 animate-spin" aria-label="로딩 중" />
@@ -24,7 +28,13 @@ export function LoadingBlock({ message = '불러오는 중...' }: { message?: st
   )
 }
 
-function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorBlock({
+  message,
+  onRetry,
+}: {
+  message: string
+  onRetry: () => void
+}) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm">
       <p className="text-red-600">{message}</p>
@@ -72,7 +82,10 @@ export function TableStateRow({
     return (
       <TableRow>
         <TableCell colSpan={colSpan} className="py-10 text-center">
-          <Loader2 className="mx-auto size-5 animate-spin text-muted-foreground" aria-label="로딩 중" />
+          <Loader2
+            className="mx-auto size-5 animate-spin text-muted-foreground"
+            aria-label="로딩 중"
+          />
         </TableCell>
       </TableRow>
     )
@@ -94,7 +107,10 @@ export function TableStateRow({
   if (empty) {
     return (
       <TableRow>
-        <TableCell colSpan={colSpan} className="py-10 text-center text-sm text-muted-foreground">
+        <TableCell
+          colSpan={colSpan}
+          className="py-10 text-center text-sm text-muted-foreground"
+        >
           {emptyMessage}
         </TableCell>
       </TableRow>
@@ -114,7 +130,13 @@ export function RefreshingContent({
   className?: string
 }) {
   return (
-    <div className={cn('transition-opacity', isRefetching && 'opacity-50', className)}>
+    <div
+      className={cn(
+        'transition-opacity',
+        isRefetching && 'opacity-50',
+        className,
+      )}
+    >
       {children}
     </div>
   )

@@ -3,7 +3,9 @@
 /** isActive(문자열) → 활성 여부 */
 export const isActiveFlag = (value: string) => {
   const v = (value ?? '').toString().trim().toLowerCase()
-  return v === '1' || v === 'y' || v === 'true' || v === 'active' || v === '활성'
+  return (
+    v === '1' || v === 'y' || v === 'true' || v === 'active' || v === '활성'
+  )
 }
 
 export const isFiniteNumber = (value: unknown): value is number =>

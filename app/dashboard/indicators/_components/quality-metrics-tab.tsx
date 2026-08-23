@@ -6,15 +6,33 @@ import { Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { TablePagerHeader } from '@/components/pager'
 import { ActiveToggleCell } from './active-toggle-cell'
-import { isY, metricLevelLabel, scoreColor, stageDbLabel } from './indicator-utils'
+import {
+  isY,
+  metricLevelLabel,
+  scoreColor,
+  stageDbLabel,
+} from './indicator-utils'
 import type { DqQualityMetricResponse, PageResult } from '@/lib/api'
 
 // 항상 노출하는 DB(단계) 열 — 데이터에 없더라도 통합/개방까지 4개를 고정 표시한다.
@@ -62,7 +80,11 @@ export function QualityMetricsTab() {
   const categoryOptions = useMemo(
     () =>
       Array.from(
-        new Set((categoriesApi.data?.items ?? []).map((m) => m.category).filter(Boolean)),
+        new Set(
+          (categoriesApi.data?.items ?? [])
+            .map((m) => m.category)
+            .filter(Boolean),
+        ),
       ).sort(),
     [categoriesApi.data],
   )
@@ -121,18 +143,32 @@ export function QualityMetricsTab() {
             <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-24 truncate whitespace-nowrap text-xs">{'지표ID'}</TableHead>
-                  <TableHead className="w-20 truncate whitespace-nowrap text-xs">{'차원'}</TableHead>
-                  <TableHead className="w-24 truncate whitespace-nowrap text-xs">{'검증단위'}</TableHead>
-                  <TableHead className="w-[220px] truncate whitespace-nowrap text-xs">{'지표명'}</TableHead>
-                  <TableHead className="truncate whitespace-nowrap text-xs">{'대상 테이블'}</TableHead>
+                  <TableHead className="w-24 truncate whitespace-nowrap text-xs">
+                    {'지표ID'}
+                  </TableHead>
+                  <TableHead className="w-20 truncate whitespace-nowrap text-xs">
+                    {'차원'}
+                  </TableHead>
+                  <TableHead className="w-24 truncate whitespace-nowrap text-xs">
+                    {'검증단위'}
+                  </TableHead>
+                  <TableHead className="w-[220px] truncate whitespace-nowrap text-xs">
+                    {'지표명'}
+                  </TableHead>
+                  <TableHead className="truncate whitespace-nowrap text-xs">
+                    {'대상 테이블'}
+                  </TableHead>
                   {stageKeys.map((stage) => (
                     <TableHead key={stage} className="w-24 text-xs">
                       {stageDbLabel(stage)}
                     </TableHead>
                   ))}
-                  <TableHead className="w-36 truncate whitespace-nowrap text-xs">{'지표 생성일'}</TableHead>
-                  <TableHead className="w-32 truncate whitespace-nowrap text-xs">{'활성/비활성'}</TableHead>
+                  <TableHead className="w-36 truncate whitespace-nowrap text-xs">
+                    {'지표 생성일'}
+                  </TableHead>
+                  <TableHead className="w-32 truncate whitespace-nowrap text-xs">
+                    {'활성/비활성'}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -146,7 +182,11 @@ export function QualityMetricsTab() {
                   />
                 ) : (
                   metrics.map((item) => (
-                    <QualityMetricRow key={item.metricId} item={item} stageKeys={stageKeys} />
+                    <QualityMetricRow
+                      key={item.metricId}
+                      item={item}
+                      stageKeys={stageKeys}
+                    />
                   ))
                 )}
               </TableBody>
@@ -166,14 +206,20 @@ const QualityMetricRow = memo(function QualityMetricRow({
   stageKeys: string[]
 }) {
   const router = useRouter()
-  const tableNames = useMemo(() => item.tableNames?.join(', ') || '-', [item.tableNames])
+  const tableNames = useMemo(
+    () => item.tableNames?.join(', ') || '-',
+    [item.tableNames],
+  )
 
   return (
     <TableRow
       className="cursor-pointer hover:bg-muted/50"
       onClick={() => router.push(`/dashboard/indicators/${item.metricId}`)}
     >
-      <TableCell className="truncate whitespace-nowrap text-xs font-mono font-medium align-top" title={item.metricId}>
+      <TableCell
+        className="truncate whitespace-nowrap text-xs font-mono font-medium align-top"
+        title={item.metricId}
+      >
         {item.metricId}
       </TableCell>
       <TableCell>
@@ -186,7 +232,10 @@ const QualityMetricRow = memo(function QualityMetricRow({
           {metricLevelLabel(item.metricLevel)}
         </Badge>
       </TableCell>
-      <TableCell className="truncate whitespace-nowrap text-xs font-medium align-top" title={item.metricNameKor}>
+      <TableCell
+        className="truncate whitespace-nowrap text-xs font-medium align-top"
+        title={item.metricNameKor}
+      >
         {item.metricNameKor}
       </TableCell>
       <TableCell className="text-xs font-mono text-muted-foreground align-top">
@@ -201,12 +250,17 @@ const QualityMetricRow = memo(function QualityMetricRow({
             {score == null ? (
               <span className="text-xs text-muted-foreground">{'-'}</span>
             ) : (
-              <span className={`text-sm font-bold ${scoreColor(score)}`}>{score}</span>
+              <span className={`text-sm font-bold ${scoreColor(score)}`}>
+                {score}
+              </span>
             )}
           </TableCell>
         )
       })}
-      <TableCell className="truncate whitespace-nowrap text-xs text-muted-foreground" title={item.createdAt}>
+      <TableCell
+        className="truncate whitespace-nowrap text-xs text-muted-foreground"
+        title={item.createdAt}
+      >
         {item.createdAt}
       </TableCell>
       <TableCell className="text-left">
@@ -215,10 +269,13 @@ const QualityMetricRow = memo(function QualityMetricRow({
           label={`품질지표 ${item.metricId}`}
           onSave={async (next) => {
             await unwrapGeneratedResult(
-              await generatedApi.PATCH('/api/qc/quality-metrics/{metricId}/activation', {
-                params: { path: { metricId: item.metricId } },
-                body: { isActive: next ? 'Y' : 'N' },
-              }),
+              await generatedApi.PATCH(
+                '/api/qc/quality-metrics/{metricId}/activation',
+                {
+                  params: { path: { metricId: item.metricId } },
+                  body: { isActive: next ? 'Y' : 'N' },
+                },
+              ),
             )
           }}
         />

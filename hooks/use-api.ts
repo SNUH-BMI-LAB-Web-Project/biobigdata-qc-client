@@ -48,7 +48,8 @@ export function useApi<T>(
       isRefetching: s.data !== null,
       error: null,
     }))
-    fetcherRef.current(signal)
+    fetcherRef
+      .current(signal)
       .then((data) => {
         if (!signal.aborted) {
           setState({

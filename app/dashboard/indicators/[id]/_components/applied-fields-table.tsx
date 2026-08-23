@@ -6,7 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { CompactPager } from '@/components/pager'
 import { useApi } from '@/hooks/use-api'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
@@ -30,7 +37,11 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
   }
 
   const isActiveParam =
-    activeFilter === 'active' ? '1' : activeFilter === 'inactive' ? '0' : undefined
+    activeFilter === 'active'
+      ? '1'
+      : activeFilter === 'inactive'
+        ? '0'
+        : undefined
 
   const { data, loading, error, refetch } = useApi(
     async (signal) =>
@@ -66,7 +77,9 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
     const items = data?.items ?? []
     if (!sortField) return items
     return [...items].sort((a, b) => {
-      const cmp = (a[sortField] ?? '').toString().localeCompare((b[sortField] ?? '').toString())
+      const cmp = (a[sortField] ?? '')
+        .toString()
+        .localeCompare((b[sortField] ?? '').toString())
       return sortDirection === 'asc' ? cmp : -cmp
     })
   }, [data, sortField, sortDirection])
@@ -120,9 +133,18 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
                   <span>적용</span>
                 </TableHead>
                 <SortHead label="DB명" onClick={() => handleSort('dbName')} />
-                <SortHead label="테이블명" onClick={() => handleSort('tableName')} />
-                <SortHead label="컬럼명" onClick={() => handleSort('fieldName')} />
-                <SortHead label="생성일" onClick={() => handleSort('createdAt')} />
+                <SortHead
+                  label="테이블명"
+                  onClick={() => handleSort('tableName')}
+                />
+                <SortHead
+                  label="컬럼명"
+                  onClick={() => handleSort('fieldName')}
+                />
+                <SortHead
+                  label="생성일"
+                  onClick={() => handleSort('createdAt')}
+                />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -135,7 +157,10 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
               )}
               {!loading && error && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-sm text-muted-foreground py-8"
+                  >
                     <div className="flex flex-col items-center gap-3">
                       <span>{error}</span>
                       <Button variant="outline" size="sm" onClick={refetch}>
@@ -152,17 +177,28 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
                     <TableCell className="text-center">
                       <Checkbox checked={isActiveFlag(row.isActive)} disabled />
                     </TableCell>
-                    <TableCell className="text-xs">{row.dbName || '-'}</TableCell>
-                    <TableCell className="text-xs font-medium">{row.tableName}</TableCell>
                     <TableCell className="text-xs">
-                      <code className="bg-muted px-1.5 py-0.5 rounded text-xs">{row.fieldName}</code>
+                      {row.dbName || '-'}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{row.createdAt}</TableCell>
+                    <TableCell className="text-xs font-medium">
+                      {row.tableName}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                        {row.fieldName}
+                      </code>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {row.createdAt}
+                    </TableCell>
                   </TableRow>
                 ))}
               {!loading && !error && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-sm text-muted-foreground py-8"
+                  >
                     필터 조건에 맞는 데이터가 없습니다
                   </TableCell>
                 </TableRow>
@@ -176,8 +212,14 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
             <span className="text-muted-foreground">
               총 {data.totalCount}건 · {data.page}/{data.totalPages} 페이지
             </span>
-            <div className={loading ? 'pointer-events-none opacity-60' : undefined}>
-              <CompactPager page={page} totalPages={data.totalPages} onChange={setPage} />
+            <div
+              className={loading ? 'pointer-events-none opacity-60' : undefined}
+            >
+              <CompactPager
+                page={page}
+                totalPages={data.totalPages}
+                onChange={setPage}
+              />
             </div>
           </div>
         )}
@@ -189,7 +231,12 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
 function SortHead({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <TableHead className="text-xs">
-      <Button variant="ghost" size="sm" onClick={onClick} className="h-7 px-2 gap-1 hover:bg-transparent">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onClick}
+        className="h-7 px-2 gap-1 hover:bg-transparent"
+      >
         {label}
         <ArrowUpDown className="w-3 h-3" />
       </Button>

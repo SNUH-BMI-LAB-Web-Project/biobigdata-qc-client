@@ -2,14 +2,23 @@
 
 import { useMemo, useState } from 'react'
 import { BarChart3, ListOrdered } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { useApi } from '@/hooks/use-api'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import { AsyncStateBlock, RefreshingContent } from '@/components/async-state'
 import { CompactPager } from '@/components/pager'
 import { DistributionResults } from './distribution-results'
 import { fmtNum, stratumKey } from './statistics-format'
-import type { DqAchillesResultDistResponse, DqAchillesResultResponse } from '@/lib/api'
+import type {
+  DqAchillesResultDistResponse,
+  DqAchillesResultResponse,
+} from '@/lib/api'
 
 const PAGE_SIZE = 20
 
@@ -17,20 +26,26 @@ export function StatisticsResults({ checkId }: { checkId: number }) {
   const countApi = useApi(
     async (signal) =>
       unwrapGeneratedResult<DqAchillesResultResponse[]>(
-        await generatedApi.GET('/api/qc/statistics-results/checks/{checkId}/analyses', {
-          params: { path: { checkId }, query: { analysisId: undefined } },
-          signal,
-        }),
+        await generatedApi.GET(
+          '/api/qc/statistics-results/checks/{checkId}/analyses',
+          {
+            params: { path: { checkId }, query: { analysisId: undefined } },
+            signal,
+          },
+        ),
       ),
     [checkId],
   )
   const distApi = useApi(
     async (signal) =>
       unwrapGeneratedResult<DqAchillesResultDistResponse[]>(
-        await generatedApi.GET('/api/qc/statistics-results/checks/{checkId}/analyses/dist', {
-          params: { path: { checkId }, query: { analysisId: undefined } },
-          signal,
-        }),
+        await generatedApi.GET(
+          '/api/qc/statistics-results/checks/{checkId}/analyses/dist',
+          {
+            params: { path: { checkId }, query: { analysisId: undefined } },
+            signal,
+          },
+        ),
       ),
     [checkId],
   )
@@ -62,7 +77,11 @@ export function StatisticsResults({ checkId }: { checkId: number }) {
                 {`검증 #${checkId} · count 값 (distribution=0)`}
               </CardDescription>
             </div>
-            <CompactPager page={countPage} totalPages={countTotalPages} onChange={setCountPage} />
+            <CompactPager
+              page={countPage}
+              totalPages={countTotalPages}
+              onChange={setCountPage}
+            />
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -80,16 +99,23 @@ export function StatisticsResults({ checkId }: { checkId: number }) {
                 <thead className="border-b bg-muted/30">
                   <tr>
                     <th className="text-left p-2 font-medium">{'분석 ID'}</th>
-                    <th className="text-left p-2 font-medium">{'분류 (Stratum)'}</th>
+                    <th className="text-left p-2 font-medium">
+                      {'분류 (Stratum)'}
+                    </th>
                     <th className="text-right p-2 font-medium">{'Count'}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pagedCount.map((row, index) => (
-                    <tr key={`${row.analysisId}-${index}`} className="border-b hover:bg-muted/30">
+                    <tr
+                      key={`${row.analysisId}-${index}`}
+                      className="border-b hover:bg-muted/30"
+                    >
                       <td className="p-2 font-mono">{row.analysisId}</td>
                       <td className="p-2">{stratumKey(row)}</td>
-                      <td className="p-2 text-right font-mono">{fmtNum(row.countValue)}</td>
+                      <td className="p-2 text-right font-mono">
+                        {fmtNum(row.countValue)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
