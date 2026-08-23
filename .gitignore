@@ -34,3 +34,7 @@ docs/reference/
 
 # Docker 이미지 산출물 (배포용 tar — 커밋 금지)
 *.tar
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
