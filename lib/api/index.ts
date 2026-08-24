@@ -85,6 +85,12 @@ export type DqQualityResultSummaryResponse =
 export type DqQualityResultResponse = Schema<'DqQualityResultResponse'> & {
   passRate: number | null
 }
+export type DqMetricResultResponse = Schema<'DqMetricResultResponse'> & {
+  passRate: number | null
+}
+export type DqSubMetricResultResponse = Schema<'DqSubMetricResultResponse'> & {
+  passRate: number | null
+}
 export type DqAchillesResultResponse = Schema<'DqAchillesResultResponse'>
 export type DqAchillesResultDistResponse =
   Schema<'DqAchillesResultDistResponse'>

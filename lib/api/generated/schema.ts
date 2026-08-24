@@ -4,6 +4,30 @@
  */
 
 export interface paths {
+    "/api/qc/tables/{tableId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * DQ 테이블 수정
+         * @description 테이블명/단계/카테고리/필수여부/설명을 수정한다.
+         */
+        put: operations["updateDqTable"];
+        post?: never;
+        /**
+         * DQ 테이블 삭제
+         * @description 소프트 삭제 처리한다 (DELETED_AT 기록, 사용여부 N).
+         */
+        delete: operations["deleteDqTable"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/me": {
         parameters: {
             query?: never;
@@ -310,6 +334,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/tables/{tableId}/activation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * DQ 테이블 활성/비활성 토글
+         * @description isActive 값을 Y/N으로 지정해 테이블 사용 여부(IS_ENABLE)를 변경한다.
+         */
+        patch: operations["updateDqTableActivation"];
+        trace?: never;
+    };
     "/api/qc/statistics-metrics/{siId}/activation": {
         parameters: {
             query?: never;
@@ -481,6 +525,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/quality-results/checks/{checkId}/metrics/{metricId}/sub-metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * checkId + metricId 기준 세부지표별 결과 조회
+         * @description 드릴다운 계층. 특정 METRIC_ID에 속한 세부지표(검증 대상 열)별 통과/위반/전체를 반환한다.
+         */
+        get: operations["getSubMetricResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-results/checks/{checkId}/metric-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * checkId 기준 지표(METRIC_ID) 단위 결과 요약 조회
+         * @description 최상위 계층. METRIC_ID로 묶어 통과/위반/전체 합계와 세부지표 개수를 반환한다.
+         */
+        get: operations["getMetricResultsByCheckId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qc/quality-metrics/{metricId}": {
         parameters: {
             query?: never;
@@ -639,6 +723,48 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description DQ 테이블 수정 요청 */
+        UpdateDqTableRequest: {
+            /** @description 테이블명 */
+            tableName: string;
+            /**
+             * @description 단계
+             * @enum {string}
+             */
+            stage: "LINK" | "PREP" | "INTG" | "OPEN";
+            /** @description 데이터 카테고리 */
+            dataCategory: string;
+            /**
+             * @description 필수 여부
+             * @enum {string}
+             */
+            tableRequired: "Y" | "R" | "R2" | "O";
+            /** @description 테이블 설명 (선택) */
+            tableDescription?: string;
+        };
+        ApiResponseDqTableResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["DqTableResponse"];
+        };
+        /** @description DQ 테이블 정보 */
+        DqTableResponse: {
+            /** @description 테이블 ID */
+            tableId?: string;
+            /** @description 테이블명 */
+            tableName?: string;
+            /** @description 단계 */
+            stage?: string;
+            /** @description 데이터 카테고리 */
+            dataCategory?: string;
+            /** @description 필수 여부 */
+            tableRequired?: string;
+            /** @description 테이블 설명 */
+            tableDescription?: string;
+            /** @description 활성화 여부 */
+            isEnable?: string;
+        };
         /** @description 회원정보 수정 요청 */
         MemberUpdateRequest: {
             /**
@@ -789,29 +915,6 @@ export interface components {
             tableRequired: "Y" | "R" | "R2" | "O";
             /** @description 테이블 설명 (선택) */
             tableDescription?: string;
-        };
-        ApiResponseDqTableResponse: {
-            success?: boolean;
-            code?: string;
-            message?: string;
-            data?: components["schemas"]["DqTableResponse"];
-        };
-        /** @description DQ 테이블 정보 */
-        DqTableResponse: {
-            /** @description 테이블 ID */
-            tableId?: string;
-            /** @description 테이블명 */
-            tableName?: string;
-            /** @description 단계 */
-            stage?: string;
-            /** @description 데이터 카테고리 */
-            dataCategory?: string;
-            /** @description 필수 여부 */
-            tableRequired?: string;
-            /** @description 테이블 설명 */
-            tableDescription?: string;
-            /** @description 활성화 여부 */
-            isEnable?: string;
         };
         /** @description DQ 필드 생성 요청 */
         CreateDqFieldRequest: {
@@ -1476,6 +1579,158 @@ export interface components {
              */
             totalPages?: number;
         };
+        ApiResponsePageResultDqSubMetricResultResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["PageResultDqSubMetricResultResponse"];
+        };
+        /** @description 세부지표 단위 품질 결과 — METRIC_ID 하위 드릴다운 계층 */
+        DqSubMetricResultResponse: {
+            /** @description 세부지표 ID (검증단위에 따라 field/table/concept check_id 중 하나) */
+            subMetricId?: string;
+            /** @description 세부지표명 (예: 환자ID NULL) */
+            subMetricName?: string;
+            /** @description 검증 대상 열 (예: patient_id) */
+            checkTargetColumn?: string;
+            /** @description 컬럼 검사지표 ID (FIELD 레벨) */
+            fieldCheckId?: string;
+            /** @description 테이블 검사지표 ID (TABLE 레벨) */
+            tableCheckId?: string;
+            /** @description 표준용어 검사지표 ID (CONCEPT 레벨) */
+            conceptCheckId?: string;
+            /**
+             * Format: int32
+             * @description 쿼리 실행 성공 여부 (0:성공 / 1:실패)
+             */
+            notApplicable?: number;
+            /** @description 실패 이유 */
+            notApplicableReason?: string;
+            /**
+             * Format: int64
+             * @description 적용 대상 row 수
+             */
+            numDenominatorRows?: number;
+            /**
+             * Format: int64
+             * @description 통과 row 수
+             */
+            numPassedRows?: number;
+            /**
+             * Format: int64
+             * @description 위배 row 수
+             */
+            numViolatedRows?: number;
+            /**
+             * Format: double
+             * @description 위배 비율 (0.0~1.0)
+             */
+            pctViolatedRows?: number;
+            /**
+             * Format: double
+             * @description 통과율 (%)
+             */
+            passRate?: number;
+        };
+        /** @description 페이지네이션 응답 */
+        PageResultDqSubMetricResultResponse: {
+            /** @description 데이터 목록 */
+            items?: components["schemas"]["DqSubMetricResultResponse"][];
+            /**
+             * Format: int32
+             * @description 전체 데이터 수
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 현재 페이지
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description 페이지 크기
+             */
+            size?: number;
+            /**
+             * Format: int32
+             * @description 전체 페이지 수
+             */
+            totalPages?: number;
+        };
+        ApiResponsePageResultDqMetricResultResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["PageResultDqMetricResultResponse"];
+        };
+        /** @description 지표(METRIC_ID) 단위 품질 결과 요약 — 최상위 계층 */
+        DqMetricResultResponse: {
+            /** @description 지표 ID */
+            metricId?: string;
+            /** @description 지표 국문명 */
+            metricNameKor?: string;
+            /** @description 차원 (완전성/정합성 등) */
+            category?: string;
+            /** @description DB 단계 */
+            stage?: string;
+            /** @description 검증 단위 (TABLE/FIELD/CONCEPT) */
+            metricLevel?: string;
+            /**
+             * Format: int32
+             * @description 세부지표 개수
+             */
+            subMetricCount?: number;
+            /**
+             * Format: int32
+             * @description 쿼리 실행 실패한 세부지표 개수
+             */
+            notApplicableCount?: number;
+            /**
+             * Format: int64
+             * @description 적용 대상 row 수 합계
+             */
+            numDenominatorRows?: number;
+            /**
+             * Format: int64
+             * @description 통과 row 수 합계
+             */
+            numPassedRows?: number;
+            /**
+             * Format: int64
+             * @description 위배 row 수 합계
+             */
+            numViolatedRows?: number;
+            /**
+             * Format: double
+             * @description 통과율 (%) — (1 - 위배/전체) * 100
+             */
+            passRate?: number;
+        };
+        /** @description 페이지네이션 응답 */
+        PageResultDqMetricResultResponse: {
+            /** @description 데이터 목록 */
+            items?: components["schemas"]["DqMetricResultResponse"][];
+            /**
+             * Format: int32
+             * @description 전체 데이터 수
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 현재 페이지
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description 페이지 크기
+             */
+            size?: number;
+            /**
+             * Format: int32
+             * @description 전체 페이지 수
+             */
+            totalPages?: number;
+        };
         ApiResponsePageResultDqQualityMetricResponse: {
             success?: boolean;
             code?: string;
@@ -1492,6 +1747,8 @@ export interface components {
             category?: string;
             /** @description 검증 단위 (TABLE/FIELD/CONCEPT) */
             metricLevel?: string;
+            /** @description 검증 대상 DB 단계 (LINK=연계 / PREP=전처리 / INTG=통합 / OPEN=개방) */
+            stage?: string;
             /** @description 지표 국문명 */
             metricNameKor?: string;
             /** @description 적용 테이블명 목록 */
@@ -1772,6 +2029,54 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateDqTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tableId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDqTableRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDqTableResponse"];
+                };
+            };
+        };
+    };
+    deleteDqTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tableId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     updateMember: {
         parameters: {
             query?: never;
@@ -2038,6 +2343,8 @@ export interface operations {
     getDqStatisticsMetricList: {
         parameters: {
             query?: {
+                stage?: string;
+                sort?: string;
                 page?: number;
                 size?: number;
             };
@@ -2087,6 +2394,8 @@ export interface operations {
             query?: {
                 keyword?: string;
                 category?: string;
+                stage?: string;
+                sort?: string;
                 page?: number;
                 size?: number;
             };
@@ -2344,6 +2653,32 @@ export interface operations {
             };
         };
     };
+    updateDqTableActivation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tableId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateActivationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     updateDqStatisticsMetricActivation: {
         parameters: {
             query?: never;
@@ -2560,6 +2895,57 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePageResultDqQualityResultResponse"];
+                };
+            };
+        };
+    };
+    getSubMetricResults: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                checkId: number;
+                metricId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultDqSubMetricResultResponse"];
+                };
+            };
+        };
+    };
+    getMetricResultsByCheckId: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                checkId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultDqMetricResultResponse"];
                 };
             };
         };

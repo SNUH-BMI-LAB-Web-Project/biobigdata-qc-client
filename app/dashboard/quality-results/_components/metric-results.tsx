@@ -17,7 +17,7 @@ import {
 import { CompactPager } from '@/components/pager'
 import { useApi } from '@/hooks/use-api'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import type { DqQualityResultResponse, PageResult } from '@/lib/api'
+import type { DqMetricResultResponse, PageResult } from '@/lib/api'
 import { MetricResultCard } from './metric-result-card'
 
 const RESULTS_PAGE_SIZE = 5
@@ -33,9 +33,9 @@ export function MetricResults({ checkId }: { checkId: number | null }) {
     async (signal) =>
       checkId == null
         ? null
-        : unwrapGeneratedResult<PageResult<DqQualityResultResponse>>(
+        : unwrapGeneratedResult<PageResult<DqMetricResultResponse>>(
             await generatedApi.GET(
-              '/api/qc/quality-results/checks/{checkId}/metrics',
+              '/api/qc/quality-results/checks/{checkId}/metric-summary',
               {
                 params: {
                   path: { checkId },
@@ -90,9 +90,10 @@ export function MetricResults({ checkId }: { checkId: number | null }) {
             isRefetching={results.isRefetching}
             className="space-y-3"
           >
-            {items.map((metric, idx) => (
+            {items.map((metric) => (
               <MetricResultCard
-                key={`${metric.metricId}-${idx}`}
+                key={metric.metricId}
+                checkId={checkId}
                 metric={metric}
               />
             ))}
