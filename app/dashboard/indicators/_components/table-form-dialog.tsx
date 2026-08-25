@@ -22,9 +22,7 @@ import type {
   PageResult,
   Stage,
 } from '@/lib/api'
-
-const OVERLAY_CLASS =
-  'fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0'
+import { OVERLAY_CLASS } from '@/components/confirm-dialog'
 
 const STAGE_OPTIONS: { value: Stage; label: string }[] = [
   { value: 'LINK', label: '연계' },
@@ -74,6 +72,8 @@ type TiberoType = (typeof TIBERO_TYPES)[number]
 
 interface ColumnDraft {
   key: string
+  /** 기존 컬럼이면 존재, 새로 추가한 컬럼이면 undefined */
+  fieldId?: string
   fieldName: string
   datatype: TiberoType
   isRequired: 'Y' | 'N'
@@ -100,38 +100,164 @@ const newColumn = (key: string): ColumnDraft => ({
   fieldDescriptionDetail: '',
 })
 
+const yn = (value: string | undefined): 'Y' | 'N' =>
+  value === 'Y' || value === 'y' ? 'Y' : 'N'
+
+const fieldToColumn = (field: DqFieldResponse): ColumnDraft => ({
+  key: field.fieldId,
+  fieldId: field.fieldId,
+  fieldName: field.fieldName ?? '',
+  datatype: (TIBERO_TYPES as readonly string[]).includes(field.datatype)
+    ? (field.datatype as TiberoType)
+    : 'VARCHAR2',
+  isRequired: yn(field.isRequired),
+  isPk: yn(field.isPk),
+  isFk: yn(field.isFk),
+  fkTableId: '', // fkTableName 으로 참조 테이블 목록에서 렌더 시 역매칭한다
+  fkTableName: field.fkTableName ?? '',
+  fkFieldName: field.fkFieldName ?? '',
+  fieldDescription: field.fieldDescription ?? '',
+  fieldDescriptionDetail: field.fieldDescriptionDetail ?? '',
+})
+
+/** 변경 감지용 직렬화 — key/fkTableId 는 화면 전용이라 제외한다 */
+const columnSignature = (c: ColumnDraft) =>
+  JSON.stringify([
+    c.fieldId ?? '',
+    c.fieldName.trim(),
+    c.datatype,
+    c.isRequired,
+    c.isPk,
+    c.isFk,
+    c.isFk === 'Y' ? c.fkTableName : '',
+    c.isFk === 'Y' ? c.fkFieldName : '',
+    c.fieldDescription.trim(),
+    c.fieldDescriptionDetail.trim(),
+  ])
+
 function RequiredMark() {
   return <span className="text-destructive ml-0.5">{'*'}</span>
 }
 
-export function AddTableDialog({
+export function TableFormDialog({
   open,
   onOpenChange,
-  onCreated,
+  table,
+  onSaved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreated: () => void
+  /** 있으면 수정 모드, 없으면 생성 모드 */
+  table?: DqTableResponse | null
+  onSaved: () => void
 }) {
+  const isEdit = !!table
   const keyCounter = useRef(0)
   const nextKey = () => `col-${keyCounter.current++}`
 
-  const [tableName, setTableName] = useState('')
-  const [stage, setStage] = useState<Stage | ''>('')
-  const [dataCategory, setDataCategory] = useState('')
-  const [tableRequired, setTableRequired] = useState('')
-  const [tableDescription, setTableDescription] = useState('')
+  // 초기값은 props 에서 직접 읽는다 — 부모가 대상이 바뀔 때 key 로 remount 시킨다
+  const [tableName, setTableName] = useState(table?.tableName ?? '')
+  const [stage, setStage] = useState<Stage | ''>((table?.stage as Stage) ?? '')
+  const [dataCategory, setDataCategory] = useState(table?.dataCategory ?? '')
+  const [tableRequired, setTableRequired] = useState(
+    table?.tableRequired ?? '',
+  )
+  const [tableDescription, setTableDescription] = useState(
+    table?.tableDescription ?? '',
+  )
   const [columns, setColumns] = useState<ColumnDraft[]>([])
+  const [removedFieldIds, setRemovedFieldIds] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // 수정 모드: 열릴 때 기존 컬럼을 불러온다
+  const fieldsApi = useApi(
+    async (signal) =>
+      open && table?.tableId
+        ? unwrapGeneratedResult<PageResult<DqFieldResponse>>(
+            await generatedApi.GET('/api/qc/tables/{tableId}/fields', {
+              params: {
+                path: { tableId: table.tableId },
+                query: { page: 1, size: 500 },
+              },
+              signal,
+            }),
+          )
+        : null,
+    [open, table?.tableId],
+  )
+
+  // 조회가 끝나기 전에는 직전 요청의 data 가 남아 있으므로 loading 을 함께 본다
+  const fieldItems = fieldsApi.loading ? null : (fieldsApi.data?.items ?? null)
+
+  // 기존 컬럼 seed — 렌더 중 상태 조정 (effect 없이 즉시 재렌더된다)
+  const [seeded, setSeeded] = useState(!isEdit)
+  if (!seeded && fieldItems) {
+    setSeeded(true)
+    setColumns(fieldItems.map(fieldToColumn))
+  }
+
+  // FK 참조 테이블 후보 — FK 컬럼이 있을 때만 한 번 조회
+  const anyFk = columns.some((c) => c.isFk === 'Y')
+  const fkTablesApi = useApi(
+    async (signal) =>
+      anyFk
+        ? unwrapGeneratedResult<PageResult<DqTableResponse>>(
+            await generatedApi.GET('/api/qc/tables', {
+              params: { query: { page: 1, size: 500, includeDisabled: true } },
+              signal,
+            }),
+          )
+        : null,
+    [anyFk],
+  )
+  const fkTables = fkTablesApi.data?.items ?? []
+
+  // 기존 FK 컬럼은 fkTableName 만 알고 있다 — 참조 컬럼 목록 조회에 필요한
+  // fkTableId 를 목록에서 역매칭해 렌더 시점에 채운다 (상태로 들고 있지 않는다)
+  const withFkTableId = (c: ColumnDraft): ColumnDraft =>
+    c.isFk === 'Y' && !c.fkTableId && c.fkTableName
+      ? {
+          ...c,
+          fkTableId:
+            fkTables.find((t) => t.tableName === c.fkTableName)?.tableId ?? '',
+        }
+      : c
+
+  // 열었을 때의 상태 — 변경 여부 판정 및 불필요한 필드 UPDATE 회피에 쓴다
+  const originalSignature = useMemo(() => {
+    if (!open) return ''
+    const fields = table?.tableId ? fieldItems : []
+    if (fields === null) return null // 아직 로딩 중 — 판정 보류
+    return JSON.stringify([
+      table?.tableName ?? '',
+      table?.stage ?? '',
+      table?.dataCategory ?? '',
+      table?.tableRequired ?? '',
+      table?.tableDescription ?? '',
+      fields.map((f) => columnSignature(fieldToColumn(f))),
+    ])
+  }, [open, table, fieldItems])
+
+  const currentSignature = JSON.stringify([
+    tableName,
+    stage,
+    dataCategory,
+    tableRequired,
+    tableDescription,
+    columns.map(columnSignature),
+  ])
+
+  const originalColumnSignatures = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const f of fieldItems ?? []) {
+      if (f.fieldId) map.set(f.fieldId, columnSignature(fieldToColumn(f)))
+    }
+    return map
+  }, [fieldItems])
+
   const dirty =
-    tableName ||
-    stage ||
-    dataCategory ||
-    tableRequired ||
-    tableDescription ||
-    columns.length > 0
+    originalSignature !== null && currentSignature !== originalSignature
 
   const reset = () => {
     setTableName('')
@@ -140,6 +266,7 @@ export function AddTableDialog({
     setTableRequired('')
     setTableDescription('')
     setColumns([])
+    setRemovedFieldIds([])
     setError(null)
   }
 
@@ -163,21 +290,10 @@ export function AddTableDialog({
       cols.map((c) => (c.key === key ? { ...c, ...patch } : c)),
     )
 
-  // FK 참조 테이블 후보 — FK 컬럼이 있을 때만 한 번 조회
-  const anyFk = columns.some((c) => c.isFk === 'Y')
-  const fkTablesApi = useApi(
-    async (signal) =>
-      anyFk
-        ? unwrapGeneratedResult<PageResult<DqTableResponse>>(
-            await generatedApi.GET('/api/qc/tables', {
-              params: { query: { page: 1, size: 500, includeDisabled: true } },
-              signal,
-            }),
-          )
-        : null,
-    [anyFk],
-  )
-  const fkTables = fkTablesApi.data?.items ?? []
+  const removeColumn = (col: ColumnDraft) => {
+    if (col.fieldId) setRemovedFieldIds((ids) => [...ids, col.fieldId!])
+    setColumns((cols) => cols.filter((x) => x.key !== col.key))
+  }
 
   const duplicateNames = useMemo(() => {
     const seen = new Map<string, number>()
@@ -202,6 +318,18 @@ export function AddTableDialog({
     return null
   }
 
+  const fieldBody = (c: ColumnDraft) => ({
+    fieldName: c.fieldName.trim(),
+    datatype: c.datatype,
+    isRequired: c.isRequired,
+    isPk: c.isPk,
+    isFk: c.isFk,
+    fkTableName: c.isFk === 'Y' ? c.fkTableName : undefined,
+    fkFieldName: c.isFk === 'Y' ? c.fkFieldName : undefined,
+    fieldDescription: c.fieldDescription.trim() || undefined,
+    fieldDescriptionDetail: c.fieldDescriptionDetail.trim() || undefined,
+  })
+
   const handleSubmit = async () => {
     const msg = validate()
     if (msg) {
@@ -211,50 +339,92 @@ export function AddTableDialog({
     setError(null)
     setSubmitting(true)
 
+    const tableBody = {
+      tableName: tableName.trim(),
+      stage: stage as 'LINK' | 'PREP' | 'INTG' | 'OPEN',
+      dataCategory: dataCategory as DataCategory,
+      tableRequired: tableRequired as 'Y' | 'R' | 'R2' | 'O',
+      tableDescription: tableDescription.trim() || undefined,
+    }
+
     try {
-      const table = await unwrapGeneratedResult<DqTableResponse>(
-        await generatedApi.POST('/api/qc/tables', {
-          body: {
-            tableName: tableName.trim(),
-            stage: stage as 'LINK' | 'PREP' | 'INTG' | 'OPEN',
-            dataCategory: dataCategory as DataCategory,
-            tableRequired: tableRequired as 'Y' | 'R' | 'R2' | 'O',
-            tableDescription: tableDescription.trim() || undefined,
-          },
-        }),
-      )
-      const tableId = table.tableId!
-      for (const c of columns) {
+      if (isEdit) {
+        const tableId = table!.tableId
         await unwrapGeneratedResult(
-          await generatedApi.POST('/api/qc/tables/{tableId}/fields', {
+          await generatedApi.PUT('/api/qc/tables/{tableId}', {
             params: { path: { tableId } },
-            body: {
-              fieldName: c.fieldName.trim(),
-              datatype: c.datatype,
-              isRequired: c.isRequired,
-              isPk: c.isPk,
-              isFk: c.isFk,
-              fkTableName: c.isFk === 'Y' ? c.fkTableName : undefined,
-              fkFieldName: c.isFk === 'Y' ? c.fkFieldName : undefined,
-              fieldDescription: c.fieldDescription.trim() || undefined,
-              fieldDescriptionDetail:
-                c.fieldDescriptionDetail.trim() || undefined,
-            },
+            body: tableBody,
           }),
         )
+        // 삭제를 먼저 처리해야 지운 컬럼의 이름을 다른 컬럼이 넘겨받을 수 있다
+        for (const fieldId of removedFieldIds) {
+          await unwrapGeneratedResult(
+            await generatedApi.DELETE(
+              '/api/qc/tables/{tableId}/fields/{fieldId}',
+              { params: { path: { tableId, fieldId } } },
+            ),
+          )
+        }
+        for (const c of columns) {
+          if (c.fieldId) {
+            // 값이 그대로면 UPDATE 를 보내지 않는다
+            if (originalColumnSignatures.get(c.fieldId) === columnSignature(c))
+              continue
+            await unwrapGeneratedResult(
+              await generatedApi.PUT(
+                '/api/qc/tables/{tableId}/fields/{fieldId}',
+                {
+                  params: { path: { tableId, fieldId: c.fieldId } },
+                  body: fieldBody(c),
+                },
+              ),
+            )
+          } else {
+            await unwrapGeneratedResult(
+              await generatedApi.POST('/api/qc/tables/{tableId}/fields', {
+                params: { path: { tableId } },
+                body: fieldBody(c),
+              }),
+            )
+          }
+        }
+        alert('테이블이 수정되었습니다.')
+      } else {
+        const created = await unwrapGeneratedResult<DqTableResponse>(
+          await generatedApi.POST('/api/qc/tables', { body: tableBody }),
+        )
+        const tableId = created.tableId!
+        for (const c of columns) {
+          await unwrapGeneratedResult(
+            await generatedApi.POST('/api/qc/tables/{tableId}/fields', {
+              params: { path: { tableId } },
+              body: fieldBody(c),
+            }),
+          )
+        }
+        alert('테이블이 추가되었습니다.')
       }
-      alert('테이블이 추가되었습니다.')
       reset()
       onOpenChange(false)
-      onCreated()
+      onSaved()
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : '테이블 추가에 실패했습니다.',
-      )
+      const base = err instanceof ApiError ? err.message : null
+      if (isEdit) {
+        // 순차 호출이라 앞선 변경은 이미 반영됐을 수 있다
+        setError(
+          `${base ?? '테이블 수정에 실패했습니다.'} (일부 변경만 반영되었을 수 있습니다.)`,
+        )
+        onSaved()
+      } else {
+        setError(base ?? '테이블 추가에 실패했습니다.')
+      }
     } finally {
       setSubmitting(false)
     }
   }
+
+  const submitLabel = isEdit ? '테이블 수정' : '테이블 추가'
+  const loadingFields = isEdit && fieldsApi.isInitialLoading
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={requestClose}>
@@ -263,10 +433,12 @@ export function AddTableDialog({
         <DialogPrimitive.Content className="bg-background fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border shadow-lg sm:max-w-4xl">
           <div className="px-6 pt-6 pb-4">
             <DialogPrimitive.Title className="text-lg font-semibold">
-              테이블 추가
+              {submitLabel}
             </DialogPrimitive.Title>
             <DialogPrimitive.Description className="sr-only">
-              원천 테이블과 컬럼을 생성합니다.
+              {isEdit
+                ? '원천 테이블과 컬럼을 수정합니다.'
+                : '원천 테이블과 컬럼을 생성합니다.'}
             </DialogPrimitive.Description>
             <DialogPrimitive.Close
               className="absolute top-4 right-4 opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
@@ -388,7 +560,11 @@ export function AddTableDialog({
                 </Button>
               </div>
 
-              {columns.length === 0 ? (
+              {loadingFields ? (
+                <p className="text-xs text-muted-foreground py-4 text-center border rounded-md">
+                  <Loader2 className="w-4 h-4 mx-auto animate-spin" />
+                </p>
+              ) : columns.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-4 text-center border rounded-md">
                   컬럼을 추가하세요.
                 </p>
@@ -406,17 +582,18 @@ export function AddTableDialog({
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-muted-foreground">
                             #컬럼{idx + 1}
+                            {col.fieldId && (
+                              <span className="ml-1.5 font-mono">
+                                ({col.fieldId})
+                              </span>
+                            )}
                           </span>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             className="h-7 w-7 p-0 text-destructive"
-                            onClick={() =>
-                              setColumns((c) =>
-                                c.filter((x) => x.key !== col.key),
-                              )
-                            }
+                            onClick={() => removeColumn(col)}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -508,7 +685,7 @@ export function AddTableDialog({
 
                         {col.isFk === 'Y' && (
                           <FkReferencePicker
-                            column={col}
+                            column={withFkTableId(col)}
                             tables={fkTables}
                             tablesLoading={fkTablesApi.loading}
                             onChange={(patch) => patchColumn(col.key, patch)}
@@ -559,11 +736,11 @@ export function AddTableDialog({
             <Button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting}
+              disabled={submitting || loadingFields}
               className="gap-2"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              테이블 추가
+              {submitLabel}
             </Button>
           </div>
         </DialogPrimitive.Content>

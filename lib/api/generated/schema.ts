@@ -28,6 +28,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/tables/{tableId}/fields/{fieldId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * DQ 필드 수정
+         * @description 필드명/타입/필수여부/PK·FK/설명을 수정한다. 테이블 내 필드명 중복 체크를 거친다.
+         */
+        put: operations["updateDqField"];
+        post?: never;
+        /**
+         * DQ 필드 삭제
+         * @description 소프트 삭제 처리한다 (DELETED_AT 기록, 사용여부 N).
+         */
+        delete: operations["deleteDqField"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/me": {
         parameters: {
             query?: never;
@@ -765,6 +789,71 @@ export interface components {
             /** @description 활성화 여부 */
             isEnable?: string;
         };
+        /** @description DQ 필드 수정 요청 */
+        UpdateDqFieldRequest: {
+            /** @description 필드명 (테이블 내 중복 불가) */
+            fieldName: string;
+            /**
+             * @description Tibero 기준 데이터 타입
+             * @enum {string}
+             */
+            datatype: "VARCHAR2" | "NVARCHAR2" | "CHAR" | "NCHAR" | "NUMBER" | "INTEGER" | "FLOAT" | "DATE" | "TIMESTAMP" | "CLOB" | "NCLOB" | "BLOB" | "RAW";
+            /**
+             * @description 필수 여부
+             * @enum {string}
+             */
+            isRequired: "Y" | "N";
+            /**
+             * @description PK 여부
+             * @enum {string}
+             */
+            isPk: "Y" | "N";
+            /**
+             * @description FK 여부 (기본값 N)
+             * @default N
+             * @enum {string}
+             */
+            isFk: "Y" | "N";
+            /** @description FK 참조 테이블명 (isFk=Y 일 때 필수, DQ_Table 목록에서 선택) */
+            fkTableName?: string;
+            /** @description FK 참조 필드명 (isFk=Y 일 때 필수, 참조 테이블의 필드 목록에서 선택) */
+            fkFieldName?: string;
+            /** @description 필드 설명 (선택) */
+            fieldDescription?: string;
+            /** @description 필드 상세 설명 (선택) */
+            fieldDescriptionDetail?: string;
+        };
+        ApiResponseDqFieldResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["DqFieldResponse"];
+        };
+        /** @description DQ 필드 정보 */
+        DqFieldResponse: {
+            /** @description 필드 ID */
+            fieldId?: string;
+            /** @description 필드명 */
+            fieldName?: string;
+            /** @description 필드 설명 */
+            fieldDescription?: string;
+            /** @description 필드 상세 설명 */
+            fieldDescriptionDetail?: string;
+            /** @description 데이터 타입 */
+            datatype?: string;
+            /** @description 필수 여부 */
+            isRequired?: string;
+            /** @description PK 여부 */
+            isPk?: string;
+            /** @description FK 여부 */
+            isFk?: string;
+            /** @description FK 테이블명 */
+            fkTableName?: string;
+            /** @description FK 필드명 */
+            fkFieldName?: string;
+            /** @description 활성화 여부 */
+            isEnable?: string;
+        };
         /** @description 회원정보 수정 요청 */
         MemberUpdateRequest: {
             /**
@@ -949,37 +1038,6 @@ export interface components {
             fieldDescription?: string;
             /** @description 필드 상세 설명 (선택) */
             fieldDescriptionDetail?: string;
-        };
-        ApiResponseDqFieldResponse: {
-            success?: boolean;
-            code?: string;
-            message?: string;
-            data?: components["schemas"]["DqFieldResponse"];
-        };
-        /** @description DQ 필드 정보 */
-        DqFieldResponse: {
-            /** @description 필드 ID */
-            fieldId?: string;
-            /** @description 필드명 */
-            fieldName?: string;
-            /** @description 필드 설명 */
-            fieldDescription?: string;
-            /** @description 필드 상세 설명 */
-            fieldDescriptionDetail?: string;
-            /** @description 데이터 타입 */
-            datatype?: string;
-            /** @description 필수 여부 */
-            isRequired?: string;
-            /** @description PK 여부 */
-            isPk?: string;
-            /** @description FK 여부 */
-            isFk?: string;
-            /** @description FK 테이블명 */
-            fkTableName?: string;
-            /** @description FK 필드명 */
-            fkFieldName?: string;
-            /** @description 활성화 여부 */
-            isEnable?: string;
         };
         /** @description DAG 실행 요청 */
         DagRunRequest: {
@@ -2077,6 +2135,56 @@ export interface operations {
             };
         };
     };
+    updateDqField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tableId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDqFieldRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDqFieldResponse"];
+                };
+            };
+        };
+    };
+    deleteDqField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tableId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     updateMember: {
         parameters: {
             query?: never;
@@ -2244,6 +2352,7 @@ export interface operations {
             query?: {
                 keyword?: string;
                 dataCategory?: string;
+                stage?: string;
                 includeDisabled?: boolean;
                 page?: number;
                 size?: number;
@@ -2344,6 +2453,7 @@ export interface operations {
         parameters: {
             query?: {
                 stage?: string;
+                siMetric?: string;
                 sort?: string;
                 page?: number;
                 size?: number;
@@ -2395,6 +2505,7 @@ export interface operations {
                 keyword?: string;
                 category?: string;
                 stage?: string;
+                metricLevel?: string;
                 sort?: string;
                 page?: number;
                 size?: number;

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,21 +15,28 @@ import {
 } from '@/components/ui/table'
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
-import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
+import { ApiError, generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { TablePagerHeader } from '@/components/pager'
-import { AddTableDialog } from './add-table-dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { TableFormDialog } from './table-form-dialog'
 import { RequiredInfoTooltip } from './required-info-tooltip'
 import { TableRowGroup } from './table-row-group'
+import { ColumnFilterHeader } from './column-filter-header'
+import { STAGE_FILTER_OPTIONS } from './indicator-utils'
 import type { DqTableResponse, PageResult } from '@/lib/api'
 
 export function TablesTab() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showDisabled, setShowDisabled] = useState(false)
+  const [stageFilter, setStageFilter] = useState('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [expandedTableId, setExpandedTableId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<DqTableResponse | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<DqTableResponse | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const keyword = useDebounced(searchTerm)
 
   const { data, isInitialLoading, isRefetching, error, refetch } = useApi(
@@ -39,6 +46,7 @@ export function TablesTab() {
           params: {
             query: {
               keyword: keyword || undefined,
+              stage: stageFilter === 'all' ? undefined : stageFilter,
               includeDisabled: showDisabled,
               page,
               size: pageSize,
@@ -47,7 +55,7 @@ export function TablesTab() {
           signal,
         }),
       ),
-    [keyword, showDisabled, page, pageSize],
+    [keyword, stageFilter, showDisabled, page, pageSize],
   )
 
   const tables = data?.items ?? []
@@ -57,6 +65,34 @@ export function TablesTab() {
   const resetList = () => {
     setPage(1)
     setExpandedTableId(null)
+  }
+
+  // memo 된 TableRowGroup 에 안정된 참조를 넘긴다
+  const handleEdit = useCallback((t: DqTableResponse) => setEditTarget(t), [])
+  const handleDelete = useCallback(
+    (t: DqTableResponse) => setDeleteTarget(t),
+    [],
+  )
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await unwrapGeneratedResult(
+        await generatedApi.DELETE('/api/qc/tables/{tableId}', {
+          params: { path: { tableId: deleteTarget.tableId } },
+        }),
+      )
+      if (expandedTableId === deleteTarget.tableId) setExpandedTableId(null)
+      setDeleteTarget(null)
+      refetch()
+    } catch (err) {
+      alert(
+        err instanceof ApiError ? err.message : '테이블 삭제에 실패했습니다.',
+      )
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -93,10 +129,38 @@ export function TablesTab() {
         </Button>
       </div>
 
-      <AddTableDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onCreated={refetch}
+      <TableFormDialog
+        // 대상이 바뀌면 remount 시켜 폼을 새 값으로 초기화한다
+        key={editTarget?.tableId ?? 'new'}
+        open={addOpen || editTarget !== null}
+        onOpenChange={(next) => {
+          if (next) return
+          setAddOpen(false)
+          setEditTarget(null)
+        }}
+        table={editTarget}
+        onSaved={refetch}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setDeleteTarget(null)
+        }}
+        title="테이블 삭제"
+        description={
+          <>
+            <b className="text-foreground font-mono">
+              {deleteTarget?.tableName}
+            </b>
+            {' 테이블을 삭제하면 목록에서 제외됩니다. 계속하시겠습니까?'}
+          </>
+        }
+        confirmLabel="삭제"
+        pendingLabel="삭제 중..."
+        destructive
+        pending={deleting}
+        onConfirm={confirmDelete}
       />
 
       <Card>
@@ -118,14 +182,24 @@ export function TablesTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8 text-xs" />
-                  <TableHead className="w-20 text-xs">{'DB'}</TableHead>
+                  <TableHead className="w-20 px-1 text-xs">
+                    <ColumnFilterHeader
+                      label="DB"
+                      allLabel="전체 DB"
+                      value={stageFilter}
+                      onChange={(value) => {
+                        setStageFilter(value)
+                        resetList()
+                      }}
+                      options={STAGE_FILTER_OPTIONS}
+                    />
+                  </TableHead>
                   <TableHead className="w-28 whitespace-normal break-words text-xs">
                     {'테이블ID'}
                   </TableHead>
                   <TableHead className="w-[380px] whitespace-normal break-words text-xs">
                     {'테이블명'}
                   </TableHead>
-                  <TableHead className="w-20 text-xs">{'단계'}</TableHead>
                   <TableHead className="w-24 text-xs">
                     <span className="inline-flex items-center gap-1">
                       {'필수여부'}
@@ -135,7 +209,10 @@ export function TablesTab() {
                   <TableHead className="w-[360px] whitespace-normal break-words text-xs">
                     {'설명'}
                   </TableHead>
-                  <TableHead className="w-16 text-xs">{'사용'}</TableHead>
+                  <TableHead className="w-32 truncate whitespace-nowrap text-xs">
+                    {'활성/비활성'}
+                  </TableHead>
+                  <TableHead className="w-20 text-xs">{'관리'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -160,6 +237,8 @@ export function TablesTab() {
                             : table.tableId,
                         )
                       }
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
                     />
                   ))
                 )}

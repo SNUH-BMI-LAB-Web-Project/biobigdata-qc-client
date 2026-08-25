@@ -7,13 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Table,
   TableBody,
   TableCell,
@@ -27,20 +20,22 @@ import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { TablePagerHeader } from '@/components/pager'
 import { ActiveToggleCell } from './active-toggle-cell'
+import { ColumnFilterHeader } from './column-filter-header'
 import {
+  METRIC_LEVEL_FILTER_OPTIONS,
+  STAGE_FILTER_OPTIONS,
+  distinctOptions,
   isY,
   metricLevelLabel,
-  scoreColor,
   stageDbLabel,
 } from './indicator-utils'
 import type { DqQualityMetricResponse, PageResult } from '@/lib/api'
 
-// 항상 노출하는 DB(단계) 열 — 데이터에 없더라도 통합/개방까지 4개를 고정 표시한다.
-const STAGE_COLUMNS = ['LINK', 'PREP', 'INTG', 'OPEN'] as const
-
 export function QualityMetricsTab() {
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [stageFilter, setStageFilter] = useState('all')
+  const [metricLevelFilter, setMetricLevelFilter] = useState('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const keyword = useDebounced(searchTerm)
@@ -53,6 +48,9 @@ export function QualityMetricsTab() {
             query: {
               keyword: keyword || undefined,
               category: categoryFilter === 'all' ? undefined : categoryFilter,
+              stage: stageFilter === 'all' ? undefined : stageFilter,
+              metricLevel:
+                metricLevelFilter === 'all' ? undefined : metricLevelFilter,
               page,
               size: pageSize,
             },
@@ -60,11 +58,15 @@ export function QualityMetricsTab() {
           signal,
         }),
       ),
-    [keyword, categoryFilter, page, pageSize],
+    [keyword, categoryFilter, stageFilter, metricLevelFilter, page, pageSize],
   )
 
   const metrics = useMemo(() => data?.items ?? [], [data?.items])
-  const stageKeys = useMemo(() => [...STAGE_COLUMNS], [])
+
+  const onFilter = (setter: (value: string) => void) => (value: string) => {
+    setter(value)
+    setPage(1)
+  }
 
   // 차원(카테고리) 옵션은 실제 지표 데이터에서 도출 — 하드코딩 목록이 백엔드 값과 어긋나 필터 결과가 비는 문제 방지
   const categoriesApi = useApi(
@@ -78,51 +80,23 @@ export function QualityMetricsTab() {
     [],
   )
   const categoryOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          (categoriesApi.data?.items ?? [])
-            .map((m) => m.category)
-            .filter(Boolean),
-        ),
-      ).sort(),
+    () => distinctOptions((categoriesApi.data?.items ?? []).map((m) => m.category)),
     [categoriesApi.data],
   )
 
   return (
     <div className="space-y-4 mt-4">
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="지표명, 설명 또는 지표ID 검색..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value)
-              setPage(1)
-            }}
-            className="pl-10"
-          />
-        </div>
-        <Select
-          value={categoryFilter}
-          onValueChange={(value) => {
-            setCategoryFilter(value)
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="지표명, 설명 또는 지표ID 검색..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value)
             setPage(1)
           }}
-        >
-          <SelectTrigger className="h-9 w-[140px] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{'전체 차원'}</SelectItem>
-            {categoryOptions.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          className="pl-10"
+        />
       </div>
 
       <Card>
@@ -143,14 +117,35 @@ export function QualityMetricsTab() {
             <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-20 px-1 text-xs">
+                    <ColumnFilterHeader
+                      label="DB"
+                      allLabel="전체 DB"
+                      value={stageFilter}
+                      onChange={onFilter(setStageFilter)}
+                      options={STAGE_FILTER_OPTIONS}
+                    />
+                  </TableHead>
                   <TableHead className="w-24 truncate whitespace-nowrap text-xs">
                     {'지표ID'}
                   </TableHead>
-                  <TableHead className="w-20 truncate whitespace-nowrap text-xs">
-                    {'차원'}
+                  <TableHead className="w-20 px-1 text-xs">
+                    <ColumnFilterHeader
+                      label="차원"
+                      allLabel="전체 차원"
+                      value={categoryFilter}
+                      onChange={onFilter(setCategoryFilter)}
+                      options={categoryOptions}
+                    />
                   </TableHead>
-                  <TableHead className="w-24 truncate whitespace-nowrap text-xs">
-                    {'검증단위'}
+                  <TableHead className="w-24 px-1 text-xs">
+                    <ColumnFilterHeader
+                      label="검증단위"
+                      allLabel="전체 단위"
+                      value={metricLevelFilter}
+                      onChange={onFilter(setMetricLevelFilter)}
+                      options={METRIC_LEVEL_FILTER_OPTIONS}
+                    />
                   </TableHead>
                   <TableHead className="w-[220px] truncate whitespace-nowrap text-xs">
                     {'지표명'}
@@ -158,11 +153,6 @@ export function QualityMetricsTab() {
                   <TableHead className="truncate whitespace-nowrap text-xs">
                     {'대상 테이블'}
                   </TableHead>
-                  {stageKeys.map((stage) => (
-                    <TableHead key={stage} className="w-24 text-xs">
-                      {stageDbLabel(stage)}
-                    </TableHead>
-                  ))}
                   <TableHead className="w-36 truncate whitespace-nowrap text-xs">
                     {'지표 생성일'}
                   </TableHead>
@@ -174,20 +164,14 @@ export function QualityMetricsTab() {
               <TableBody>
                 {metrics.length === 0 ? (
                   <TableStateRow
-                    colSpan={7 + stageKeys.length}
+                    colSpan={8}
                     loading={isInitialLoading}
                     error={error}
                     empty={!isInitialLoading && !error}
                     onRetry={refetch}
                   />
                 ) : (
-                  metrics.map((item) => (
-                    <QualityMetricRow
-                      key={item.metricId}
-                      item={item}
-                      stageKeys={stageKeys}
-                    />
-                  ))
+                  metrics.map((item) => <QualityMetricRow key={item.metricId} item={item} />)
                 )}
               </TableBody>
             </Table>
@@ -200,22 +184,22 @@ export function QualityMetricsTab() {
 
 const QualityMetricRow = memo(function QualityMetricRow({
   item,
-  stageKeys,
 }: {
   item: DqQualityMetricResponse
-  stageKeys: string[]
 }) {
   const router = useRouter()
-  const tableNames = useMemo(
-    () => item.tableNames?.join(', ') || '-',
-    [item.tableNames],
-  )
+  const tableNames = useMemo(() => item.tableNames?.join(', ') || '-', [item.tableNames])
 
   return (
     <TableRow
       className="cursor-pointer hover:bg-muted/50"
       onClick={() => router.push(`/dashboard/indicators/${item.metricId}`)}
     >
+      <TableCell className="text-left">
+        <Badge variant="secondary" className="text-xs">
+          {stageDbLabel(item.stage)}
+        </Badge>
+      </TableCell>
       <TableCell
         className="truncate whitespace-nowrap text-xs font-mono font-medium align-top"
         title={item.metricId}
@@ -243,20 +227,6 @@ const QualityMetricRow = memo(function QualityMetricRow({
           {tableNames}
         </div>
       </TableCell>
-      {stageKeys.map((stage) => {
-        const score = item.stageScores?.[stage]
-        return (
-          <TableCell key={stage} className="text-left">
-            {score == null ? (
-              <span className="text-xs text-muted-foreground">{'-'}</span>
-            ) : (
-              <span className={`text-sm font-bold ${scoreColor(score)}`}>
-                {score}
-              </span>
-            )}
-          </TableCell>
-        )
-      })}
       <TableCell
         className="truncate whitespace-nowrap text-xs text-muted-foreground"
         title={item.createdAt}
@@ -269,13 +239,10 @@ const QualityMetricRow = memo(function QualityMetricRow({
           label={`품질지표 ${item.metricId}`}
           onSave={async (next) => {
             await unwrapGeneratedResult(
-              await generatedApi.PATCH(
-                '/api/qc/quality-metrics/{metricId}/activation',
-                {
-                  params: { path: { metricId: item.metricId } },
-                  body: { isActive: next ? 'Y' : 'N' },
-                },
-              ),
+              await generatedApi.PATCH('/api/qc/quality-metrics/{metricId}/activation', {
+                params: { path: { metricId: item.metricId } },
+                body: { isActive: next ? 'Y' : 'N' },
+              }),
             )
           }}
         />
