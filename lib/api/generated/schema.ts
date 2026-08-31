@@ -632,7 +632,7 @@ export interface paths {
         };
         /**
          * 지표 선택 목록 조회
-         * @description 검증 범위 선택 모달의 지표 단위 피커에서 사용. metricLevel(TABLE/FIELD/CONCEPT)은 필수이며 해당 세분화 단위의 지표를 페이징 없이 전부 반환한다. keyword는 지표 ID, 세부지표 ID, 지표명(한글)만 검색한다.
+         * @description 검증 범위 선택 모달의 지표 단위 피커에서 사용. metricLevel(TABLE/FIELD/CONCEPT)은 필수이며 해당 세분화 단위의 지표를 페이징 없이 전부 반환한다. keyword는 지표 ID, 세부지표 ID, 지표명(한글)만 검색한다. keyword가 세부지표 ID에 걸린 경우 matchedCheckIds에 그 세부지표 ID를 담아 준다(그 외에는 빈 배열).
          */
         get: operations["getMetricPickerList"];
         put?: never;
@@ -1928,6 +1928,8 @@ export interface components {
             metricNameKor?: string;
             /** @description 품질 차원(카테고리) */
             category?: string;
+            /** @description 검색어가 세부지표 ID에 걸린 경우 그 세부지표 ID 목록. 검색어가 없거나 지표 ID·지표명으로만 매칭된 경우 빈 배열 */
+            matchedCheckIds?: string[];
         };
         ApiResponseListCheckPickerItemResponse: {
             success?: boolean;

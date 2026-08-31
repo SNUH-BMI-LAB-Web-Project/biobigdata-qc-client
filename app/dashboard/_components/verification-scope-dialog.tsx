@@ -23,6 +23,13 @@ const OVERLAY_CLASS =
 /** metricId → 부분 선택된 세부지표 ID 목록. 세분화 단위는 모달 전체가 하나만 쓴다. */
 type SelectedChecks = Record<string, string[]>
 
+/**
+ * 검색어가 '세부지표 ID'에 걸린 지표만 비어 있지 않다 — 이 지표는 목록도 매칭된 것만 보여 주고,
+ * 지표 체크박스도 지표 전체가 아니라 매칭된 세부지표만 선택한다(= 필터 모드).
+ * 지표명·지표ID로만 걸렸거나 검색어가 없으면 빈 배열이라 기존 '지표 전체' 동작 그대로다.
+ */
+const matchedCheckIdsOf = (metric?: MetricPickerItemResponse) => metric?.matchedCheckIds ?? []
+
 export type ScopeSelection =
   | { scope: 'ALL' }
   | {
@@ -132,8 +139,16 @@ export function VerificationScopeDialog({
   const checks = (checksApi.data ?? []).filter(
     (check) => check.metricId === expandedMetric?.metricId,
   )
+  const expandedMatched = matchedCheckIdsOf(expandedMetric)
+  // 검색어가 세부지표 ID에 걸린 지표는 매칭된 것만 보여 준다.
+  const visibleChecks =
+    expandedMatched.length > 0
+      ? checks.filter((check) => check.checkId && expandedMatched.includes(check.checkId))
+      : checks
   // 세부지표 토글은 펼쳐진 지표에서만 일어나므로 이 목록이 곧 '그 지표의 전체 세부지표'다.
-  const visibleCheckIds = checks
+  // 필터 모드에서도 '지표 전체 선택'을 개별 선택으로 풀 때는 반드시 이 전체 목록을 써야 한다 —
+  // 보이는 것만 쓰면 매칭 안 된 세부지표가 조용히 선택 해제된다.
+  const allCheckIds = checks
     .map((check) => check.checkId)
     .filter((checkId): checkId is string => Boolean(checkId))
 
@@ -143,16 +158,34 @@ export function VerificationScopeDialog({
     setSelectedChecks(next)
   }
 
-  const toggleMetric = (metricId: string) => {
+  const toggleMetric = (metricId: string, matched: string[]) => {
     const fullySelected = selectedMetricIds.includes(metricId)
-    const partialCount = selectedChecks[metricId]?.length ?? 0
+    const partial = selectedChecks[metricId] ?? []
 
-    // 전체든 부분이든 뭔가 선택돼 있으면 한 번 누를 때 전부 해제한다.
-    if (fullySelected || partialCount > 0) {
+    // 필터 모드: 화면에 보이는 건 부분집합이므로 '지표 전체'로는 절대 올리지 않는다.
+    if (matched.length > 0) {
       if (fullySelected) {
         setSelectedMetricIds(selectedMetricIds.filter((id) => id !== metricId))
       }
-      if (partialCount > 0) clearChecksOf(metricId)
+      const covered = fullySelected || matched.every((id) => partial.includes(id))
+      // 이전 검색에서 골라 둔 세부지표는 건드리지 않고 매칭된 것만 켜고 끈다.
+      const nextCheckIds = covered
+        ? partial.filter((id) => !matched.includes(id))
+        : [...new Set([...partial, ...matched])]
+
+      const next = { ...selectedChecks }
+      if (nextCheckIds.length === 0) delete next[metricId]
+      else next[metricId] = nextCheckIds
+      setSelectedChecks(next)
+      return
+    }
+
+    // 전체든 부분이든 뭔가 선택돼 있으면 한 번 누를 때 전부 해제한다.
+    if (fullySelected || partial.length > 0) {
+      if (fullySelected) {
+        setSelectedMetricIds(selectedMetricIds.filter((id) => id !== metricId))
+      }
+      if (partial.length > 0) clearChecksOf(metricId)
       return
     }
     setSelectedMetricIds([...selectedMetricIds, metricId])
@@ -162,14 +195,17 @@ export function VerificationScopeDialog({
     const metricSelected = selectedMetricIds.includes(metricId)
     // 지표 전체 선택은 세부지표가 모두 켜진 것으로 보이므로,
     // 그 상태에서 하나를 끄면 나머지를 명시적인 부분 선택으로 풀어 둔다.
-    const current = metricSelected ? visibleCheckIds : (selectedChecks[metricId] ?? [])
+    const current = metricSelected ? allCheckIds : (selectedChecks[metricId] ?? [])
     const nextCheckIds = current.includes(checkId)
       ? current.filter((id) => id !== checkId)
       : [...current, checkId]
 
     // 반대로 세부지표를 다 채우면 '지표 전체' 선택으로 승격한다.
+    // 단 필터 모드에선 보이는 게 부분집합이라 다 채워도 '지표 전체'가 아니다.
     const coversAll =
-      visibleCheckIds.length > 0 && visibleCheckIds.every((id) => nextCheckIds.includes(id))
+      expandedMatched.length === 0 &&
+      allCheckIds.length > 0 &&
+      allCheckIds.every((id) => nextCheckIds.includes(id))
 
     if (coversAll) {
       if (!metricSelected) setSelectedMetricIds([...selectedMetricIds, metricId])
@@ -295,11 +331,16 @@ export function VerificationScopeDialog({
                       const metricId = metric.metricId ?? ''
                       const partial = selectedChecks[metricId] ?? []
                       const metricSelected = selectedMetricIds.includes(metricId)
-                      const checked = metricSelected
-                        ? true
-                        : partial.length > 0
-                          ? 'indeterminate'
-                          : false
+                      const matched = matchedCheckIdsOf(metric)
+                      // 필터 모드에선 '매칭된 세부지표를 다 골랐는가'가 곧 체크 상태다.
+                      const coversMatched =
+                        matched.length > 0 && matched.every((id) => partial.includes(id))
+                      const checked =
+                        metricSelected || coversMatched
+                          ? true
+                          : partial.length > 0
+                            ? 'indeterminate'
+                            : false
                       const expanded = expandedMetricId === metricId
 
                       return (
@@ -319,8 +360,12 @@ export function VerificationScopeDialog({
                             </button>
                             <Checkbox
                               checked={checked}
-                              onCheckedChange={() => toggleMetric(metricId)}
-                              aria-label={`${metric.metricNameKor} 전체 선택`}
+                              onCheckedChange={() => toggleMetric(metricId, matched)}
+                              aria-label={
+                                matched.length > 0
+                                  ? `${metric.metricNameKor} 매칭된 세부지표 전체 선택`
+                                  : `${metric.metricNameKor} 전체 선택`
+                              }
                             />
                             <span className="font-mono text-xs text-muted-foreground w-16 shrink-0">
                               {metricId}
@@ -335,14 +380,26 @@ export function VerificationScopeDialog({
 
                           {expanded && (
                             <div className="bg-muted/30 border-t">
+                              {/* 전체가 아니라 검색에 걸린 것만 보인다는 걸 명시한다. */}
+                              {matched.length > 0 && !checksApi.loading && !checksApi.error && (
+                                <p className="px-3 pt-2 text-[11px] text-muted-foreground">
+                                  {`검색어와 일치하는 세부지표 ${visibleChecks.length}개`}
+                                </p>
+                              )}
                               {checksApi.loading ? (
                                 <ListState message="세부지표 불러오는 중..." />
                               ) : checksApi.error ? (
                                 <ListState message={checksApi.error} />
-                              ) : checks.length === 0 ? (
-                                <ListState message="세부지표가 없습니다" />
+                              ) : visibleChecks.length === 0 ? (
+                                <ListState
+                                  message={
+                                    matched.length > 0
+                                      ? '검색어와 일치하는 세부지표가 없습니다'
+                                      : '세부지표가 없습니다'
+                                  }
+                                />
                               ) : (
-                                checks.map((check) => (
+                                visibleChecks.map((check) => (
                                   <label
                                     key={check.checkId}
                                     className="flex items-center gap-2 pl-12 pr-3 py-1.5 text-xs cursor-pointer hover:bg-muted/50"
