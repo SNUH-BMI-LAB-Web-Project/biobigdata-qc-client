@@ -10,6 +10,7 @@ import {
   FileBarChart,
   Gauge,
   LayoutDashboard,
+  Sparkles,
   Table,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,10 @@ const RESULT_NAV_ITEMS: readonly NavItem[] = [
 
 const SECONDARY_NAV_ITEMS: readonly NavItem[] = [
   { name: '지표DB 관리', href: '/dashboard/indicators', icon: Table },
+]
+
+const THIRD_NAV_ITEMS: readonly NavItem[] = [
+  { name: 'Agent', href: '/dashboard/agent', icon: Sparkles },
 ]
 
 /** 대시보드 공통 사이드바 — 1차/결과(접힘)/지표DB 내비 + 품질 점수 팝오버 */
@@ -97,6 +102,15 @@ export function DashboardSidebar() {
             onClick={() => router.push(item.href)}
           />
         ))}
+
+        {THIRD_NAV_ITEMS.map((item) => (
+          <SidebarLink
+            key={item.href}
+            item={item}
+            active={pathname === item.href}
+            onClick={() => router.push(item.href)}
+          />
+        ))}
       </nav>
 
       <div className="p-3 border-t flex-shrink-0">
@@ -132,8 +146,7 @@ function SidebarLink({
       className={cn(
         'w-full justify-start gap-2',
         size === 'sub' ? 'text-xs h-8' : 'text-sm h-9',
-        active &&
-          'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary',
+        active && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary',
       )}
       onClick={onClick}
     >
