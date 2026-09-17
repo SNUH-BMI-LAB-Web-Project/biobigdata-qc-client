@@ -26,10 +26,10 @@ function statusIcon(metric: DqMetricResultResponse, failed: boolean) {
 
 /** 지표(METRIC_ID) 1건의 통과율/통과·위반 건수를 통합해 보여주는 카드. 세부지표가 있으면 펼쳐서 드릴다운 가능 */
 export function MetricResultCard({
-  checkId,
+  runId,
   metric,
 }: {
-  checkId: number
+  runId: number
   metric: DqMetricResultResponse
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -126,7 +126,7 @@ export function MetricResultCard({
 
       {expanded && hasSubMetrics && (
         <div className="border-t px-3 pb-3 pt-2">
-          <SubMetricResults checkId={checkId} metricId={metric.metricId} />
+          <SubMetricResults runId={runId} metricId={metric.metricId} />
         </div>
       )}
     </div>

@@ -9,21 +9,21 @@ import { MetricResults } from './metric-results'
 
 function QualityResultsContent() {
   const searchParams = useSearchParams()
-  const deepLinkCheckId = useMemo(() => {
-    const raw = searchParams.get('checkId')
+  const deepLinkRunId = useMemo(() => {
+    const raw = searchParams.get('runId')
     if (!raw) return null
     const parsed = Number(raw)
     return Number.isNaN(parsed) ? null : parsed
   }, [searchParams])
 
   const [selectedStage, setSelectedStage] = useState<string | null>(null)
-  const [selectedCheckId, setSelectedCheckId] = useState<number | null>(
-    deepLinkCheckId,
+  const [selectedRunId, setSelectedRunId] = useState<number | null>(
+    deepLinkRunId,
   )
 
   const handleSelectStage = (stage: string) => {
     setSelectedStage((prev) => (prev === stage ? null : stage))
-    setSelectedCheckId(null)
+    setSelectedRunId(null)
   }
 
   return (
@@ -42,10 +42,10 @@ function QualityResultsContent() {
         />
         <ChecksTable
           selectedStage={selectedStage}
-          selectedCheckId={selectedCheckId}
-          onSelectCheck={setSelectedCheckId}
+          selectedRunId={selectedRunId}
+          onSelectRun={setSelectedRunId}
         />
-        <MetricResults checkId={selectedCheckId} />
+        <MetricResults runId={selectedRunId} />
       </main>
     </div>
   )

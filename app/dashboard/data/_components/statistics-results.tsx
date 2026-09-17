@@ -16,43 +16,43 @@ import { CompactPager } from '@/components/pager'
 import { DistributionResults } from './distribution-results'
 import { fmtNum, stratumKey } from './statistics-format'
 import type {
-  DqAchillesResultDistResponse,
-  DqAchillesResultResponse,
+  DqStatisticsResultDistResponse,
+  DqStatisticsResultResponse,
 } from '@/lib/api'
 
 const PAGE_SIZE = 20
 
-export function StatisticsResults({ checkId }: { checkId: number }) {
+export function StatisticsResults({ runId }: { runId: number }) {
   const countApi = useApi(
     async (signal) =>
-      unwrapGeneratedResult<DqAchillesResultResponse[]>(
+      unwrapGeneratedResult<DqStatisticsResultResponse[]>(
         await generatedApi.GET(
-          '/api/qc/statistics-results/checks/{checkId}/analyses',
+          '/api/qc/statistics-results/checks/{runId}/analyses',
           {
-            params: { path: { checkId }, query: { analysisId: undefined } },
+            params: { path: { runId }, query: { metricId: undefined } },
             signal,
           },
         ),
       ),
-    [checkId],
+    [runId],
   )
   const distApi = useApi(
     async (signal) =>
-      unwrapGeneratedResult<DqAchillesResultDistResponse[]>(
+      unwrapGeneratedResult<DqStatisticsResultDistResponse[]>(
         await generatedApi.GET(
-          '/api/qc/statistics-results/checks/{checkId}/analyses/dist',
+          '/api/qc/statistics-results/checks/{runId}/analyses/dist',
           {
-            params: { path: { checkId }, query: { analysisId: undefined } },
+            params: { path: { runId }, query: { metricId: undefined } },
             signal,
           },
         ),
       ),
-    [checkId],
+    [runId],
   )
 
-  const [countPageState, setCountPageState] = useState({ checkId, page: 1 })
-  const countPage = countPageState.checkId === checkId ? countPageState.page : 1
-  const setCountPage = (page: number) => setCountPageState({ checkId, page })
+  const [countPageState, setCountPageState] = useState({ runId, page: 1 })
+  const countPage = countPageState.runId === runId ? countPageState.page : 1
+  const setCountPage = (page: number) => setCountPageState({ runId, page })
   const countData = useMemo(() => countApi.data ?? [], [countApi.data])
   const countTotalPages = useMemo(
     () => Math.max(1, Math.ceil(countData.length / PAGE_SIZE)),
@@ -74,7 +74,7 @@ export function StatisticsResults({ checkId }: { checkId: number }) {
                 {'통계 결과 — 단순값'}
               </CardTitle>
               <CardDescription className="text-xs">
-                {`검증 #${checkId} · count 값 (distribution=0)`}
+                {`검증 #${runId} · count 값 (distribution=0)`}
               </CardDescription>
             </div>
             <CompactPager
@@ -98,7 +98,7 @@ export function StatisticsResults({ checkId }: { checkId: number }) {
               <table className="w-full text-xs">
                 <thead className="border-b bg-muted/30">
                   <tr>
-                    <th className="text-left p-2 font-medium">{'분석 ID'}</th>
+                    <th className="text-left p-2 font-medium">{'지표 ID'}</th>
                     <th className="text-left p-2 font-medium">
                       {'분류 (Stratum)'}
                     </th>
@@ -108,10 +108,10 @@ export function StatisticsResults({ checkId }: { checkId: number }) {
                 <tbody>
                   {pagedCount.map((row, index) => (
                     <tr
-                      key={`${row.analysisId}-${index}`}
+                      key={`${row.metricId}-${index}`}
                       className="border-b hover:bg-muted/30"
                     >
-                      <td className="p-2 font-mono">{row.analysisId}</td>
+                      <td className="p-2 font-mono">{row.metricId}</td>
                       <td className="p-2">{stratumKey(row)}</td>
                       <td className="p-2 text-right font-mono">
                         {fmtNum(row.countValue)}
@@ -132,7 +132,7 @@ export function StatisticsResults({ checkId }: { checkId: number }) {
             {'통계 결과 — 분포'}
           </CardTitle>
           <CardDescription className="text-xs">
-            {`검증 #${checkId} · 분포 값 (distribution=1)`}
+            {`검증 #${runId} · 분포 값 (distribution=1)`}
           </CardDescription>
         </CardHeader>
         <CardContent>

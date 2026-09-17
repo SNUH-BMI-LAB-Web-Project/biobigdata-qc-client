@@ -17,26 +17,26 @@ import { useApi } from '@/hooks/use-api'
 import {
   STAGE_LABEL,
   SUB_STAGE_LABEL,
-  checkTypeLabel,
+  runTypeLabel,
   generatedApi,
   unwrapGeneratedResult,
 } from '@/lib/api'
-import type { DqCheckLogResponse, PageResult } from '@/lib/api'
+import type { DqRunLogResponse, PageResult } from '@/lib/api'
 import { fmtDate } from './statistics-format'
 
 const LOGS_PAGE_SIZE = 5
 
 interface StatisticsHistoryTableProps {
   stage: string // 'ALL' | stage code
-  selectedCheckId: number | null
-  onSelectCheck: (checkId: number) => void
+  selectedRunId: number | null
+  onSelectRun: (runId: number) => void
 }
 
 /** 통계 검증 실행 내역 표 — 완료 건 클릭 시 통계 결과를 띄운다. */
 export function StatisticsHistoryTable({
   stage,
-  selectedCheckId,
-  onSelectCheck,
+  selectedRunId,
+  onSelectRun,
 }: StatisticsHistoryTableProps) {
   const [page, setPage] = useState(1)
 
@@ -45,7 +45,7 @@ export function StatisticsHistoryTable({
 
   const logsApi = useApi(
     async (signal) =>
-      unwrapGeneratedResult<PageResult<DqCheckLogResponse>>(
+      unwrapGeneratedResult<PageResult<DqRunLogResponse>>(
         await generatedApi.GET('/api/qc/statistics-results/checks', {
           params: {
             query: {
@@ -117,11 +117,11 @@ export function StatisticsHistoryTable({
               </thead>
               <tbody>
                 {logs.map((row, idx) => {
-                  const isCompleted = row.checkStatus === 1
-                  const isSelected = selectedCheckId === row.checkId
+                  const isCompleted = row.runStatus === 1
+                  const isSelected = selectedRunId === row.runId
                   return (
                     <tr
-                      key={row.checkId}
+                      key={row.runId}
                       className={`border-b transition-all ${
                         isCompleted ? 'cursor-pointer' : 'opacity-60'
                       } ${
@@ -132,7 +132,7 @@ export function StatisticsHistoryTable({
                             : ''
                       }`}
                       onClick={() => {
-                        if (isCompleted) onSelectCheck(row.checkId)
+                        if (isCompleted) onSelectRun(row.runId)
                       }}
                     >
                       <td className="p-2 text-center">
@@ -148,20 +148,20 @@ export function StatisticsHistoryTable({
                       </td>
                       <td className="p-2">
                         <Badge variant="outline" className="text-[10px]">
-                          {checkTypeLabel(row.checkType)}
+                          {runTypeLabel(row.runType)}
                         </Badge>
                       </td>
                       <td className="p-2 whitespace-normal break-all">
-                        {row.checkStatusFstWrt || '-'}
+                        {row.createdBy || '-'}
                       </td>
                       <td className="p-2 font-mono">
-                        {fmtDate(row.checkStartDatetime)}
+                        {fmtDate(row.runStartDatetime)}
                       </td>
                       <td className="p-2 font-mono">
-                        {fmtDate(row.checkEndDatetime)}
+                        {fmtDate(row.runEndDatetime)}
                       </td>
                       <td className="p-2">
-                        <CheckStatusBadge status={row.checkStatus} />
+                        <CheckStatusBadge status={row.runStatus} />
                       </td>
                     </tr>
                   )

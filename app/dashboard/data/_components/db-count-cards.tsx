@@ -2,7 +2,7 @@
 
 import { useApi } from '@/hooks/use-api'
 import { STAGE_LABEL, generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import type { DqCheckLogResponse, PageResult } from '@/lib/api'
+import type { DqRunLogResponse, PageResult } from '@/lib/api'
 
 // DB 카드로 노출하는 단계 (수집DB(COLL)는 UI에 표시하지 않음 — 품질 결과와 동일)
 export const STAGE_CARDS = ['LINK', 'PREP', 'INTG', 'OPEN'] as const
@@ -17,7 +17,7 @@ export function DbCountCards({ stage, onSelectStage }: DbCountCardsProps) {
   const countsApi = useApi(async (signal) => {
     const entries = await Promise.all(
       STAGE_CARDS.map(async (s) => {
-        const res = await unwrapGeneratedResult<PageResult<DqCheckLogResponse>>(
+        const res = await unwrapGeneratedResult<PageResult<DqRunLogResponse>>(
           await generatedApi.GET('/api/qc/statistics-results/checks', {
             params: { query: { stage: s, page: 1, size: 1 } },
             signal,

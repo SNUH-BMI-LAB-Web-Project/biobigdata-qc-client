@@ -14,7 +14,7 @@ import {
 } from './verification-scope-dialog'
 import { VerificationSelectionPanel } from './verification-selection-panel'
 import type {
-  CheckExecutionResponse,
+  RunExecutionResponse,
   DagRunRequest,
   DagRunResponse,
   PageResult,
@@ -38,7 +38,7 @@ export function QualityVerificationView() {
     refetch,
   } = useApi(
     async (signal) =>
-      unwrapGeneratedResult<PageResult<CheckExecutionResponse>>(
+      unwrapGeneratedResult<PageResult<RunExecutionResponse>>(
         await generatedApi.GET('/api/qc/executions', {
           params: { query: { page: currentPage, size: EXECUTIONS_PAGE_SIZE } },
           signal,
@@ -52,7 +52,7 @@ export function QualityVerificationView() {
     (db) => db.id === selectedDb,
   )
   const requiresSubStage = selectedDbInfo?.requiresSubStage ?? false
-  const hasRunningVerification = executions.some((row) => row.checkStatus === 0)
+  const hasRunningVerification = executions.some((row) => row.runStatus === 0)
   const isQuality = selectedIndicator === 'quality'
   const canExecute =
     !!selectedDb &&

@@ -17,22 +17,22 @@ import { StatisticsResults } from './statistics-results'
 
 function DataStatisticsResultContent() {
   const searchParams = useSearchParams()
-  const deepLinkCheckId = useMemo(() => {
-    const v = searchParams.get('checkId')
+  const deepLinkRunId = useMemo(() => {
+    const v = searchParams.get('runId')
     if (!v) return null
     const n = Number(v)
     return Number.isFinite(n) ? n : null
   }, [searchParams])
 
   const [stage, setStage] = useState<string>('ALL')
-  const [selectedCheckId, setSelectedCheckId] = useState<number | null>(
-    deepLinkCheckId,
+  const [selectedRunId, setSelectedRunId] = useState<number | null>(
+    deepLinkRunId,
   )
 
   // DB 카드 클릭 → 단계 필터 토글 (이미 선택된 카드 재클릭 시 전체로)
   const handleSelectStage = (s: string) => {
     setStage((prev) => (prev === s ? 'ALL' : s))
-    setSelectedCheckId(null)
+    setSelectedRunId(null)
   }
 
   return (
@@ -41,18 +41,18 @@ function DataStatisticsResultContent() {
         <div>
           <h1 className="text-xl font-bold">{'데이터 통계 결과'}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {'통계지표(Achilles) 검증 결과를 확인합니다'}
+            {'통계지표 검증 결과를 확인합니다'}
           </p>
         </div>
 
         <DbCountCards stage={stage} onSelectStage={handleSelectStage} />
         <StatisticsHistoryTable
           stage={stage}
-          selectedCheckId={selectedCheckId}
-          onSelectCheck={setSelectedCheckId}
+          selectedRunId={selectedRunId}
+          onSelectRun={setSelectedRunId}
         />
 
-        {selectedCheckId === null ? (
+        {selectedRunId === null ? (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
@@ -68,7 +68,7 @@ function DataStatisticsResultContent() {
             </CardContent>
           </Card>
         ) : (
-          <StatisticsResults checkId={selectedCheckId} />
+          <StatisticsResults runId={selectedRunId} />
         )}
       </main>
     </div>

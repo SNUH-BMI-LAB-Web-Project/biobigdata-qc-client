@@ -12,10 +12,10 @@ const SUB_METRICS_PAGE_SIZE = 5
 
 /** METRIC_ID 하위 세부지표(검증 대상 열) 드릴다운 목록 */
 export function SubMetricResults({
-  checkId,
+  runId,
   metricId,
 }: {
-  checkId: number
+  runId: number
   metricId: string
 }) {
   const [page, setPage] = useState(1)
@@ -24,17 +24,17 @@ export function SubMetricResults({
     async (signal) =>
       unwrapGeneratedResult<PageResult<DqSubMetricResultResponse>>(
         await generatedApi.GET(
-          '/api/qc/quality-results/checks/{checkId}/metrics/{metricId}/sub-metrics',
+          '/api/qc/quality-results/checks/{runId}/metrics/{metricId}/sub-metrics',
           {
             params: {
-              path: { checkId, metricId },
+              path: { runId, metricId },
               query: { page, size: SUB_METRICS_PAGE_SIZE },
             },
             signal,
           },
         ),
       ),
-    [checkId, metricId, page],
+    [runId, metricId, page],
   )
 
   const items = results.data?.items ?? []
@@ -66,6 +66,14 @@ export function SubMetricResults({
                     {sub.checkTargetColumn && (
                       <div className="truncate text-muted-foreground">
                         {sub.checkTargetColumn}
+                      </div>
+                    )}
+                    {sub.checkNotes && (
+                      <div
+                        className="truncate text-muted-foreground"
+                        title={sub.checkNotes}
+                      >
+                        {sub.checkNotes}
                       </div>
                     )}
                     {failed && (

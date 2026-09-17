@@ -17,26 +17,26 @@ import { useApi } from '@/hooks/use-api'
 import {
   STAGE_LABEL,
   SUB_STAGE_LABEL,
-  checkTypeLabel,
+  runTypeLabel,
   generatedApi,
   unwrapGeneratedResult,
 } from '@/lib/api'
-import type { DqCheckLogResponse, PageResult } from '@/lib/api'
+import type { DqRunLogResponse, PageResult } from '@/lib/api'
 import { formatDatetime } from './quality-result-utils'
 
 const CHECKS_PAGE_SIZE = 5
 
 interface ChecksTableProps {
   selectedStage: string | null
-  selectedCheckId: number | null
-  onSelectCheck: (checkId: number) => void
+  selectedRunId: number | null
+  onSelectRun: (runId: number) => void
 }
 
 /** 검증 실행 내역 표 — 완료 건 클릭 시 지표별 결과를 띄운다. */
 export function ChecksTable({
   selectedStage,
-  selectedCheckId,
-  onSelectCheck,
+  selectedRunId,
+  onSelectRun,
 }: ChecksTableProps) {
   const [page, setPage] = useState(1)
 
@@ -45,7 +45,7 @@ export function ChecksTable({
 
   const checks = useApi(
     async (signal) =>
-      unwrapGeneratedResult<PageResult<DqCheckLogResponse>>(
+      unwrapGeneratedResult<PageResult<DqRunLogResponse>>(
         await generatedApi.GET('/api/qc/quality-results/checks', {
           params: {
             query: {
@@ -117,11 +117,11 @@ export function ChecksTable({
               </thead>
               <tbody>
                 {items.map((row, idx) => {
-                  const completed = row.checkStatus === 1
-                  const isSelected = selectedCheckId === row.checkId
+                  const completed = row.runStatus === 1
+                  const isSelected = selectedRunId === row.runId
                   return (
                     <tr
-                      key={row.checkId}
+                      key={row.runId}
                       className={`border-b transition-all ${
                         completed
                           ? 'cursor-pointer'
@@ -134,7 +134,7 @@ export function ChecksTable({
                             : ''
                       }`}
                       onClick={() => {
-                        if (completed) onSelectCheck(row.checkId)
+                        if (completed) onSelectRun(row.runId)
                       }}
                     >
                       <td className="p-2 text-center">
@@ -150,20 +150,20 @@ export function ChecksTable({
                       </td>
                       <td className="p-2">
                         <Badge variant="outline" className="text-[10px]">
-                          {checkTypeLabel(row.checkType)}
+                          {runTypeLabel(row.runType)}
                         </Badge>
                       </td>
                       <td className="p-2 whitespace-normal break-all">
-                        {row.checkStatusFstWrt || '-'}
+                        {row.createdBy || '-'}
                       </td>
                       <td className="p-2 font-mono">
-                        {formatDatetime(row.checkStartDatetime)}
+                        {formatDatetime(row.runStartDatetime)}
                       </td>
                       <td className="p-2 font-mono">
-                        {formatDatetime(row.checkEndDatetime)}
+                        {formatDatetime(row.runEndDatetime)}
                       </td>
                       <td className="p-2">
-                        <CheckStatusBadge status={row.checkStatus} />
+                        <CheckStatusBadge status={row.runStatus} />
                       </td>
                     </tr>
                   )

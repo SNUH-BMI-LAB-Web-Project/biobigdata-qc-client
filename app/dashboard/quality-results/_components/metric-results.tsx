@@ -22,30 +22,30 @@ import { MetricResultCard } from './metric-result-card'
 
 const RESULTS_PAGE_SIZE = 5
 
-/** 선택된 검증(checkId)의 지표별 결과 목록 */
-export function MetricResults({ checkId }: { checkId: number | null }) {
+/** 선택된 검증(runId)의 지표별 결과 목록 */
+export function MetricResults({ runId }: { runId: number | null }) {
   const [page, setPage] = useState(1)
 
   // 다른 검증을 선택하면 첫 페이지로
-  useEffect(() => setPage(1), [checkId])
+  useEffect(() => setPage(1), [runId])
 
   const results = useApi(
     async (signal) =>
-      checkId == null
+      runId == null
         ? null
         : unwrapGeneratedResult<PageResult<DqMetricResultResponse>>(
             await generatedApi.GET(
-              '/api/qc/quality-results/checks/{checkId}/metric-summary',
+              '/api/qc/quality-results/checks/{runId}/metric-summary',
               {
                 params: {
-                  path: { checkId },
+                  path: { runId },
                   query: { page, size: RESULTS_PAGE_SIZE },
                 },
                 signal,
               },
             ),
           ),
-    [checkId, page],
+    [runId, page],
   )
 
   const items = results.data?.items ?? []
@@ -60,12 +60,12 @@ export function MetricResults({ checkId }: { checkId: number | null }) {
               {'지표별 결과'}
             </CardTitle>
             <CardDescription className="text-xs">
-              {checkId == null
+              {runId == null
                 ? '완료된 검증을 선택하면 지표별 결과가 표시됩니다'
-                : `검증 #${checkId}`}
+                : `검증 #${runId}`}
             </CardDescription>
           </div>
-          {checkId != null && (
+          {runId != null && (
             <CompactPager
               page={results.data?.page ?? page}
               totalPages={results.data?.totalPages ?? 1}
@@ -75,7 +75,7 @@ export function MetricResults({ checkId }: { checkId: number | null }) {
         </div>
       </CardHeader>
       <CardContent>
-        {checkId == null ? (
+        {runId == null ? (
           <EmptyBlock message="위 표에서 완료된 검증을 선택하세요." />
         ) : items.length === 0 ? (
           <AsyncStateBlock
@@ -93,7 +93,7 @@ export function MetricResults({ checkId }: { checkId: number | null }) {
             {items.map((metric) => (
               <MetricResultCard
                 key={metric.metricId}
-                checkId={checkId}
+                runId={runId}
                 metric={metric}
               />
             ))}

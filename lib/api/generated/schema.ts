@@ -73,6 +73,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/stages/{stage}/{subStage}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** [관리자] 개방 버전 단건 조회 */
+        get: operations["getStage"];
+        /** [관리자] 개방 버전 수정 */
+        put: operations["updateStage"];
+        post?: never;
+        /** [관리자] 개방 버전 삭제 (유효종료) */
+        delete: operations["deleteStage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/permissions/{role}": {
         parameters: {
             query?: never;
@@ -168,8 +187,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 통계 지표 목록 조회 */
-        get: operations["getDqStatisticsMetricList"];
+        /** 통계지표 종류(SI) 목록 조회 */
+        get: operations["getDqStatisticsAnalysisList"];
         put?: never;
         /**
          * 통계 지표 검증 DAG 실행
@@ -277,6 +296,24 @@ export interface paths {
          * @description 회원ID/비밀번호로 인증하고 세션을 생성한다.
          */
         post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/stages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** [관리자] 개방 버전 전체 목록 조회 */
+        get: operations["getStagesForAdmin"];
+        put?: never;
+        /** [관리자] 개방 버전 추가 */
+        post: operations["createStage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -392,10 +429,10 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * 통계 지표 활성/비활성 토글
-         * @description isActive 값을 Y/N으로 지정해 통계 지표의 활성 여부를 변경한다.
+         * 통계지표 종류(SI) 활성/비활성 토글
+         * @description isActive 값을 Y/N으로 지정해 통계지표 종류의 활성 여부를 변경한다.
          */
-        patch: operations["updateDqStatisticsMetricActivation"];
+        patch: operations["updateDqStatisticsAnalysisActivation"];
         trace?: never;
     };
     "/api/qc/quality-metrics/{metricId}/activation": {
@@ -429,7 +466,7 @@ export interface paths {
          * 통계 검증 실행 내역 목록 조회
          * @description subStage(preview_open / main_open)로 사전개방·본개방 필터링 가능. 대소문자 무관.
          */
-        get: operations["getStatisticsCheckLogs"];
+        get: operations["getStatisticsRunLogs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -438,7 +475,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/qc/statistics-results/checks/{checkId}/analyses": {
+    "/api/qc/statistics-results/checks/{runId}/analyses": {
         parameters: {
             query?: never;
             header?: never;
@@ -449,7 +486,7 @@ export interface paths {
          * 통계 분석 결과 조회 (단순값)
          * @description distribution=0인 결과
          */
-        get: operations["getAchillesResultList"];
+        get: operations["getStatisticsResultList"];
         put?: never;
         post?: never;
         delete?: never;
@@ -458,7 +495,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/qc/statistics-results/checks/{checkId}/analyses/dist": {
+    "/api/qc/statistics-results/checks/{runId}/analyses/dist": {
         parameters: {
             query?: never;
             header?: never;
@@ -469,7 +506,7 @@ export interface paths {
          * 통계 분석 결과 조회 (분포)
          * @description distribution=1인 결과
          */
-        get: operations["getAchillesResultDistList"];
+        get: operations["getStatisticsResultDistList"];
         put?: never;
         post?: never;
         delete?: never;
@@ -485,8 +522,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Achilles 분석 목록 조회 */
-        get: operations["getDqAchillesAnalysisList"];
+        /** 통계지표 목록 조회 */
+        get: operations["getDqStatisticsMetricList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/stages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 개방 버전 목록 조회 (동적 UI용)
+         * @description enabledOnly=true(기본)이면 사용중인 버전만. 품질검증 실행 화면의 DB단계·버전 선택 UI 구성에 사용.
+         */
+        get: operations["getStages"];
         put?: never;
         post?: never;
         delete?: never;
@@ -523,7 +580,7 @@ export interface paths {
          * 품질 검증 실행 내역 목록 조회
          * @description subStage(preview_open / main_open)로 사전개방·본개방 필터링 가능. 대소문자 무관.
          */
-        get: operations["getQualityCheckLogs"];
+        get: operations["getQualityRunLogs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -532,15 +589,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/qc/quality-results/checks/{checkId}/metrics": {
+    "/api/qc/quality-results/checks/{runId}/metrics": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** checkId 기준 지표별 품질 결과 조회 */
-        get: operations["getQualityResultsByCheckId"];
+        /** runId 기준 지표별 품질 결과 조회 */
+        get: operations["getQualityResultsByRunId"];
         put?: never;
         post?: never;
         delete?: never;
@@ -549,7 +606,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/qc/quality-results/checks/{checkId}/metrics/{metricId}/sub-metrics": {
+    "/api/qc/quality-results/checks/{runId}/metrics/{metricId}/sub-metrics": {
         parameters: {
             query?: never;
             header?: never;
@@ -557,7 +614,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * checkId + metricId 기준 세부지표별 결과 조회
+         * runId + metricId 기준 세부지표별 결과 조회
          * @description 드릴다운 계층. 특정 METRIC_ID에 속한 세부지표(검증 대상 열)별 통과/위반/전체를 반환한다.
          */
         get: operations["getSubMetricResults"];
@@ -569,7 +626,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/qc/quality-results/checks/{checkId}/metric-summary": {
+    "/api/qc/quality-results/checks/{runId}/metric-summary": {
         parameters: {
             query?: never;
             header?: never;
@@ -577,10 +634,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * checkId 기준 지표(METRIC_ID) 단위 결과 요약 조회
+         * runId 기준 지표(METRIC_ID) 단위 결과 요약 조회
          * @description 최상위 계층. METRIC_ID로 묶어 통과/위반/전체 합계와 세부지표 개수를 반환한다.
          */
-        get: operations["getMetricResultsByCheckId"];
+        get: operations["getMetricResultsByRunId"];
         put?: never;
         post?: never;
         delete?: never;
@@ -674,7 +731,7 @@ export interface paths {
          * 검증 현황 목록 조회
          * @description subStage(preview_open / main_open)로 사전개방·본개방 필터링 가능. 대소문자 무관.
          */
-        get: operations["getCheckExecutionList"];
+        get: operations["getRunExecutionList"];
         put?: never;
         post?: never;
         delete?: never;
@@ -683,7 +740,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/qc/executions/{checkId}": {
+    "/api/qc/executions/{runId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -692,9 +749,9 @@ export interface paths {
         };
         /**
          * 검증 현황 상세 조회
-         * @description CHECK_ID에 해당하는 실행 로그를 반환합니다. 시작 시간(HH:mm), 종료 시간(HH:mm)을 포함합니다.
+         * @description RUN_ID에 해당하는 실행 로그를 반환합니다. 시작 시간(HH:mm), 종료 시간(HH:mm)을 포함합니다.
          */
-        get: operations["getCheckExecutionDetail"];
+        get: operations["getRunExecutionDetail"];
         put?: never;
         post?: never;
         delete?: never;
@@ -937,6 +994,46 @@ export interface components {
              */
             lastLoginAt?: string;
         };
+        /** @description DB 단계 개방 버전 수정 요청 */
+        UpdateDqStageRequest: {
+            /** @description 버전명 (예: 사전개방, 본개방) */
+            versionName: string;
+            /** @description 버전 설명 (선택) */
+            versionDescription?: string;
+            /** @description DB 구조 정의서명 (선택) */
+            schemaDocName?: string;
+            /** @description 품질팀 사용 가능 일자 YYYY-MM-DD (선택) */
+            availableAt?: string;
+            /** @description 사용 여부 (Y/N, 선택) */
+            isEnable?: string;
+        };
+        ApiResponseDqStageResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["DqStageResponse"];
+        };
+        /** @description DB 단계별 개방 버전 */
+        DqStageResponse: {
+            /** @description DB 단계 (LINK/COLL/PREP/INTG/OPEN) */
+            stage?: string;
+            /** @description 데이터 버전 (1, 2, ...) */
+            subStage?: string;
+            /** @description 버전명 (예: 사전개방, 본개방) */
+            versionName?: string;
+            /** @description 버전 설명 */
+            versionDescription?: string;
+            /** @description DB 구조 정의서명 */
+            schemaDocName?: string;
+            /** @description 품질팀 사용 가능 일자 (YYYY-MM-DD) */
+            availableAt?: string;
+            /** @description 사용 여부 (Y/N) */
+            isEnable?: string;
+            /** @description 생성일 */
+            createdAt?: string;
+            /** @description 수정일 */
+            updatedAt?: string;
+        };
         /** @description 역할별 권한 수정 요청 */
         RolePermissionsUpdateRequest: {
             /**
@@ -1172,6 +1269,26 @@ export interface components {
              */
             role?: "ADMIN" | "MANAGER" | "VIEWER";
         };
+        /** @description DB 단계 개방 버전 생성 요청 */
+        CreateDqStageRequest: {
+            /**
+             * @description DB 단계
+             * @enum {string}
+             */
+            stage: "LINK" | "COLL" | "PREP" | "INTG" | "OPEN";
+            /** @description 데이터 버전 (1, 2, ...) */
+            subStage: string;
+            /** @description 버전명 (예: 사전개방, 본개방) */
+            versionName: string;
+            /** @description 버전 설명 (선택) */
+            versionDescription?: string;
+            /** @description DB 구조 정의서명 (선택) */
+            schemaDocName?: string;
+            /** @description 품질팀 사용 가능 일자 YYYY-MM-DD (선택) */
+            availableAt?: string;
+            /** @description 사용 여부 (Y/N, 기본 Y) */
+            isEnable?: string;
+        };
         /** @description 관리자 - 사용자 생성 요청 */
         AdminMemberCreateRequest: {
             /**
@@ -1271,41 +1388,56 @@ export interface components {
              */
             totalPages?: number;
         };
-        ApiResponsePageResultDqCheckLogResponse: {
+        ApiResponsePageResultDqRunLogResponse: {
             success?: boolean;
             code?: string;
             message?: string;
-            data?: components["schemas"]["PageResultDqCheckLogResponse"];
+            data?: components["schemas"]["PageResultDqRunLogResponse"];
         };
-        /** @description 검증 실행 내역 */
-        DqCheckLogResponse: {
+        /** @description 검증 실행 기록 (구 검증 실행 내역) */
+        DqRunLogResponse: {
             /**
              * Format: int32
              * @description 실행 ID
              */
-            checkId?: number;
+            runId?: number;
             /** @description DB 단계 (LINK/COLL/PREP/INTG/OPEN) */
             stage?: string;
-            /** @description 대상 데이터 */
+            /** @description 대상 데이터 (데이터 버전) */
             subStage?: string;
-            /** @description 지표 유형 (quality/achilles) */
-            checkType?: string;
+            /** @description 지표 유형 (quality/statistics) */
+            runType?: string;
+            /**
+             * Format: int32
+             * @description 실행 check type 수
+             */
+            runCntCheckType?: number;
+            /**
+             * Format: int32
+             * @description 실행 지표 수
+             */
+            runCntCheck?: number;
             /** @description 실행 시작 시간 */
-            checkStartDatetime?: string;
+            runStartDatetime?: string;
             /** @description 실행 종료 시간 */
-            checkEndDatetime?: string;
+            runEndDatetime?: string;
             /**
              * Format: int32
              * @description 검증 상태 (0:진행중 / 1:완료 / 2:오류)
              */
-            checkStatus?: number;
+            runStatus?: number;
             /** @description 실행 계정 */
-            checkStatusFstWrt?: string;
+            createdBy?: string;
+            /**
+             * Format: double
+             * @description 실행별 품질 점수(%) — 통계 실행은 null
+             */
+            score?: number;
         };
         /** @description 페이지네이션 응답 */
-        PageResultDqCheckLogResponse: {
+        PageResultDqRunLogResponse: {
             /** @description 데이터 목록 */
-            items?: components["schemas"]["DqCheckLogResponse"][];
+            items?: components["schemas"]["DqRunLogResponse"][];
             /**
              * Format: int32
              * @description 전체 데이터 수
@@ -1327,16 +1459,16 @@ export interface components {
              */
             totalPages?: number;
         };
-        ApiResponseListDqAchillesResultResponse: {
+        ApiResponseListDqStatisticsResultResponse: {
             success?: boolean;
             code?: string;
             message?: string;
-            data?: components["schemas"]["DqAchillesResultResponse"][];
+            data?: components["schemas"]["DqStatisticsResultResponse"][];
         };
         /** @description 통계 분석 결과 (단일값) */
-        DqAchillesResultResponse: {
-            /** @description 분석 ID */
-            analysisId?: string;
+        DqStatisticsResultResponse: {
+            /** @description 통계지표 ID */
+            metricId?: string;
             /** @description 통계 기준1 */
             stratum1Name?: string;
             /** @description 통계 기준2 */
@@ -1357,16 +1489,16 @@ export interface components {
             /** @description 계산 종료 시간 */
             analysisEndDatetime?: string;
         };
-        ApiResponseListDqAchillesResultDistResponse: {
+        ApiResponseListDqStatisticsResultDistResponse: {
             success?: boolean;
             code?: string;
             message?: string;
-            data?: components["schemas"]["DqAchillesResultDistResponse"][];
+            data?: components["schemas"]["DqStatisticsResultDistResponse"][];
         };
         /** @description 통계 분석 결과 (분포) */
-        DqAchillesResultDistResponse: {
-            /** @description 분석 ID */
-            analysisId?: string;
+        DqStatisticsResultDistResponse: {
+            /** @description 통계지표 ID */
+            metricId?: string;
             /** @description 통계 기준1 */
             stratum1Name?: string;
             /** @description 통계 기준2 */
@@ -1432,34 +1564,82 @@ export interface components {
             /** @description 계산 종료 시간 */
             analysisEndDatetime?: string;
         };
+        ApiResponsePageResultDqStatisticsAnalysisResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["PageResultDqStatisticsAnalysisResponse"];
+        };
+        /** @description 통계지표 종류(SI) 정보 */
+        DqStatisticsAnalysisResponse: {
+            /** @description 통계지표 종류 ID */
+            siId?: string;
+            /** @description 통계지표 종류명 */
+            siName?: string;
+            /** @description 통계지표 종류 설명 */
+            siDescription?: string;
+            /** @description 통계지표 적용 DB 단계 */
+            siStage?: string;
+            /** @description 통계지표 유형 (SCALE/DIST/FLOW/JOIN/TREND) */
+            siMetric?: string;
+            /** @description 활성화 여부 (Y/N) */
+            isActive?: string;
+            /** @description 지표 생성일 */
+            createdAt?: string;
+            /** @description 유효종료 사유 */
+            deletedReason?: string;
+        };
+        /** @description 페이지네이션 응답 */
+        PageResultDqStatisticsAnalysisResponse: {
+            /** @description 데이터 목록 */
+            items?: components["schemas"]["DqStatisticsAnalysisResponse"][];
+            /**
+             * Format: int32
+             * @description 전체 데이터 수
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 현재 페이지
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description 페이지 크기
+             */
+            size?: number;
+            /**
+             * Format: int32
+             * @description 전체 페이지 수
+             */
+            totalPages?: number;
+        };
         ApiResponsePageResultDqStatisticsMetricResponse: {
             success?: boolean;
             code?: string;
             message?: string;
             data?: components["schemas"]["PageResultDqStatisticsMetricResponse"];
         };
-        /** @description 통계 지표 정보 */
+        /** @description 통계지표 목록 정보 */
         DqStatisticsMetricResponse: {
-            /** @description 통계 지표 ID */
-            siId?: string;
-            /** @description 통계 지표명 */
-            siName?: string;
-            /** @description 통계 지표 설명 */
-            siDescription?: string;
-            /** @description 통계 지표 적용 DB 단계 */
-            siStage?: string;
-            /** @description 통계 지표 유형 (SCALE/DIST/FLOW/JOIN/TREND) */
-            siMetric?: string;
-            /** @description 분석 ID */
-            analysisId?: string;
-            /** @description 결과 유형 (0: count, 1: 분포) */
+            /** @description 통계지표 ID */
+            metricId?: string;
+            /** @description 데이터 카테고리 */
+            dataCategory?: string;
+            /** @description 통계지표명 */
+            metricName?: string;
+            /** @description 통계지표 설명 */
+            metricDescription?: string;
+            /** @description 기본 여부 */
+            isDefault?: string;
+            /** @description 분포 */
             distribution?: string;
-            /** @description 활성화 여부 (Y/N) */
+            /** @description 활성화 여부 */
             isActive?: string;
-            /** @description 지표 생성일 */
-            createdAt?: string;
             /** @description 유효종료 사유 */
-            others?: string;
+            deletedReason?: string;
+            /** @description SQL 텍스트 */
+            sqlText?: string;
         };
         /** @description 페이지네이션 응답 */
         PageResultDqStatisticsMetricResponse: {
@@ -1486,57 +1666,11 @@ export interface components {
              */
             totalPages?: number;
         };
-        ApiResponsePageResultDqAchillesAnalysisResponse: {
+        ApiResponseListDqStageResponse: {
             success?: boolean;
             code?: string;
             message?: string;
-            data?: components["schemas"]["PageResultDqAchillesAnalysisResponse"];
-        };
-        /** @description Achilles 분석 정보 */
-        DqAchillesAnalysisResponse: {
-            /** @description 분석 ID */
-            analysisId?: string;
-            /** @description 데이터 카테고리 */
-            dataCategory?: string;
-            /** @description 분석명 */
-            analysisName?: string;
-            /** @description 분석 설명 */
-            analysisDescription?: string;
-            /** @description 기본 여부 */
-            isDefault?: string;
-            /** @description 분포 */
-            distribution?: string;
-            /** @description 활성화 여부 */
-            isActive?: string;
-            /** @description 기타 */
-            others?: string;
-            /** @description SQL 텍스트 */
-            sqlText?: string;
-        };
-        /** @description 페이지네이션 응답 */
-        PageResultDqAchillesAnalysisResponse: {
-            /** @description 데이터 목록 */
-            items?: components["schemas"]["DqAchillesAnalysisResponse"][];
-            /**
-             * Format: int32
-             * @description 전체 데이터 수
-             */
-            totalCount?: number;
-            /**
-             * Format: int32
-             * @description 현재 페이지
-             */
-            page?: number;
-            /**
-             * Format: int32
-             * @description 페이지 크기
-             */
-            size?: number;
-            /**
-             * Format: int32
-             * @description 전체 페이지 수
-             */
-            totalPages?: number;
+            data?: components["schemas"]["DqStageResponse"][];
         };
         ApiResponseListDqQualityResultSummaryResponse: {
             success?: boolean;
@@ -1645,7 +1779,9 @@ export interface components {
         };
         /** @description 세부지표 단위 품질 결과 — METRIC_ID 하위 드릴다운 계층 */
         DqSubMetricResultResponse: {
-            /** @description 세부지표 ID (검증단위에 따라 field/table/concept check_id 중 하나) */
+            /** @description 체크 타입 ID (구 지표 ID = metric_id) */
+            checkTypeId?: string;
+            /** @description 세부지표 ID (검증단위에 따라 field/table/concept check_id 중 하나) — check id */
             subMetricId?: string;
             /** @description 세부지표명 (예: 환자ID NULL) */
             subMetricName?: string;
@@ -1689,6 +1825,8 @@ export interface components {
              * @description 통과율 (%)
              */
             passRate?: number;
+            /** @description 세부지표 설명 (check_notes, CLOB — UI는 한 줄+마우스오버 전체) */
+            checkNotes?: string;
         };
         /** @description 페이지네이션 응답 */
         PageResultDqSubMetricResultResponse: {
@@ -1865,10 +2003,27 @@ export interface components {
             isActive?: string;
             /** @description 지표 설명 */
             metricDescription?: string;
-            /** @description stage별 최근 검증 통과율 (key: STAGE, value: 통과율%) */
+            /** @description stage별 최근 검증 통과율 (key: STAGE, value: 통과율%) — deprecated, recentResults로 대체 예정 */
             stageScores?: {
                 [key: string]: number;
             };
+            /** @description 최근 검증 결과 (최신순 최대 5건) */
+            recentResults?: components["schemas"]["RecentResultItem"][];
+        };
+        /** @description 최근 검증 결과 항목 */
+        RecentResultItem: {
+            /**
+             * Format: int32
+             * @description 실행 ID
+             */
+            runId?: number;
+            /** @description 실행 시작 시간 */
+            runStartDatetime?: string;
+            /**
+             * Format: double
+             * @description 점수 (0~100)
+             */
+            score?: number;
         };
         ApiResponsePageResultFieldCheckItem: {
             success?: boolean;
@@ -1880,7 +2035,7 @@ export interface components {
         FieldCheckItem: {
             /** @description 적용 여부 (Y/N) */
             isActive?: string;
-            /** @description DB명 — 출처 미확인, 추후 반영 */
+            /** @description DB명 (DB 단계 코드: LINK/COLL/PREP/INTG/OPEN) */
             dbName?: string;
             /** @description 테이블명 */
             tableName?: string;
@@ -1948,41 +2103,16 @@ export interface components {
             /** @description 컬럼명 (TABLE 레벨은 null) */
             fieldName?: string;
         };
-        ApiResponsePageResultCheckExecutionResponse: {
+        ApiResponsePageResultRunExecutionResponse: {
             success?: boolean;
             code?: string;
             message?: string;
-            data?: components["schemas"]["PageResultCheckExecutionResponse"];
-        };
-        /** @description 검증 실행 내역 목록 항목 */
-        CheckExecutionResponse: {
-            /**
-             * Format: int32
-             * @description 실행 ID
-             */
-            checkId?: number;
-            /** @description DB 단계 코드 (LINK/COLL/PREP/INTG/OPEN) */
-            stage?: string;
-            /** @description 서브 단계 (preview_open/main_open) */
-            subStage?: string;
-            /** @description 지표 유형 (quality/achilles) */
-            checkType?: string;
-            /** @description 실행자 */
-            checkStatusFstWrt?: string;
-            /** @description 실행 시작 일시 */
-            checkStartDatetime?: string;
-            /** @description 실행 종료 일시 */
-            checkEndDatetime?: string;
-            /**
-             * Format: int32
-             * @description 검증 상태 (0:진행중 / 1:완료 / 2:오류 / 3:중단)
-             */
-            checkStatus?: number;
+            data?: components["schemas"]["PageResultRunExecutionResponse"];
         };
         /** @description 페이지네이션 응답 */
-        PageResultCheckExecutionResponse: {
+        PageResultRunExecutionResponse: {
             /** @description 데이터 목록 */
-            items?: components["schemas"]["CheckExecutionResponse"][];
+            items?: components["schemas"]["RunExecutionResponse"][];
             /**
              * Format: int32
              * @description 전체 데이터 수
@@ -2004,28 +2134,68 @@ export interface components {
              */
             totalPages?: number;
         };
-        ApiResponseListCheckExecutionDetailResponse: {
-            success?: boolean;
-            code?: string;
-            message?: string;
-            data?: components["schemas"]["CheckExecutionDetailResponse"][];
-        };
-        /** @description CHECK_ID 기준 stage별 검증 상세 */
-        CheckExecutionDetailResponse: {
+        /** @description 검증 현황 목록 항목 */
+        RunExecutionResponse: {
             /**
-             * Format: int64
-             * @description 실행된 품질검사 쿼리 수
+             * Format: int32
+             * @description 실행 ID
              */
-            queryCount?: number;
-            /** @description 시작 일시 */
-            checkStartDatetime?: string;
-            /** @description 종료 일시 */
-            checkEndDatetime?: string;
+            runId?: number;
+            /** @description DB 단계 코드 (LINK/COLL/PREP/INTG/OPEN) */
+            stage?: string;
+            /** @description 대상 데이터 (데이터 버전) */
+            subStage?: string;
+            /** @description 지표 유형 (quality/statistics) */
+            runType?: string;
+            /**
+             * Format: int32
+             * @description 실행 check type 수
+             */
+            runCntCheckType?: number;
+            /**
+             * Format: int32
+             * @description 실행 지표 수
+             */
+            runCntCheck?: number;
+            /** @description 실행자 */
+            createdBy?: string;
+            /** @description 실행 시작 일시 */
+            runStartDatetime?: string;
+            /** @description 실행 종료 일시 */
+            runEndDatetime?: string;
             /**
              * Format: int32
              * @description 검증 상태 (0:진행중 / 1:완료 / 2:오류 / 3:중단)
              */
-            checkStatus?: number;
+            runStatus?: number;
+            /**
+             * Format: double
+             * @description 실행별 품질 점수(%) — 통계 실행은 null
+             */
+            score?: number;
+        };
+        ApiResponseListRunExecutionDetailResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["RunExecutionDetailResponse"][];
+        };
+        /** @description RUN_ID 기준 stage별 검증 상세 */
+        RunExecutionDetailResponse: {
+            /**
+             * Format: int64
+             * @description 실행된 지표(METRIC_ID) 수
+             */
+            queryCount?: number;
+            /** @description 시작 일시 */
+            runStartDatetime?: string;
+            /** @description 종료 일시 */
+            runEndDatetime?: string;
+            /**
+             * Format: int32
+             * @description 검증 상태 (0:진행중 / 1:완료 / 2:오류 / 3:중단)
+             */
+            runStatus?: number;
             /**
              * Format: double
              * @description 품질 점수 (0~100, null 가능)
@@ -2216,6 +2386,81 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    getStage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage: string;
+                subStage: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDqStageResponse"];
+                };
+            };
+        };
+    };
+    updateStage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage: string;
+                subStage: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDqStageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDqStageResponse"];
+                };
+            };
+        };
+    };
+    deleteStage: {
+        parameters: {
+            query?: {
+                deletedReason?: string;
+            };
+            header?: never;
+            path: {
+                stage: string;
+                subStage: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -2451,7 +2696,7 @@ export interface operations {
             };
         };
     };
-    getDqStatisticsMetricList: {
+    getDqStatisticsAnalysisList: {
         parameters: {
             query?: {
                 stage?: string;
@@ -2472,7 +2717,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponsePageResultDqStatisticsMetricResponse"];
+                    "*/*": components["schemas"]["ApiResponsePageResultDqStatisticsAnalysisResponse"];
                 };
             };
         };
@@ -2645,6 +2890,50 @@ export interface operations {
             };
         };
     };
+    getStagesForAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDqStageResponse"];
+                };
+            };
+        };
+    };
+    createStage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDqStageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDqStageResponse"];
+                };
+            };
+        };
+    };
     changePassword_1: {
         parameters: {
             query?: never;
@@ -2792,7 +3081,7 @@ export interface operations {
             };
         };
     };
-    updateDqStatisticsMetricActivation: {
+    updateDqStatisticsAnalysisActivation: {
         parameters: {
             query?: never;
             header?: never;
@@ -2844,7 +3133,7 @@ export interface operations {
             };
         };
     };
-    getStatisticsCheckLogs: {
+    getStatisticsRunLogs: {
         parameters: {
             query?: {
                 stage?: string;
@@ -2864,19 +3153,19 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponsePageResultDqCheckLogResponse"];
+                    "*/*": components["schemas"]["ApiResponsePageResultDqRunLogResponse"];
                 };
             };
         };
     };
-    getAchillesResultList: {
+    getStatisticsResultList: {
         parameters: {
             query?: {
-                analysisId?: string;
+                metricId?: string;
             };
             header?: never;
             path: {
-                checkId: number;
+                runId: number;
             };
             cookie?: never;
         };
@@ -2888,19 +3177,19 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseListDqAchillesResultResponse"];
+                    "*/*": components["schemas"]["ApiResponseListDqStatisticsResultResponse"];
                 };
             };
         };
     };
-    getAchillesResultDistList: {
+    getStatisticsResultDistList: {
         parameters: {
             query?: {
-                analysisId?: string;
+                metricId?: string;
             };
             header?: never;
             path: {
-                checkId: number;
+                runId: number;
             };
             cookie?: never;
         };
@@ -2912,12 +3201,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseListDqAchillesResultDistResponse"];
+                    "*/*": components["schemas"]["ApiResponseListDqStatisticsResultDistResponse"];
                 };
             };
         };
     };
-    getDqAchillesAnalysisList: {
+    getDqStatisticsMetricList: {
         parameters: {
             query?: {
                 page?: number;
@@ -2937,7 +3226,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponsePageResultDqAchillesAnalysisResponse"];
+                    "*/*": components["schemas"]["ApiResponsePageResultDqStatisticsMetricResponse"];
+                };
+            };
+        };
+    };
+    getStages: {
+        parameters: {
+            query?: {
+                enabledOnly?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDqStageResponse"];
                 };
             };
         };
@@ -2962,7 +3273,7 @@ export interface operations {
             };
         };
     };
-    getQualityCheckLogs: {
+    getQualityRunLogs: {
         parameters: {
             query?: {
                 stage?: string;
@@ -2982,12 +3293,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponsePageResultDqCheckLogResponse"];
+                    "*/*": components["schemas"]["ApiResponsePageResultDqRunLogResponse"];
                 };
             };
         };
     };
-    getQualityResultsByCheckId: {
+    getQualityResultsByRunId: {
         parameters: {
             query?: {
                 page?: number;
@@ -2995,7 +3306,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                checkId: number;
+                runId: number;
             };
             cookie?: never;
         };
@@ -3020,7 +3331,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                checkId: number;
+                runId: number;
                 metricId: string;
             };
             cookie?: never;
@@ -3038,7 +3349,7 @@ export interface operations {
             };
         };
     };
-    getMetricResultsByCheckId: {
+    getMetricResultsByRunId: {
         parameters: {
             query?: {
                 page?: number;
@@ -3046,7 +3357,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                checkId: number;
+                runId: number;
             };
             cookie?: never;
         };
@@ -3161,7 +3472,7 @@ export interface operations {
             };
         };
     };
-    getCheckExecutionList: {
+    getRunExecutionList: {
         parameters: {
             query?: {
                 subStage?: string;
@@ -3180,17 +3491,17 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponsePageResultCheckExecutionResponse"];
+                    "*/*": components["schemas"]["ApiResponsePageResultRunExecutionResponse"];
                 };
             };
         };
     };
-    getCheckExecutionDetail: {
+    getRunExecutionDetail: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                checkId: number;
+                runId: number;
             };
             cookie?: never;
         };
@@ -3202,7 +3513,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseListCheckExecutionDetailResponse"];
+                    "*/*": components["schemas"]["ApiResponseListRunExecutionDetailResponse"];
                 };
             };
         };

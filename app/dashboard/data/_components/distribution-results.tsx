@@ -10,12 +10,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { DqAchillesResultDistResponse } from '@/lib/api'
+import type { DqStatisticsResultDistResponse } from '@/lib/api'
 
 interface DistributionResultsProps {
-  rows: DqAchillesResultDistResponse[]
+  rows: DqStatisticsResultDistResponse[]
   fmtNum: (n: number | null | undefined) => string
-  stratumKey: (row: DqAchillesResultDistResponse) => string
+  stratumKey: (row: DqStatisticsResultDistResponse) => string
 }
 
 export function DistributionResults({
@@ -28,7 +28,7 @@ export function DistributionResults({
       rows.map((row, idx) => {
         const label = stratumKey(row)
         return {
-          name: label === '-' ? row.analysisId : label,
+          name: label === '-' ? row.metricId : label,
           idx,
           min: row.minValue,
           p10: row.p10Value,
@@ -78,7 +78,7 @@ export function DistributionResults({
         <table className="w-full text-xs">
           <thead className="border-b bg-muted/30">
             <tr>
-              <th className="text-left p-2 font-medium">{'분석 ID'}</th>
+              <th className="text-left p-2 font-medium">{'지표 ID'}</th>
               <th className="text-left p-2 font-medium">{'분류'}</th>
               <th className="text-right p-2 font-medium">{'Count'}</th>
               <th className="text-right p-2 font-medium">{'최소'}</th>
@@ -95,10 +95,10 @@ export function DistributionResults({
           <tbody>
             {rows.map((row, idx) => (
               <tr
-                key={`${row.analysisId}-${idx}`}
+                key={`${row.metricId}-${idx}`}
                 className="border-b hover:bg-muted/30"
               >
-                <td className="p-2 font-mono">{row.analysisId}</td>
+                <td className="p-2 font-mono">{row.metricId}</td>
                 <td className="p-2">{stratumKey(row)}</td>
                 <td className="p-2 text-right font-mono">
                   {fmtNum(row.countValue)}

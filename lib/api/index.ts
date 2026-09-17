@@ -43,7 +43,7 @@ export type VerificationScope = NonNullable<
 export type MetricLevel = NonNullable<
   components['schemas']['DagRunRequest']['metricLevel']
 >
-export type CheckStatus = 0 | 1 | 2 | 3
+export type RunStatus = 0 | 1 | 2 | 3
 
 export type LoginRequest = Schema<'LoginRequest'>
 export type LoginResponse = Schema<'LoginResponse'>
@@ -70,17 +70,18 @@ export type DqQualityMetricDetailResponse =
 export type FieldCheckItem = Schema<'FieldCheckItem'>
 export type CheckPickerItemResponse = Schema<'CheckPickerItemResponse'>
 export type MetricPickerItemResponse = Schema<'MetricPickerItemResponse'>
+export type DqStatisticsAnalysisResponse =
+  Schema<'DqStatisticsAnalysisResponse'>
 export type DqStatisticsMetricResponse = Schema<'DqStatisticsMetricResponse'>
-export type DqAchillesAnalysisResponse = Schema<'DqAchillesAnalysisResponse'>
-export type DqCheckLogResponse = Schema<'DqCheckLogResponse'> & {
-  checkStatus: CheckStatus
+export type DqRunLogResponse = Schema<'DqRunLogResponse'> & {
+  runStatus: RunStatus
 }
-export type CheckExecutionResponse = Schema<'CheckExecutionResponse'> & {
-  checkStatus: CheckStatus
+export type RunExecutionResponse = Schema<'RunExecutionResponse'> & {
+  runStatus: RunStatus
 }
-export type CheckExecutionDetailResponse =
-  Schema<'CheckExecutionDetailResponse'> & {
-    checkStatus: CheckStatus
+export type RunExecutionDetailResponse =
+  Schema<'RunExecutionDetailResponse'> & {
+    runStatus: RunStatus
     score: number | null
   }
 export type DqQualityResultSummaryResponse =
@@ -94,9 +95,9 @@ export type DqMetricResultResponse = Schema<'DqMetricResultResponse'> & {
 export type DqSubMetricResultResponse = Schema<'DqSubMetricResultResponse'> & {
   passRate: number | null
 }
-export type DqAchillesResultResponse = Schema<'DqAchillesResultResponse'>
-export type DqAchillesResultDistResponse =
-  Schema<'DqAchillesResultDistResponse'>
+export type DqStatisticsResultResponse = Schema<'DqStatisticsResultResponse'>
+export type DqStatisticsResultDistResponse =
+  Schema<'DqStatisticsResultDistResponse'>
 
 export const ROLE_LABEL: Record<Role, string> = {
   ADMIN: '관리자',
@@ -104,15 +105,15 @@ export const ROLE_LABEL: Record<Role, string> = {
   VIEWER: '뷰어',
 }
 
-export const CHECK_STATUS_LABEL: Record<CheckStatus, string> = {
+export const RUN_STATUS_LABEL: Record<RunStatus, string> = {
   0: '진행중',
   1: '완료',
   2: '오류',
   3: '중단',
 }
 
-export const checkTypeLabel = (checkType: string): string =>
-  ({ quality: '품질지표', achilles: '통계지표' })[checkType] ?? checkType
+export const runTypeLabel = (runType: string): string =>
+  ({ quality: '품질지표', statistics: '통계지표' })[runType] ?? runType
 
 export const STAGE_LABEL: Record<string, string> = {
   LINK: '연계DB',

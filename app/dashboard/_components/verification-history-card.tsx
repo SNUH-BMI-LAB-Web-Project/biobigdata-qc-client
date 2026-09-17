@@ -25,16 +25,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { STAGE_LABEL, SUB_STAGE_LABEL, checkTypeLabel } from '@/lib/api'
+import { STAGE_LABEL, SUB_STAGE_LABEL, runTypeLabel } from '@/lib/api'
 import { AsyncStateBlock, RefreshingContent } from '@/components/async-state'
 import { CheckStatusBadge } from '@/components/check-status-badge'
 import { ExecutionDetailRow } from './execution-detail-row'
 import { CompactPager } from '@/components/pager'
 import { EXECUTIONS_PAGE_SIZE } from './verification-config'
-import type { CheckExecutionResponse } from '@/lib/api'
+import type { RunExecutionResponse } from '@/lib/api'
 
 interface VerificationHistoryCardProps {
-  rows: CheckExecutionResponse[]
+  rows: RunExecutionResponse[]
   totalCount: number
   page: number
   totalPages: number
@@ -44,7 +44,7 @@ interface VerificationHistoryCardProps {
   error: string | null
   onPageChange: (page: number) => void
   onRetry: () => void
-  onToggleRow: (checkId: number) => void
+  onToggleRow: (runId: number) => void
 }
 
 export function VerificationHistoryCard({
@@ -118,20 +118,20 @@ export function VerificationHistoryCard({
               </TableHeader>
               <TableBody>
                 {rows.map((row, index) => (
-                  <Fragment key={row.checkId}>
+                  <Fragment key={row.runId}>
                     <ExecutionRow
                       row={row}
-                      rowNumber={row.checkId}
-                      expanded={expandedRows.includes(row.checkId)}
-                      onToggle={() => onToggleRow(row.checkId)}
+                      rowNumber={row.runId}
+                      expanded={expandedRows.includes(row.runId)}
+                      onToggle={() => onToggleRow(row.runId)}
                     />
-                    {expandedRows.includes(row.checkId) && (
+                    {expandedRows.includes(row.runId) && (
                       <TableRow
-                        key={`${row.checkId}-detail`}
+                        key={`${row.runId}-detail`}
                         className="bg-muted/30"
                       >
                         <TableCell colSpan={10} className="p-4">
-                          <ExecutionDetailRow checkId={row.checkId} />
+                          <ExecutionDetailRow runId={row.runId} />
                         </TableCell>
                       </TableRow>
                     )}
@@ -152,7 +152,7 @@ function ExecutionRow({
   expanded,
   onToggle,
 }: {
-  row: CheckExecutionResponse
+  row: RunExecutionResponse
   rowNumber: number
   expanded: boolean
   onToggle: () => void
@@ -176,41 +176,41 @@ function ExecutionRow({
         {SUB_STAGE_LABEL[row.subStage] ?? (row.subStage || '-')}
       </TableCell>
       <TableCell className="text-xs">
-        <Badge variant="outline">{checkTypeLabel(row.checkType)}</Badge>
+        <Badge variant="outline">{runTypeLabel(row.runType)}</Badge>
       </TableCell>
       <TableCell className="text-xs">
         <div className="flex items-center gap-1">
           <User className="w-3 h-3 text-muted-foreground" />
-          {row.checkStatusFstWrt || '-'}
+          {row.createdBy || '-'}
         </div>
       </TableCell>
       <TableCell className="text-xs">
-        <DateCell value={row.checkStartDatetime} />
+        <DateCell value={row.runStartDatetime} />
       </TableCell>
       <TableCell className="text-xs">
-        {row.checkEndDatetime ? (
-          <DateCell value={row.checkEndDatetime} />
+        {row.runEndDatetime ? (
+          <DateCell value={row.runEndDatetime} />
         ) : (
           <span className="text-muted-foreground">-</span>
         )}
       </TableCell>
       <TableCell>
-        <CheckStatusBadge status={row.checkStatus} />
+        <CheckStatusBadge status={row.runStatus} />
       </TableCell>
       <TableCell className="text-right">
-        {row.checkStatus === 1 && (
+        {row.runStatus === 1 && (
           <Button
             variant="outline"
             size="sm"
             className="h-6 text-xs gap-1"
             onClick={(e) => {
               e.stopPropagation()
-              // 지표 유형에 따라 결과 화면 분기 — 통계지표(achilles)는 데이터 통계 결과, 그 외는 품질 결과
+              // 지표 유형에 따라 결과 화면 분기 — 통계지표(statistics)는 데이터 통계 결과, 그 외는 품질 결과
               const resultPath =
-                row.checkType === 'achilles'
+                row.runType === 'statistics'
                   ? '/dashboard/data'
                   : '/dashboard/quality-results'
-              window.location.href = `${resultPath}?checkId=${row.checkId}`
+              window.location.href = `${resultPath}?runId=${row.runId}`
             }}
           >
             <ExternalLink className="w-3 h-3" />

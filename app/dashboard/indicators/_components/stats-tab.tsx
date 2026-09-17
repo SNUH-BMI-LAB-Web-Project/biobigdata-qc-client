@@ -26,7 +26,7 @@ import {
   isY,
   stageDbLabel,
 } from './indicator-utils'
-import type { DqStatisticsMetricResponse, PageResult } from '@/lib/api'
+import type { DqStatisticsAnalysisResponse, PageResult } from '@/lib/api'
 
 export function StatsTab() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -38,7 +38,7 @@ export function StatsTab() {
 
   const { data, isInitialLoading, isRefetching, error, refetch } = useApi(
     async (signal) =>
-      unwrapGeneratedResult<PageResult<DqStatisticsMetricResponse>>(
+      unwrapGeneratedResult<PageResult<DqStatisticsAnalysisResponse>>(
         await generatedApi.GET('/api/qc/statistics-metrics', {
           params: {
             query: {
@@ -65,7 +65,7 @@ export function StatsTab() {
   // 유형(siMetric) 옵션은 실제 통계지표 데이터에서 도출 — 전용 엔드포인트가 없다
   const metricsApi = useApi(
     async (signal) =>
-      unwrapGeneratedResult<PageResult<DqStatisticsMetricResponse>>(
+      unwrapGeneratedResult<PageResult<DqStatisticsAnalysisResponse>>(
         await generatedApi.GET('/api/qc/statistics-metrics', {
           params: { query: { page: 1, size: 500 } },
           signal,
@@ -99,7 +99,7 @@ export function StatsTab() {
           pageSize={pageSize}
           totalCount={data?.totalCount ?? 0}
           totalPages={data?.totalPages ?? 1}
-          totalLabel={`총 ${data?.totalCount ?? 0}개 통계지표 (Achilles 기반)`}
+          totalLabel={`총 ${data?.totalCount ?? 0}개 통계지표`}
           onChange={setPage}
           onPageSizeChange={(size) => {
             setPageSize(size)
@@ -179,7 +179,7 @@ export function StatsTab() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground align-top whitespace-normal break-words">
-                        {stat.others || '-'}
+                        {stat.deletedReason || '-'}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground align-top whitespace-normal break-all">
                         {stat.createdAt}

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { useApi } from '@/hooks/use-api'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import { CheckStatusBadge } from '@/components/check-status-badge'
-import type { CheckExecutionDetailResponse } from '@/lib/api'
+import type { RunExecutionDetailResponse } from '@/lib/api'
 
 function getScoreColor(score: number) {
   if (score >= 90) return 'text-green-600'
@@ -13,16 +13,16 @@ function getScoreColor(score: number) {
   return 'text-red-600'
 }
 
-export function ExecutionDetailRow({ checkId }: { checkId: number }) {
+export function ExecutionDetailRow({ runId }: { runId: number }) {
   const { data, loading, error } = useApi(
     async (signal) =>
-      unwrapGeneratedResult<CheckExecutionDetailResponse[]>(
-        await generatedApi.GET('/api/qc/executions/{checkId}', {
-          params: { path: { checkId } },
+      unwrapGeneratedResult<RunExecutionDetailResponse[]>(
+        await generatedApi.GET('/api/qc/executions/{runId}', {
+          params: { path: { runId } },
           signal,
         }),
       ),
-    [checkId],
+    [runId],
   )
 
   if (loading) {
@@ -59,8 +59,8 @@ export function ExecutionDetailRow({ checkId }: { checkId: number }) {
               </Badge>
             </div>
             <div className="flex items-center gap-4">
-              <Timestamp label="시작" value={detail.checkStartDatetime} />
-              <Timestamp label="종료" value={detail.checkEndDatetime} />
+              <Timestamp label="시작" value={detail.runStartDatetime} />
+              <Timestamp label="종료" value={detail.runEndDatetime} />
               {detail.score !== null && detail.score !== undefined ? (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">
@@ -73,7 +73,7 @@ export function ExecutionDetailRow({ checkId }: { checkId: number }) {
                   </span>
                 </div>
               ) : (
-                <CheckStatusBadge status={detail.checkStatus} />
+                <CheckStatusBadge status={detail.runStatus} />
               )}
             </div>
           </div>

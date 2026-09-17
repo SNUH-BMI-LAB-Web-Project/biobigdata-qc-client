@@ -1,10 +1,10 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
-import { CHECK_STATUS_LABEL } from '@/lib/api'
-import type { CheckStatus } from '@/lib/api'
+import { RUN_STATUS_LABEL } from '@/lib/api'
+import type { RunStatus } from '@/lib/api'
 
-function checkStatusClass(status: CheckStatus): string {
+function checkStatusClass(status: RunStatus): string {
   switch (status) {
     case 1:
       return 'bg-green-100 text-green-800 hover:bg-green-100'
@@ -18,13 +18,13 @@ function checkStatusClass(status: CheckStatus): string {
   }
 }
 
-export function CheckStatusBadge({ status }: { status: CheckStatus }) {
+export function CheckStatusBadge({ status }: { status: RunStatus }) {
   return (
     <Badge
       variant="secondary"
       className={`text-xs ${checkStatusClass(status)}`}
     >
-      {CHECK_STATUS_LABEL[status] ?? '-'}
+      {RUN_STATUS_LABEL[status] ?? '-'}
     </Badge>
   )
 }
