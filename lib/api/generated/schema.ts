@@ -192,7 +192,7 @@ export interface paths {
         put?: never;
         /**
          * 통계 지표 검증 DAG 실행
-         * @description target_stage, target_sub_stage를 지정해 통계 지표 검증 DAG를 트리거한다. PREP/INTG/OPEN 단계에서는 target_sub_stage(preview_open/main_open)가 필수이다.
+         * @description target_stage, target_sub_stage를 지정해 통계 지표 검증 DAG를 트리거한다. PREP/INTG/OPEN 단계에서는 target_sub_stage(dq_stage의 개방 버전 값, GET /api/qc/stages 참고)가 필수이다.
          */
         post: operations["triggerStatsDagRun"];
         delete?: never;
@@ -213,7 +213,7 @@ export interface paths {
         put?: never;
         /**
          * 품질 지표 검증 DAG 실행
-         * @description target_stage, target_sub_stage를 지정해 품질 지표 검증 DAG를 트리거한다. PREP/INTG/OPEN 단계에서는 target_sub_stage(preview_open/main_open)가 필수이다. scope으로 검증 범위(ALL/METRIC)를 지정할 수 있으며, 개방DB(OPEN) 단계는 DAG 미구현으로 501을 반환한다. 지표 단위와 세부지표 단위는 DAG가 달라 최대 2건의 결과가 반환될 수 있다.
+         * @description target_stage, target_sub_stage를 지정해 품질 지표 검증 DAG를 트리거한다. PREP/INTG/OPEN 단계에서는 target_sub_stage(dq_stage의 개방 버전 값, GET /api/qc/stages 참고)가 필수이다. scope으로 검증 범위(ALL/METRIC)를 지정할 수 있으며, 개방DB(OPEN) 단계는 DAG 미구현으로 501을 반환한다. 지표 단위와 세부지표 단위는 DAG가 달라 최대 2건의 결과가 반환될 수 있다.
          */
         post: operations["triggerQualityDagRun"];
         delete?: never;
@@ -464,7 +464,7 @@ export interface paths {
         };
         /**
          * 통계 검증 실행 내역 목록 조회
-         * @description subStage(preview_open / main_open)로 사전개방·본개방 필터링 가능. 대소문자 무관.
+         * @description subStage(dq_stage의 개방 버전 값)로 필터링 가능. GET /api/qc/stages 참고.
          */
         get: operations["getStatisticsRunLogs"];
         put?: never;
@@ -578,7 +578,7 @@ export interface paths {
         };
         /**
          * 품질 검증 실행 내역 목록 조회
-         * @description subStage(preview_open / main_open)로 사전개방·본개방 필터링 가능. 대소문자 무관.
+         * @description subStage(dq_stage의 개방 버전 값)로 필터링 가능. GET /api/qc/stages 참고.
          */
         get: operations["getQualityRunLogs"];
         put?: never;
@@ -729,7 +729,7 @@ export interface paths {
         };
         /**
          * 검증 현황 목록 조회
-         * @description subStage(preview_open / main_open)로 사전개방·본개방 필터링 가능. 대소문자 무관.
+         * @description subStage(dq_stage의 개방 버전 값)로 필터링 가능. GET /api/qc/stages 참고.
          */
         get: operations["getRunExecutionList"];
         put?: never;
@@ -1145,11 +1145,10 @@ export interface components {
              */
             targetStage: "LINK" | "COLL" | "PREP" | "INTG" | "OPEN";
             /**
-             * @description 개방 하위 단계 (PREP/INTG/OPEN에서 필수)
-             * @example preview_open
-             * @enum {string}
+             * @description 개방 버전 (PREP/INTG/OPEN에서 필수). QC_SCHEMA.dq_stage 의 subStage 값 — GET /api/qc/stages 로 조회한다.
+             * @example 1
              */
-            targetSubStage?: "preview_open" | "main_open";
+            targetSubStage?: string;
             /**
              * @description 품질지표 검증 범위 (품질지표 실행에만 사용, 통계지표는 무시됨). 미지정 시 ALL로 취급.
              * @example ALL
@@ -1272,10 +1271,10 @@ export interface components {
         /** @description DB 단계 개방 버전 생성 요청 */
         CreateDqStageRequest: {
             /**
-             * @description DB 단계
+             * @description DB 단계. 연계DB(LINK)/수집DB(COLL)는 개방 버전 구분이 없어 등록할 수 없다.
              * @enum {string}
              */
-            stage: "LINK" | "COLL" | "PREP" | "INTG" | "OPEN";
+            stage: "PREP" | "INTG" | "OPEN";
             /** @description 데이터 버전 (1, 2, ...) */
             subStage: string;
             /** @description 버전명 (예: 사전개방, 본개방) */

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
 import { useDebounced } from '@/hooks/use-debounced'
-import { generatedApi, STAGE_LABEL, SUB_STAGE_LABEL, unwrapGeneratedResult } from '@/lib/api'
+import { generatedApi, STAGE_LABEL, unwrapGeneratedResult } from '@/lib/api'
 import { VERIFICATION_METRIC_LEVELS } from './verification-config'
 import type {
   CheckPickerItemResponse,
@@ -44,6 +44,8 @@ interface VerificationScopeDialogProps {
   onOpenChange: (open: boolean) => void
   targetStage: Stage
   targetSubStage?: string
+  /** 표시용 개방 버전명 — 값(targetSubStage)은 dq_stage.subStage 원본이라 그대로 쓰지 않는다. */
+  targetSubStageLabel?: string
   onConfirm: (selection: ScopeSelection) => void
 }
 
@@ -52,6 +54,7 @@ export function VerificationScopeDialog({
   onOpenChange,
   targetStage,
   targetSubStage,
+  targetSubStageLabel,
   onConfirm,
 }: VerificationScopeDialogProps) {
   const [scope, setScope] = useState<'ALL' | 'METRIC'>('ALL')
@@ -248,7 +251,7 @@ export function VerificationScopeDialog({
 
   const contextLabel = [
     STAGE_LABEL[targetStage],
-    targetSubStage ? SUB_STAGE_LABEL[targetSubStage] : null,
+    targetSubStage ? (targetSubStageLabel ?? targetSubStage) : null,
   ]
     .filter(Boolean)
     .join(' · ')

@@ -16,11 +16,11 @@ import { CheckStatusBadge } from '@/components/check-status-badge'
 import { useApi } from '@/hooks/use-api'
 import {
   STAGE_LABEL,
-  SUB_STAGE_LABEL,
   runTypeLabel,
   generatedApi,
   unwrapGeneratedResult,
 } from '@/lib/api'
+import { useSubStageLabel } from '@/hooks/use-stages'
 import type { DqRunLogResponse, PageResult } from '@/lib/api'
 import { fmtDate } from './statistics-format'
 
@@ -39,6 +39,7 @@ export function StatisticsHistoryTable({
   onSelectRun,
 }: StatisticsHistoryTableProps) {
   const [page, setPage] = useState(1)
+  const subStageLabel = useSubStageLabel()
 
   // 단계 필터가 바뀌면 첫 페이지로
   useEffect(() => setPage(1), [stage])
@@ -142,9 +143,7 @@ export function StatisticsHistoryTable({
                         {STAGE_LABEL[row.stage] ?? row.stage}
                       </td>
                       <td className="p-2 whitespace-normal break-words">
-                        {row.subStage
-                          ? (SUB_STAGE_LABEL[row.subStage] ?? row.subStage)
-                          : '-'}
+                        {subStageLabel(row.stage, row.subStage)}
                       </td>
                       <td className="p-2">
                         <Badge variant="outline" className="text-[10px]">

@@ -9,13 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  VERIFICATION_DATABASES,
-  VERIFICATION_INDICATOR_TYPES,
-  VERIFICATION_SUB_STAGES,
-} from './verification-config'
+import { VERIFICATION_INDICATOR_TYPES } from './verification-config'
+import type { StageGroup } from '@/hooks/use-stages'
 
 interface VerificationSelectionPanelProps {
+  stageGroups: StageGroup[]
+  stagesLoading: boolean
+  stagesError: string | null
   selectedDb: string
   selectedSubStage: string
   selectedIndicator: string
@@ -30,6 +30,9 @@ interface VerificationSelectionPanelProps {
 }
 
 export function VerificationSelectionPanel({
+  stageGroups,
+  stagesLoading,
+  stagesError,
   selectedDb,
   selectedSubStage,
   selectedIndicator,
@@ -42,8 +45,9 @@ export function VerificationSelectionPanel({
   onIndicatorChange,
   onExecute,
 }: VerificationSelectionPanelProps) {
-  const selectedDbInfo = VERIFICATION_DATABASES.find(
-    (db) => db.id === selectedDb,
+  const selectedGroup = stageGroups.find((group) => group.stage === selectedDb)
+  const selectedVersion = selectedGroup?.versions.find(
+    (version) => version.subStage === selectedSubStage,
   )
   const indicatorInfo = VERIFICATION_INDICATOR_TYPES.find(
     (type) => type.id === selectedIndicator,
@@ -62,17 +66,25 @@ export function VerificationSelectionPanel({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {VERIFICATION_DATABASES.map((db) => (
-              <SelectionOption
-                key={db.id}
-                selected={selectedDb === db.id}
-                label={db.name}
-                description={db.description}
-                onClick={() => onDbChange(db.id)}
-              />
-            ))}
-          </div>
+          {stagesLoading ? (
+            <SelectionEmpty message="개방 단계를 불러오는 중..." />
+          ) : stagesError ? (
+            <SelectionEmpty message={stagesError} />
+          ) : stageGroups.length === 0 ? (
+            <SelectionEmpty message="등록된 개방 단계가 없습니다" />
+          ) : (
+            <div className="space-y-2">
+              {stageGroups.map((group) => (
+                <SelectionOption
+                  key={group.stage}
+                  selected={selectedDb === group.stage}
+                  label={group.label}
+                  description={`${group.versions.length}개 버전`}
+                  onClick={() => onDbChange(group.stage)}
+                />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -83,22 +95,25 @@ export function VerificationSelectionPanel({
             {'2. 검증 대상 데이터'}
           </CardTitle>
           <CardDescription className="text-xs">
-            {'사전 개방 / 본 개방을 선택하세요'}
+            {'검증할 개방 버전을 선택하세요'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {!selectedDb ? (
             <SelectionEmpty message="먼저 검증 대상 DB를 선택하세요" />
           ) : !requiresSubStage ? (
-            <SelectionEmpty message="연계DB는 사전/본 개방 구분이 없습니다" />
+            <SelectionEmpty
+              message={`${selectedGroup?.label ?? '이 단계'}는 개방 단계 구분이 없습니다`}
+            />
           ) : (
             <div className="space-y-2">
-              {VERIFICATION_SUB_STAGES.map((subStage) => (
+              {selectedGroup?.versions.map((version) => (
                 <SelectionOption
-                  key={subStage.id}
-                  selected={selectedSubStage === subStage.id}
-                  label={subStage.name}
-                  onClick={() => onSubStageChange(subStage.id)}
+                  key={version.subStage}
+                  selected={selectedSubStage === version.subStage}
+                  label={version.versionName}
+                  description={version.versionDescription || undefined}
+                  onClick={() => onSubStageChange(version.subStage)}
                 />
               ))}
             </div>
@@ -165,9 +180,8 @@ export function VerificationSelectionPanel({
             )}
             {canExecute && !hasRunningVerification && (
               <p className="text-xs text-muted-foreground text-center mt-2">
-                {selectedDbInfo?.name}
-                {requiresSubStage &&
-                  ` / ${VERIFICATION_SUB_STAGES.find((stage) => stage.id === selectedSubStage)?.name}`}
+                {selectedGroup?.label}
+                {requiresSubStage && ` / ${selectedVersion?.versionName ?? ''}`}
                 {' / '}
                 {indicatorInfo?.name}
               </p>

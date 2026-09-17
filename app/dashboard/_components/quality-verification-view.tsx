@@ -3,10 +3,8 @@
 import { useState } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { ApiError, generatedApi, unwrapGeneratedResult } from '@/lib/api'
-import {
-  EXECUTIONS_PAGE_SIZE,
-  VERIFICATION_DATABASES,
-} from './verification-config'
+import { EXECUTIONS_PAGE_SIZE } from './verification-config'
+import { useStages } from '@/hooks/use-stages'
 import { VerificationHistoryCard } from './verification-history-card'
 import {
   VerificationScopeDialog,
@@ -47,11 +45,16 @@ export function QualityVerificationView() {
     [currentPage],
   )
 
+  const {
+    groups: stageGroups,
+    loading: stagesLoading,
+    error: stagesError,
+  } = useStages(true)
+
   const executions = executionsPage?.items ?? []
-  const selectedDbInfo = VERIFICATION_DATABASES.find(
-    (db) => db.id === selectedDb,
-  )
-  const requiresSubStage = selectedDbInfo?.requiresSubStage ?? false
+  const selectedGroup = stageGroups.find((group) => group.stage === selectedDb)
+  // 개방 버전이 등록된 단계만 버전 선택을 요구한다 (연계DB는 등록 행이 없어 기존처럼 건너뛴다).
+  const requiresSubStage = (selectedGroup?.versions.length ?? 0) > 0
   const hasRunningVerification = executions.some((row) => row.runStatus === 0)
   const isQuality = selectedIndicator === 'quality'
   const canExecute =
@@ -155,6 +158,9 @@ export function QualityVerificationView() {
       <main className="container mx-auto px-4 py-4 space-y-4">
         <ViewHeader />
         <VerificationSelectionPanel
+          stageGroups={stageGroups}
+          stagesLoading={stagesLoading}
+          stagesError={stagesError}
           selectedDb={selectedDb}
           selectedSubStage={selectedSubStage}
           selectedIndicator={selectedIndicator}
@@ -187,6 +193,11 @@ export function QualityVerificationView() {
         onOpenChange={setScopeDialogOpen}
         targetStage={selectedDb as Stage}
         targetSubStage={requiresSubStage ? selectedSubStage : undefined}
+        targetSubStageLabel={
+          selectedGroup?.versions.find(
+            (version) => version.subStage === selectedSubStage,
+          )?.versionName
+        }
         onConfirm={(selection) => void runQuality(selection)}
       />
     </div>

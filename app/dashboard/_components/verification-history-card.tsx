@@ -25,12 +25,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { STAGE_LABEL, SUB_STAGE_LABEL, runTypeLabel } from '@/lib/api'
+import { STAGE_LABEL, runTypeLabel } from '@/lib/api'
 import { AsyncStateBlock, RefreshingContent } from '@/components/async-state'
 import { CheckStatusBadge } from '@/components/check-status-badge'
 import { ExecutionDetailRow } from './execution-detail-row'
 import { CompactPager } from '@/components/pager'
 import { EXECUTIONS_PAGE_SIZE } from './verification-config'
+import { useSubStageLabel } from '@/hooks/use-stages'
 import type { RunExecutionResponse } from '@/lib/api'
 
 interface VerificationHistoryCardProps {
@@ -60,6 +61,8 @@ export function VerificationHistoryCard({
   onRetry,
   onToggleRow,
 }: VerificationHistoryCardProps) {
+  const subStageLabel = useSubStageLabel()
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -124,6 +127,7 @@ export function VerificationHistoryCard({
                       rowNumber={row.runId}
                       expanded={expandedRows.includes(row.runId)}
                       onToggle={() => onToggleRow(row.runId)}
+                      subStageLabel={subStageLabel}
                     />
                     {expandedRows.includes(row.runId) && (
                       <TableRow
@@ -151,11 +155,13 @@ function ExecutionRow({
   rowNumber,
   expanded,
   onToggle,
+  subStageLabel,
 }: {
   row: RunExecutionResponse
   rowNumber: number
   expanded: boolean
   onToggle: () => void
+  subStageLabel: (stage: string, subStage: string | undefined) => string
 }) {
   return (
     <TableRow className="cursor-pointer hover:bg-muted/50" onClick={onToggle}>
@@ -173,7 +179,7 @@ function ExecutionRow({
         {STAGE_LABEL[row.stage] ?? row.stage}
       </TableCell>
       <TableCell className="text-xs whitespace-normal break-words">
-        {SUB_STAGE_LABEL[row.subStage] ?? (row.subStage || '-')}
+        {subStageLabel(row.stage, row.subStage)}
       </TableCell>
       <TableCell className="text-xs">
         <Badge variant="outline">{runTypeLabel(row.runType)}</Badge>

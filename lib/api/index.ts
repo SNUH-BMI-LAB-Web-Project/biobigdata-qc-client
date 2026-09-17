@@ -98,6 +98,7 @@ export type DqSubMetricResultResponse = Schema<'DqSubMetricResultResponse'> & {
 export type DqStatisticsResultResponse = Schema<'DqStatisticsResultResponse'>
 export type DqStatisticsResultDistResponse =
   Schema<'DqStatisticsResultDistResponse'>
+export type DqStageResponse = Schema<'DqStageResponse'>
 
 export const ROLE_LABEL: Record<Role, string> = {
   ADMIN: '관리자',
@@ -121,11 +122,4 @@ export const STAGE_LABEL: Record<string, string> = {
   PREP: '전처리DB',
   INTG: '통합DB',
   OPEN: '개방DB',
-}
-
-export const SUB_STAGE_LABEL: Record<string, string> = {
-  preview_open: '사전 개방',
-  main_open: '본 개방',
-  PREVIEW_OPEN: '사전 개방',
-  MAIN_OPEN: '본 개방',
 }
