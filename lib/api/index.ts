@@ -75,6 +75,8 @@ export type DqStatisticsAnalysisResponse =
 export type DqStatisticsMetricResponse = Schema<'DqStatisticsMetricResponse'>
 export type DqRunLogResponse = Schema<'DqRunLogResponse'> & {
   runStatus: RunStatus
+  // 통계 실행은 점수가 없다 (서버가 null 반환)
+  score: number | null
 }
 export type RunExecutionResponse = Schema<'RunExecutionResponse'> & {
   runStatus: RunStatus

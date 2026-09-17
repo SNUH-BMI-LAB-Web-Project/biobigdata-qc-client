@@ -216,7 +216,13 @@ function ExecutionRow({
                 row.runType === 'statistics'
                   ? '/dashboard/data'
                   : '/dashboard/quality-results'
-              window.location.href = `${resultPath}?runId=${row.runId}`
+              // 결과 화면이 DB/버전 선택 상태를 복원할 수 있도록 함께 넘긴다.
+              const params = new URLSearchParams({
+                runId: String(row.runId),
+                stage: row.stage,
+              })
+              if (row.subStage) params.set('subStage', row.subStage)
+              window.location.href = `${resultPath}?${params}`
             }}
           >
             <ExternalLink className="w-3 h-3" />

@@ -79,7 +79,6 @@ export function VerificationSelectionPanel({
                   key={group.stage}
                   selected={selectedDb === group.stage}
                   label={group.label}
-                  description={`${group.versions.length}개 버전`}
                   onClick={() => onDbChange(group.stage)}
                 />
               ))}
@@ -112,7 +111,6 @@ export function VerificationSelectionPanel({
                   key={version.subStage}
                   selected={selectedSubStage === version.subStage}
                   label={version.versionName}
-                  description={version.versionDescription || undefined}
                   onClick={() => onSubStageChange(version.subStage)}
                 />
               ))}
@@ -196,13 +194,11 @@ export function VerificationSelectionPanel({
 function SelectionOption({
   selected,
   label,
-  description,
   icon,
   onClick,
 }: {
   selected: boolean
   label: string
-  description?: string
   icon?: React.ReactNode
   onClick: () => void
 }) {
@@ -220,11 +216,6 @@ function SelectionOption({
         {icon}
         <span className="font-medium text-sm">{label}</span>
       </span>
-      {description && (
-        <span className="block text-xs text-muted-foreground mt-0.5">
-          {description}
-        </span>
-      )}
     </button>
   )
 }

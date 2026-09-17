@@ -20,45 +20,56 @@ import {
   generatedApi,
   unwrapGeneratedResult,
 } from '@/lib/api'
-import { useSubStageLabel } from '@/hooks/use-stages'
 import type { DqRunLogResponse, PageResult } from '@/lib/api'
-import { formatDatetime } from './quality-result-utils'
+import {
+  formatDatetime,
+  getScoreColor,
+  isFiniteNumber,
+} from './quality-result-utils'
 
 const CHECKS_PAGE_SIZE = 5
 
 interface ChecksTableProps {
   selectedStage: string | null
+  /** 선택 전이면 null, 버전 구분이 없는 단계(연계DB)면 '' */
+  selectedSubStage: string | null
   selectedRunId: number | null
   onSelectRun: (runId: number) => void
 }
 
-/** 검증 실행 내역 표 — 완료 건 클릭 시 지표별 결과를 띄운다. */
+/** 검증 실행 내역 표 — 실행별 점수/지표 건수를 함께 보여주고, 완료 건 클릭 시 지표별 결과를 띄운다. */
 export function ChecksTable({
   selectedStage,
+  selectedSubStage,
   selectedRunId,
   onSelectRun,
 }: ChecksTableProps) {
   const [page, setPage] = useState(1)
-  const subStageLabel = useSubStageLabel()
 
-  // 단계 필터가 바뀌면 첫 페이지로
-  useEffect(() => setPage(1), [selectedStage])
+  // 선택이 바뀌면 첫 페이지로
+  useEffect(() => setPage(1), [selectedStage, selectedSubStage])
+
+  // DB / 버전을 다 고르기 전에는 조회하지 않는다.
+  const ready = !!selectedStage && selectedSubStage !== null
 
   const checks = useApi(
-    async (signal) =>
-      unwrapGeneratedResult<PageResult<DqRunLogResponse>>(
+    async (signal) => {
+      if (!ready) return null
+      return unwrapGeneratedResult<PageResult<DqRunLogResponse>>(
         await generatedApi.GET('/api/qc/quality-results/checks', {
           params: {
             query: {
               stage: selectedStage ?? undefined,
+              subStage: selectedSubStage || undefined,
               page,
               size: CHECKS_PAGE_SIZE,
             },
           },
           signal,
         }),
-      ),
-    [selectedStage, page],
+      )
+    },
+    [ready, selectedStage, selectedSubStage, page],
   )
 
   const items = checks.data?.items ?? []
@@ -79,15 +90,21 @@ export function ChecksTable({
               {'완료된 검증을 선택하여 지표별 결과를 확인하세요'}
             </CardDescription>
           </div>
-          <CompactPager
-            page={checks.data?.page ?? page}
-            totalPages={checks.data?.totalPages ?? 1}
-            onChange={setPage}
-          />
+          {ready && (
+            <CompactPager
+              page={checks.data?.page ?? page}
+              totalPages={checks.data?.totalPages ?? 1}
+              onChange={setPage}
+            />
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        {items.length === 0 ? (
+        {!ready ? (
+          <p className="text-xs text-muted-foreground text-center py-10">
+            {'조회할 DB와 데이터 버전을 선택하세요'}
+          </p>
+        ) : items.length === 0 ? (
           <AsyncStateBlock
             loading={checks.isInitialLoading}
             error={checks.error}
@@ -101,11 +118,13 @@ export function ChecksTable({
               <thead className="border-b bg-muted/30">
                 <tr>
                   <th className="text-center p-2 font-medium w-14">{'번호'}</th>
-                  <th className="text-left p-2 font-medium w-24">{'DB'}</th>
-                  <th className="text-left p-2 font-medium w-40">{'데이터'}</th>
                   <th className="text-left p-2 font-medium w-24">
                     {'지표 유형'}
                   </th>
+                  <th className="text-right p-2 font-medium w-28">
+                    {'검증 지표'}
+                  </th>
+                  <th className="text-right p-2 font-medium w-20">{'점수'}</th>
                   <th className="text-left p-2 font-medium w-28">{'실행자'}</th>
                   <th className="text-left p-2 font-medium w-44">
                     {'시작 일시'}
@@ -142,15 +161,25 @@ export function ChecksTable({
                         {(page - 1) * CHECKS_PAGE_SIZE + idx + 1}
                       </td>
                       <td className="p-2">
-                        {STAGE_LABEL[row.stage] ?? row.stage}
-                      </td>
-                      <td className="p-2 whitespace-normal break-words">
-                        {subStageLabel(row.stage, row.subStage)}
-                      </td>
-                      <td className="p-2">
                         <Badge variant="outline" className="text-[10px]">
                           {runTypeLabel(row.runType)}
                         </Badge>
+                      </td>
+                      <td className="p-2 text-right font-mono">
+                        {isFiniteNumber(row.runCntCheck)
+                          ? `${row.runCntCheckType}유형 / ${row.runCntCheck}건`
+                          : '-'}
+                      </td>
+                      <td className="p-2 text-right">
+                        {isFiniteNumber(row.score) ? (
+                          <span
+                            className={`font-bold ${getScoreColor(row.score)}`}
+                          >
+                            {row.score}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">{'-'}</span>
+                        )}
                       </td>
                       <td className="p-2 whitespace-normal break-all">
                         {row.createdBy || '-'}

@@ -3,26 +3,37 @@
 import { Suspense, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { LoadingBlock } from '@/components/async-state'
-import { StageSummaryCards } from './stage-summary-cards'
+import { StageVersionPanel } from './stage-version-panel'
 import { ChecksTable } from './checks-table'
 import { MetricResults } from './metric-results'
 
 function QualityResultsContent() {
   const searchParams = useSearchParams()
-  const deepLinkRunId = useMemo(() => {
+  // 검증 실행 화면의 '결과 보기' 딥링크 — runId 와 함께 넘어온 stage/subStage 로 선택 상태를 복원한다.
+  const deepLink = useMemo(() => {
     const raw = searchParams.get('runId')
-    if (!raw) return null
-    const parsed = Number(raw)
-    return Number.isNaN(parsed) ? null : parsed
+    const parsed = raw ? Number(raw) : NaN
+    return {
+      runId: Number.isNaN(parsed) ? null : parsed,
+      stage: searchParams.get('stage'),
+      subStage: searchParams.get('subStage'),
+    }
   }, [searchParams])
 
-  const [selectedStage, setSelectedStage] = useState<string | null>(null)
+  const [selectedStage, setSelectedStage] = useState<string | null>(
+    deepLink.stage,
+  )
+  // null = 아직 선택 안 함, '' = 버전 구분이 없는 단계(연계DB)
+  const [selectedSubStage, setSelectedSubStage] = useState<string | null>(
+    deepLink.stage ? (deepLink.subStage ?? '') : null,
+  )
   const [selectedRunId, setSelectedRunId] = useState<number | null>(
-    deepLinkRunId,
+    deepLink.runId,
   )
 
-  const handleSelectStage = (stage: string) => {
-    setSelectedStage((prev) => (prev === stage ? null : stage))
+  const handleSelect = (stage: string, subStage: string | null) => {
+    setSelectedStage(stage)
+    setSelectedSubStage(subStage)
     setSelectedRunId(null)
   }
 
@@ -36,12 +47,14 @@ function QualityResultsContent() {
           </p>
         </div>
 
-        <StageSummaryCards
+        <StageVersionPanel
           selectedStage={selectedStage}
-          onSelectStage={handleSelectStage}
+          selectedSubStage={selectedSubStage}
+          onSelect={handleSelect}
         />
         <ChecksTable
           selectedStage={selectedStage}
+          selectedSubStage={selectedSubStage}
           selectedRunId={selectedRunId}
           onSelectRun={setSelectedRunId}
         />
