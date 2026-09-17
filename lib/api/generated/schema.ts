@@ -552,23 +552,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/qc/quality-results/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** stage별 품질 결과 요약 조회 */
-        get: operations["getQualityResultSummary"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/qc/quality-results/checks": {
         parameters: {
             query?: never;
@@ -1671,27 +1654,6 @@ export interface components {
             message?: string;
             data?: components["schemas"]["DqStageResponse"][];
         };
-        ApiResponseListDqQualityResultSummaryResponse: {
-            success?: boolean;
-            code?: string;
-            message?: string;
-            data?: components["schemas"]["DqQualityResultSummaryResponse"][];
-        };
-        /** @description stage별 품질 결과 요약 */
-        DqQualityResultSummaryResponse: {
-            /** @description DB 단계 (LINK/COLL/PREP/INTG/OPEN) */
-            stage?: string;
-            /**
-             * Format: double
-             * @description 종합 통과율 (%)
-             */
-            score?: number;
-            /**
-             * Format: int64
-             * @description 검증 지표 수
-             */
-            metricCount?: number;
-        };
         ApiResponsePageResultDqQualityResultResponse: {
             success?: boolean;
             code?: string;
@@ -1996,16 +1958,14 @@ export interface components {
             category?: string;
             /** @description 검증 단위 (TABLE/FIELD/CONCEPT) */
             metricLevel?: string;
+            /** @description 지표 DB 단계 코드 (LINK/COLL/PREP/INTG/OPEN) */
+            stage?: string;
             /** @description 지표 생성일 */
             createdAt?: string;
             /** @description 적용 여부 (Y/N) */
             isActive?: string;
             /** @description 지표 설명 */
             metricDescription?: string;
-            /** @description stage별 최근 검증 통과율 (key: STAGE, value: 통과율%) — deprecated, recentResults로 대체 예정 */
-            stageScores?: {
-                [key: string]: number;
-            };
             /** @description 최근 검증 결과 (최신순 최대 5건) */
             recentResults?: components["schemas"]["RecentResultItem"][];
         };
@@ -2020,9 +1980,24 @@ export interface components {
             runStartDatetime?: string;
             /**
              * Format: double
-             * @description 점수 (0~100)
+             * @description 통과율 점수 (0~100)
              */
             score?: number;
+            /**
+             * Format: int64
+             * @description 검사 대상 행수
+             */
+            numDenominatorRows?: number;
+            /**
+             * Format: int64
+             * @description 통과 행수
+             */
+            numPassedRows?: number;
+            /**
+             * Format: int64
+             * @description 위배 행수
+             */
+            numViolatedRows?: number;
         };
         ApiResponsePageResultFieldCheckItem: {
             success?: boolean;
@@ -2034,8 +2009,6 @@ export interface components {
         FieldCheckItem: {
             /** @description 적용 여부 (Y/N) */
             isActive?: string;
-            /** @description DB명 (DB 단계 코드: LINK/COLL/PREP/INTG/OPEN) */
-            dbName?: string;
             /** @description 테이블명 */
             tableName?: string;
             /** @description 컬럼명 */
@@ -3248,26 +3221,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListDqStageResponse"];
-                };
-            };
-        };
-    };
-    getQualityResultSummary: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseListDqQualityResultSummaryResponse"];
                 };
             };
         };

@@ -6,9 +6,10 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import type { DqQualityMetricDetailResponse } from '@/lib/api'
+import { stageDbLabel } from '../../_components/indicator-utils'
 import { isActiveFlag } from './detail-utils'
 
-/** 지표 상세 상단 헤더 카드 — ID·이름·차원/검증단위/활성/생성일 */
+/** 지표 상세 상단 헤더 카드 — ID·이름·차원/검증단위/DB단계/활성/생성일 */
 export function MetricSummaryHeader({
   detail,
 }: {
@@ -29,6 +30,9 @@ export function MetricSummaryHeader({
             <CardDescription className="flex items-center gap-4 mt-2">
               <Badge variant="outline">{detail.category}</Badge>
               <Badge variant="secondary">{detail.metricLevel}</Badge>
+              {detail.stage && (
+                <Badge variant="outline">{stageDbLabel(detail.stage)}</Badge>
+              )}
               <Badge variant={active ? 'default' : 'secondary'}>
                 {active ? '활성' : '비활성'}
               </Badge>

@@ -66,7 +66,10 @@ export function IndicatorDetailView() {
 
         <MetricSummaryHeader detail={detail} />
         <MetricInfoCards detail={detail} />
-        <AppliedFieldsTable metricId={metricId} />
+        <AppliedFieldsTable
+          metricId={metricId}
+          metricLevel={detail.metricLevel}
+        />
       </main>
     </div>
   )

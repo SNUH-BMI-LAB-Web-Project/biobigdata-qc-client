@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import { ArrowUpDown, Loader2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -22,8 +22,21 @@ import { isActiveFlag } from './detail-utils'
 
 const PAGE_SIZE = 20
 
-/** 지표가 적용되는 테이블/컬럼 목록 — 필터·정렬·페이징 (자체 조회) */
-export function AppliedFieldsTable({ metricId }: { metricId: string }) {
+/**
+ * 지표가 적용되는 테이블/컬럼 목록 — 필터·정렬·페이징 (자체 조회).
+ * 조회 대상 테이블은 서버가 지표의 검증 단위(metricLevel)로 분기한다:
+ * FIELD→dq_field_check, TABLE→dq_table_check, CONCEPT→dq_concept_check.
+ * TABLE 단위는 테이블 통째로 검사하므로 컬럼 개념이 없어 컬럼명 칸을 숨긴다.
+ */
+export function AppliedFieldsTable({
+  metricId,
+  metricLevel,
+}: {
+  metricId: string
+  metricLevel?: string
+}) {
+  const hasFieldColumn = metricLevel?.trim().toUpperCase() !== 'TABLE'
+  const colCount = hasFieldColumn ? 4 : 3
   const [tableFilter, setTableFilter] = useState('')
   const [columnFilter, setColumnFilter] = useState('')
   const [activeFilter, setActiveFilter] = useState('all') // all | active | inactive
@@ -36,11 +49,12 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
     setPage(1)
   }
 
+  // DB 에 저장된 값은 'Y'/'N' — 다른 모든 쿼리와 동일하게 맞춘다
   const isActiveParam =
     activeFilter === 'active'
-      ? '1'
+      ? 'Y'
       : activeFilter === 'inactive'
-        ? '0'
+        ? 'N'
         : undefined
 
   const { data, loading, error, refetch } = useApi(
@@ -94,7 +108,7 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead className="text-xs w-16">
+                <TableHead className="text-xs w-24">
                   <select
                     value={activeFilter}
                     onChange={(e) => onFilter(setActiveFilter)(e.target.value)}
@@ -106,9 +120,6 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
                   </select>
                 </TableHead>
                 <TableHead className="text-xs">
-                  <span className="text-muted-foreground">DB명</span>
-                </TableHead>
-                <TableHead className="text-xs">
                   <Input
                     placeholder="테이블 검색..."
                     value={tableFilter}
@@ -116,31 +127,34 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
                     className="h-7 px-2 text-xs"
                   />
                 </TableHead>
-                <TableHead className="text-xs">
-                  <Input
-                    placeholder="컬럼 검색..."
-                    value={columnFilter}
-                    onChange={(e) => onFilter(setColumnFilter)(e.target.value)}
-                    className="h-7 px-2 text-xs"
-                  />
-                </TableHead>
+                {hasFieldColumn && (
+                  <TableHead className="text-xs">
+                    <Input
+                      placeholder="컬럼 검색..."
+                      value={columnFilter}
+                      onChange={(e) => onFilter(setColumnFilter)(e.target.value)}
+                      className="h-7 px-2 text-xs"
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="text-xs">
                   <span className="text-muted-foreground">생성일</span>
                 </TableHead>
               </TableRow>
               <TableRow>
-                <TableHead className="text-xs w-16">
-                  <span>적용</span>
+                <TableHead className="text-xs w-24">
+                  <span>적용 여부</span>
                 </TableHead>
-                <SortHead label="DB명" onClick={() => handleSort('dbName')} />
                 <SortHead
                   label="테이블명"
                   onClick={() => handleSort('tableName')}
                 />
-                <SortHead
-                  label="컬럼명"
-                  onClick={() => handleSort('fieldName')}
-                />
+                {hasFieldColumn && (
+                  <SortHead
+                    label="컬럼명"
+                    onClick={() => handleSort('fieldName')}
+                  />
+                )}
                 <SortHead
                   label="생성일"
                   onClick={() => handleSort('createdAt')}
@@ -150,7 +164,7 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={colCount} className="text-center py-8">
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mx-auto" />
                   </TableCell>
                 </TableRow>
@@ -158,7 +172,7 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
               {!loading && error && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={colCount}
                     className="text-center text-sm text-muted-foreground py-8"
                   >
                     <div className="flex flex-col items-center gap-3">
@@ -172,31 +186,39 @@ export function AppliedFieldsTable({ metricId }: { metricId: string }) {
               )}
               {!loading &&
                 !error &&
-                rows.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="text-center">
-                      <Checkbox checked={isActiveFlag(row.isActive)} disabled />
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {row.dbName || '-'}
-                    </TableCell>
-                    <TableCell className="text-xs font-medium">
-                      {row.tableName}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
-                        {row.fieldName}
-                      </code>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {row.createdAt}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                rows.map((row, index) => {
+                  const active = isActiveFlag(row.isActive)
+                  return (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Badge variant={active ? 'default' : 'secondary'}>
+                          {active ? '적용' : '미적용'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs font-medium">
+                        {row.tableName}
+                      </TableCell>
+                      {hasFieldColumn && (
+                        <TableCell className="text-xs">
+                          {row.fieldName ? (
+                            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                              {row.fieldName}
+                            </code>
+                          ) : (
+                            '-'
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-xs text-muted-foreground">
+                        {row.createdAt}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               {!loading && !error && rows.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={colCount}
                     className="text-center text-sm text-muted-foreground py-8"
                   >
                     필터 조건에 맞는 데이터가 없습니다

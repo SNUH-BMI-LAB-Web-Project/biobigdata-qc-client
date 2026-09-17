@@ -86,8 +86,6 @@ export type RunExecutionDetailResponse =
     runStatus: RunStatus
     score: number | null
   }
-export type DqQualityResultSummaryResponse =
-  Schema<'DqQualityResultSummaryResponse'>
 export type DqQualityResultResponse = Schema<'DqQualityResultResponse'> & {
   passRate: number | null
 }
