@@ -207,9 +207,12 @@ const QualityMetricRow = memo(function QualityMetricRow({
         {item.metricId}
       </TableCell>
       <TableCell>
-        <Badge variant="outline" className="text-xs">
+        <div
+          className="max-w-full truncate text-xs"
+          title={item.category}
+        >
           {item.category}
-        </Badge>
+        </div>
       </TableCell>
       <TableCell>
         <Badge variant="secondary" className="text-xs">
