@@ -300,6 +300,7 @@ export function SignupForm({ onDone }: { onDone: () => void }) {
 
           <Button
             type="submit"
+            size="lg"
             className="w-full"
             disabled={!canSubmit || submitting}
           >

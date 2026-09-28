@@ -36,8 +36,7 @@ export function CompactPager({
     <div className="flex items-center gap-1">
       <Button
         variant="outline"
-        size="sm"
-        className="h-7 text-xs"
+        size="xs"
         disabled={page <= 1}
         onClick={() => onChange(Math.max(1, page - 1))}
       >
@@ -51,8 +50,7 @@ export function CompactPager({
       />
       <Button
         variant="outline"
-        size="sm"
-        className="h-7 text-xs"
+        size="xs"
         disabled={page >= totalPages}
         onClick={() => onChange(Math.min(totalPages, page + 1))}
       >

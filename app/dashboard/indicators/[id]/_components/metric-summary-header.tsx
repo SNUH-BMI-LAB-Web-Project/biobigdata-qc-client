@@ -21,7 +21,7 @@ export function MetricSummaryHeader({
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-xl">
+            <CardTitle className="text-2xl leading-[34px]">
               <span className="font-mono text-base text-muted-foreground mr-2">
                 {detail.metricId}
               </span>

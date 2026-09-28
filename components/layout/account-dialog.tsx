@@ -168,10 +168,10 @@ export function AccountDialog({
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                size="xs"
                 disabled={withdrawing}
                 onClick={() => setWithdrawOpen(true)}
-                className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 {withdrawing ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

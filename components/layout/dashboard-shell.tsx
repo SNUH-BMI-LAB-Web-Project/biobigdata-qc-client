@@ -17,6 +17,7 @@ interface DashboardShellProps {
 export function DashboardShell({ children }: DashboardShellProps) {
   const router = useRouter()
   const [accountOpen, setAccountOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const { data: me, refetch: refetchMe } = useApi(
     async (signal) =>
@@ -36,16 +37,21 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <DashboardHeader
-        userName={me?.mberNm}
+        user={me}
         onLogoClick={() => router.push('/dashboard')}
         onAccountClick={() => setAccountOpen(true)}
         onLogout={handleLogout}
       />
-      <div className="flex flex-1 overflow-hidden">
-        <DashboardSidebar />
-        <div className="flex-1 overflow-y-auto">{children}</div>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <DashboardSidebar
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+        />
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+          {children}
+        </div>
       </div>
       <AccountDialog
         open={accountOpen}

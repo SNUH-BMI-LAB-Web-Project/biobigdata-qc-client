@@ -155,7 +155,7 @@ export function QualityVerificationView() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="container mx-auto px-4 py-4 space-y-4">
+      <main className="container mx-auto space-y-6 px-6 py-6 lg:px-8">
         <ViewHeader />
         <VerificationSelectionPanel
           stageGroups={stageGroups}
@@ -207,8 +207,8 @@ export function QualityVerificationView() {
 function ViewHeader() {
   return (
     <div>
-      <h1 className="text-xl font-bold">{'품질검증 실행'}</h1>
-      <p className="text-sm text-muted-foreground mt-1">
+      <h1 className="text-2xl font-bold leading-[34px]">{'품질검증 실행'}</h1>
+      <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
         {'검증 대상 선택 및 품질/통계 지표 검증 실행'}
       </p>
     </div>

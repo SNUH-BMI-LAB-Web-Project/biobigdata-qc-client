@@ -53,7 +53,7 @@ export function IndicatorDetailView() {
 
   return (
     <div className="flex-1 flex flex-col overflow-auto">
-      <main className="container mx-auto px-4 py-4 space-y-4">
+      <main className="container mx-auto space-y-6 px-6 py-6 lg:px-8">
         <Button
           variant="ghost"
           size="sm"

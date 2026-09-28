@@ -1,74 +1,69 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { QUALITY_SCORE_CRITERIA } from '@/lib/quality-score'
 
 interface QualityScorePopoverProps {
   trigger: React.ReactNode
+  collapsed?: boolean
 }
 
-export function QualityScorePopover({ trigger }: QualityScorePopoverProps) {
-  const [open, setOpen] = useState(false)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-
-  const place = (e: React.MouseEvent) => {
-    setPosition({ x: e.clientX, y: e.clientY })
-  }
-
+export function QualityScorePopover({
+  trigger,
+  collapsed = false,
+}: QualityScorePopoverProps) {
   return (
-    <>
-      <Button
-        variant="ghost"
-        className="w-full justify-start gap-2 text-sm h-9"
-        onMouseEnter={(e) => {
-          place(e)
-          setOpen(true)
-        }}
-        onMouseLeave={() => setOpen(false)}
-        onClick={(e) => {
-          place(e)
-          setOpen((value) => !value)
-        }}
-      >
-        {trigger}
-      </Button>
-
-      {open && (
-        <div
-          className="fixed z-50 w-60 rounded-md border bg-popover text-popover-foreground p-3 shadow-md"
-          style={{
-            left: position.x + 14,
-            top: position.y - 12,
-            transform: 'translateY(-100%)',
-          }}
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={
+            collapsed
+              ? 'h-10 w-full px-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              : 'h-10 w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+          }
+          aria-label="품질 점수 기준"
         >
-          <p className="text-sm font-semibold mb-2">
-            {'대시보드 품질 점수 기준'}
-          </p>
-          <div className="space-y-1.5 text-sm">
-            <ScoreRule
-              colorClass="bg-green-500"
-              label="우수"
-              value={`${QUALITY_SCORE_CRITERIA.excellent}점 이상`}
-              textClass="text-green-600"
-            />
-            <ScoreRule
-              colorClass="bg-yellow-500"
-              label="양호"
-              value={`${QUALITY_SCORE_CRITERIA.good}점 ~ ${QUALITY_SCORE_CRITERIA.excellent - 1}점`}
-              textClass="text-yellow-600"
-            />
-            <ScoreRule
-              colorClass="bg-red-500"
-              label="보통"
-              value={`${QUALITY_SCORE_CRITERIA.fair}점 미만`}
-              textClass="text-red-600"
-            />
-          </div>
+          {trigger}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="right"
+        align="end"
+        aria-label="대시보드 품질 점수 기준"
+        className="w-64"
+      >
+        <p className="text-sm font-semibold mb-2">
+          {'대시보드 품질 점수 기준'}
+        </p>
+        <div className="space-y-1.5 text-sm">
+          <ScoreRule
+            colorClass="bg-success"
+            label="우수"
+            value={`${QUALITY_SCORE_CRITERIA.excellent}점 이상`}
+            textClass="text-success"
+          />
+          <ScoreRule
+            colorClass="bg-warning"
+            label="양호"
+            value={`${QUALITY_SCORE_CRITERIA.good}점 ~ ${QUALITY_SCORE_CRITERIA.excellent - 1}점`}
+            textClass="text-warning"
+          />
+          <ScoreRule
+            colorClass="bg-destructive"
+            label="보통"
+            value={`${QUALITY_SCORE_CRITERIA.fair}점 미만`}
+            textClass="text-destructive"
+          />
         </div>
-      )}
-    </>
+      </PopoverContent>
+    </Popover>
   )
 }
 

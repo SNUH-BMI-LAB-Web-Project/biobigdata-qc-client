@@ -1,157 +1,292 @@
 'use client'
 
-import { useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRef, useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   BarChart3,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
-  ClipboardCheck,
-  FileBarChart,
   Gauge,
   LayoutDashboard,
   Sparkles,
   Table,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { QualityScorePopover } from './quality-score-popover'
+import { PopoverArrow } from '@radix-ui/react-popover'
 
 interface NavItem {
   name: string
   href: string
   icon: React.ComponentType<{ className?: string }>
 }
-
-const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
-  { name: '품질검증 실행', href: '/dashboard', icon: LayoutDashboard },
-]
-
-const RESULT_NAV_ITEMS: readonly NavItem[] = [
-  {
-    name: '데이터 품질 결과',
-    href: '/dashboard/quality-results',
-    icon: ClipboardCheck,
-  },
-  { name: '데이터 통계 결과', href: '/dashboard/data', icon: FileBarChart },
-]
-
-const SECONDARY_NAV_ITEMS: readonly NavItem[] = [
+interface DashboardSidebarProps {
+  collapsed: boolean
+  onCollapsedChange: (collapsed: boolean) => void
+}
+const EXECUTION_ITEM: NavItem = {
+  name: '품질검증 실행',
+  href: '/dashboard',
+  icon: LayoutDashboard,
+}
+const RESULT_NAV_ITEMS = [
+  { name: '데이터 품질 결과', href: '/dashboard/quality-results' },
+  { name: '데이터 통계 결과', href: '/dashboard/data' },
+] as const
+const OTHER_NAV_ITEMS: readonly NavItem[] = [
   { name: '지표DB 관리', href: '/dashboard/indicators', icon: Table },
-]
-
-const THIRD_NAV_ITEMS: readonly NavItem[] = [
   { name: 'Agent', href: '/dashboard/agent', icon: Sparkles },
 ]
 
-/** 대시보드 공통 사이드바 — 1차/결과(접힘)/지표DB 내비 + 품질 점수 팝오버 */
-export function DashboardSidebar() {
-  const router = useRouter()
+/** PDF p.32 LNB: 접힘 상태에서도 하위 메뉴와 품질 기준에 접근할 수 있다. */
+export function DashboardSidebar({
+  collapsed,
+  onCollapsedChange,
+}: DashboardSidebarProps) {
   const pathname = usePathname()
   const [resultsOpen, setResultsOpen] = useState(true)
-
+  const resultsActive = RESULT_NAV_ITEMS.some((item) =>
+    isPathActive(pathname, item.href),
+  )
   return (
-    <aside className="w-48 border-r bg-card flex flex-col flex-shrink-0">
-      <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
-        {PRIMARY_NAV_ITEMS.map((item) => (
-          <SidebarLink
-            key={item.href}
-            item={item}
-            active={pathname === item.href}
-            onClick={() => router.push(item.href)}
-          />
-        ))}
-
-        <div className="pt-2">
-          <Button
-            variant="ghost"
-            className="w-full justify-between gap-2 text-sm h-9"
-            onClick={() => setResultsOpen((open) => !open)}
+    <aside
+      aria-label="사이드바"
+      className='flex relative'
+    >
+      <div>
+        <button
+          type="button"
+          className="absolute -right-3 top-8 z-30 flex size-6 items-center justify-center rounded-full border border-primary bg-white text-primary shadow-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2"
+          onClick={() => onCollapsedChange(!collapsed)}
+          aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          aria-expanded={!collapsed}
+          aria-controls="dashboard-navigation"
+        >
+          {collapsed ? (
+            <ChevronRight className="size-4" />
+          ) : (
+            <ChevronLeft className="size-4" />
+          )}
+        </button>
+      </div>
+      <div className={cn(
+        'flex relative z-20 transition-[width] duration-200 motion-reduce:transition-none bg-sidebar overflow-hidden',
+        collapsed ? 'w-16' : 'w-65',
+      )}>
+        <div className={cn(
+          'flex min-h-0 shrink-0 flex-col text-sidebar-foreground',
+          collapsed ? 'w-16' : 'w-65',
+        )}>
+          <nav
+            id="dashboard-navigation"
+            aria-label="품질관리 메뉴"
+            className="min-h-0 flex-1 overflow-y-auto px-3 pb-8 pt-8"
           >
-            <span className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              <span>{'품질검증 결과'}</span>
-            </span>
-            {resultsOpen ? (
-              <ChevronDown className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5" />
-            )}
-          </Button>
-
-          {resultsOpen && (
-            <div className="ml-4 mt-1 space-y-1">
-              {RESULT_NAV_ITEMS.map((item) => (
+            <p
+              className={
+                collapsed
+                  ? 'sr-only'
+                  : 'mb-5 px-3 text-lg font-bold leading-[26px]'
+              }
+            >
+              대시보드
+            </p>
+            <div className={collapsed ? 'h-6.5 mb-5' : ''}></div>
+            <div className="space-y-1">
+              <SidebarLink
+                item={EXECUTION_ITEM}
+                active={isPathActive(pathname, EXECUTION_ITEM.href)}
+                collapsed={collapsed}
+              />
+              {collapsed ? (
+                <CollapsedResults
+                  key={pathname}
+                  pathname={pathname}
+                  active={resultsActive}
+                />
+              ) : (
+                <div>
+                  <button
+                    type="button"
+                    className={cn(
+                      sidebarItemClass(resultsOpen || resultsActive),
+                      resultsOpen && 'rounded-b-none',
+                    )}
+                    onClick={() => setResultsOpen((open) => !open)}
+                    aria-expanded={resultsOpen}
+                    aria-controls="quality-results-submenu"
+                  >
+                    <BarChart3 className="size-4 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 truncate text-left">
+                      품질검증 결과
+                    </span>
+                    {resultsOpen ? (
+                      <ChevronDown className="size-4" />
+                    ) : (
+                      <ChevronRight className="size-4" />
+                    )}
+                  </button>
+                  <div
+                    id="quality-results-submenu"
+                    hidden={!resultsOpen}
+                    className="rounded-b-md bg-sidebar-submenu py-1"
+                  >
+                    <ResultLinks pathname={pathname} />
+                  </div>
+                </div>
+              )}
+              {OTHER_NAV_ITEMS.map((item) => (
                 <SidebarLink
                   key={item.href}
                   item={item}
-                  active={pathname === item.href}
-                  size="sub"
-                  onClick={() => router.push(item.href)}
+                  active={isPathActive(pathname, item.href)}
+                  collapsed={collapsed}
                 />
               ))}
             </div>
-          )}
+          </nav>
+          <div className="shrink-0 border-t border-sidebar-border px-3 py-3">
+            <QualityScorePopover
+              collapsed={collapsed}
+              trigger={
+                <>
+                  <Gauge className="size-5 shrink-0" aria-hidden="true" />
+                  <span className={collapsed ? 'sr-only' : undefined}>
+                    품질 점수 기준
+                  </span>
+                </>
+              }
+            />
+          </div>
         </div>
-
-        {SECONDARY_NAV_ITEMS.map((item) => (
-          <SidebarLink
-            key={item.href}
-            item={item}
-            active={pathname === item.href}
-            onClick={() => router.push(item.href)}
-          />
-        ))}
-
-        {THIRD_NAV_ITEMS.map((item) => (
-          <SidebarLink
-            key={item.href}
-            item={item}
-            active={pathname === item.href}
-            onClick={() => router.push(item.href)}
-          />
-        ))}
-      </nav>
-
-      <div className="p-3 border-t flex-shrink-0">
-        <QualityScorePopover
-          trigger={
-            <span className="inline-flex items-center gap-2">
-              <Gauge className="w-4 h-4" />
-              {'품질 점수 기준'}
-            </span>
-          }
-        />
       </div>
     </aside>
   )
 }
 
+function CollapsedResults({
+  pathname,
+  active,
+}: {
+  pathname: string
+  active: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <div>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={sidebarItemClass(active || open, true)}
+            aria-label="품질검증 결과"
+          >
+            <BarChart3 className="size-4" aria-hidden="true" />
+          </button>
+        </PopoverTrigger>
+      </div>
+      <PopoverContent
+        ref={contentRef}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          contentRef.current?.querySelector<HTMLAnchorElement>('a')?.focus()
+        }}
+        side="right"
+        align="center"
+        sideOffset={16}
+        aria-label="품질검증 결과"
+        className="min-w-40 bg-[#264f7e] border-none px-3 py-2"
+      >
+        <PopoverArrow className='visible fill-[#264f7e]' />
+        <div className='flex flex-col gap-1.5'>
+          {RESULT_NAV_ITEMS.map((item) => {
+            const active = isPathActive(pathname, item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className='text-white'
+              >
+                <span className="truncate">{item.name}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function ResultLinks({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string
+  onNavigate?: () => void
+}) {
+  return RESULT_NAV_ITEMS.map((item) => {
+    const active = isPathActive(pathname, item.href)
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-current={active ? 'page' : undefined}
+        onClick={onNavigate}
+        className={cn(
+          'mx-1 flex min-h-8 items-center gap-2 rounded px-3 py-1.5 text-[13px] font-medium leading-5 text-sidebar-submenu-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
+          active && 'bg-accent',
+        )}
+      >
+        <span className="truncate pl-6">{item.name}</span>
+      </Link>
+    )
+  })
+}
+
 function SidebarLink({
   item,
   active,
-  size = 'main',
-  onClick,
+  collapsed,
 }: {
   item: NavItem
   active: boolean
-  size?: 'main' | 'sub'
-  onClick: () => void
+  collapsed: boolean
 }) {
   const Icon = item.icon
-
   return (
-    <Button
-      variant={active ? 'secondary' : 'ghost'}
-      className={cn(
-        'w-full justify-start gap-2',
-        size === 'sub' ? 'text-xs h-8' : 'text-sm h-9',
-        active && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary',
-      )}
-      onClick={onClick}
-    >
-      <Icon className={size === 'sub' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
-      {item.name}
-    </Button>
+    <div>
+      <Link
+        href={item.href}
+        className={sidebarItemClass(active, collapsed)}
+        aria-current={active ? 'page' : undefined}
+      >
+        <Icon className="size-4 shrink-0" aria-hidden="true" />
+        <span className={collapsed ? 'sr-only' : 'truncate'}>{item.name}</span>
+      </Link>
+    </div>
   )
+}
+
+function sidebarItemClass(active: boolean, collapsed = false) {
+  return cn(
+    'flex h-10 w-full items-center rounded-md text-sm font-medium leading-5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sidebar-ring',
+    collapsed ? 'justify-center' : 'justify-start gap-3 px-3',
+    active
+      ? 'bg-[image:var(--sidebar-selected-background)] font-bold text-sidebar-primary-foreground'
+      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+  )
+}
+
+function isPathActive(pathname: string, href: string) {
+  if (href === '/dashboard') return pathname === href
+  return pathname === href || pathname.startsWith(`${href}/`)
 }

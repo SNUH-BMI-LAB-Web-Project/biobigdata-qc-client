@@ -14,7 +14,7 @@ const TAB_TRIGGER_CLASS = cn(
 export function IndicatorsView() {
   return (
     <div className="flex-1 flex flex-col">
-      <main className="container mx-auto px-4 py-4 space-y-4">
+      <main className="container mx-auto space-y-6 px-6 py-6 lg:px-8">
         <ViewHeader />
         <TabsPrimitive.Root
           defaultValue="tables"
@@ -59,8 +59,8 @@ export function IndicatorsView() {
 function ViewHeader() {
   return (
     <div>
-      <h1 className="text-xl font-bold">{'지표DB 관리'}</h1>
-      <p className="text-sm text-muted-foreground mt-1">
+      <h1 className="text-2xl font-bold leading-[34px]">{'지표DB 관리'}</h1>
+      <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
         {'원천 테이블 · 품질지표 · 통계지표 관리'}
       </p>
     </div>

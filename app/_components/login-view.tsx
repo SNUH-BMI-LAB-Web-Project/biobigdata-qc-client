@@ -88,7 +88,12 @@ export function LoginView() {
               <p className="text-sm text-red-600 text-center">{error}</p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={loading}
+            >
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               로그인
             </Button>

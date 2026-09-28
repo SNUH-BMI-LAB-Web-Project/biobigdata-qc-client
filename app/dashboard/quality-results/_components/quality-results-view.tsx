@@ -39,10 +39,12 @@ function QualityResultsContent() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="container mx-auto px-4 py-4 space-y-4">
+      <main className="container mx-auto space-y-6 px-6 py-6 lg:px-8">
         <div>
-          <h1 className="text-xl font-bold">{'데이터 품질 결과'}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-2xl font-bold leading-[34px]">
+            {'데이터 품질 결과'}
+          </h1>
+          <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
             {'품질지표 검증 결과를 확인합니다'}
           </p>
         </div>
