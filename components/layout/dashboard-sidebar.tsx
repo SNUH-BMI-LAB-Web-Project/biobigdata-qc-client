@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { useAgentEnabled } from '@/hooks/use-agent-enabled'
 import { QualityScorePopover } from './quality-score-popover'
 import { PopoverArrow } from '@radix-ui/react-popover'
 
@@ -51,6 +52,7 @@ export function DashboardSidebar({
   onCollapsedChange,
 }: DashboardSidebarProps) {
   const pathname = usePathname()
+  const { enabled: agentEnabled } = useAgentEnabled()
   const [resultsOpen, setResultsOpen] = useState(true)
   const resultsActive = RESULT_NAV_ITEMS.some((item) =>
     isPathActive(pathname, item.href),
@@ -148,6 +150,7 @@ export function DashboardSidebar({
                   item={item}
                   active={isPathActive(pathname, item.href)}
                   collapsed={collapsed}
+                  disabled={item.href === '/dashboard/agent' && !agentEnabled}
                 />
               ))}
             </div>
@@ -256,12 +259,17 @@ function SidebarLink({
   item,
   active,
   collapsed,
+  disabled = false,
 }: {
   item: NavItem
   active: boolean
   collapsed: boolean
+  disabled?: boolean
 }) {
   const Icon = item.icon
+  if (disabled) {
+    return <div></div>
+  }
   return (
     <div>
       <Link

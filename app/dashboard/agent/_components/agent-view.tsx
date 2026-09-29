@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { SquarePen } from 'lucide-react'
+import { Loader2, SquarePen, ZapOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAgentEnabled } from '@/hooks/use-agent-enabled'
 import { AGENT_SCOPES } from './agent-config'
 import { AgentComposer } from './agent-composer'
 import { AgentGreeting } from './agent-greeting'
@@ -17,6 +18,7 @@ const FAKE_RESPONSE_DELAY = 900
 
 /** 품질 검증 Agent 화면 — 인사말·빠른 질문·대화·입력창을 조합한 외형 전용 뷰 */
 export function AgentView() {
+  const { enabled, loading } = useAgentEnabled()
   const [messages, setMessages] = useState<AgentMessage[]>([])
   const [input, setInput] = useState('')
   const [pending, setPending] = useState(false)
@@ -67,6 +69,28 @@ export function AgentView() {
     setMessages([])
     setInput('')
     setPending(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!enabled) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+          <ZapOff className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <h1 className="text-lg font-semibold">{'Agent 기능이 비활성화되어 있습니다'}</h1>
+        <p className="text-sm text-muted-foreground">
+          {'관리자에 의해 사용이 중지되었습니다. 필요하면 관리자에게 문의하세요.'}
+        </p>
+      </div>
+    )
   }
 
   return (
