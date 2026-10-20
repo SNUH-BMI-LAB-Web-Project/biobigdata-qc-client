@@ -95,6 +95,9 @@ export type DqMetricResultResponse = Schema<'DqMetricResultResponse'> & {
 export type DqSubMetricResultResponse = Schema<'DqSubMetricResultResponse'> & {
   passRate: number | null
 }
+export type ViolationExecuteResponse = Schema<'ViolationExecuteResponse'>
+export type ViolationRowResponse = Schema<'ViolationRowResponse'>
+export type ViolationQueryInfoResponse = Schema<'ViolationQueryInfoResponse'>
 export type DqStatisticsResultResponse = Schema<'DqStatisticsResultResponse'>
 export type DqStatisticsResultDistResponse =
   Schema<'DqStatisticsResultDistResponse'>

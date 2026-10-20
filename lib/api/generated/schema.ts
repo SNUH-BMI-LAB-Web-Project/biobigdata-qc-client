@@ -610,6 +610,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/quality-results/{runId}/violations/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 위배 상세 조회 실행 전 정보 */
+        get: operations["getViolationQueryInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-results/{runId}/violations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 위배 상세 데이터 조회 실행 */
+        post: operations["executeViolationQuery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-results/violations/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 위배 상세 데이터 페이지 조회 */
+        get: operations["getViolationPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-results/violations/{jobId}/abort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 위배 상세 조회 쿼리 종료(abort) */
+        post: operations["abortViolationQuery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qc/quality-results/checks/{runId}/metrics/{metricId}/sub-metrics": {
         parameters: {
             query?: never;
@@ -1795,6 +1863,101 @@ export interface components {
             code?: string;
             message?: string;
             data?: components["schemas"]["PageResultDqSubMetricResultResponse"];
+        };
+        /** @description 위배 상세 조회 실행 전 정보 (쿼리 편집·예상 시간 표시용) */
+        ViolationQueryInfoResponse: {
+            /** @description 저장된 위배 조회 쿼리 (sql_text_violate) */
+            violationQuery?: string;
+            /**
+             * Format: int32
+             * @description 예상 소요 시간(ms) — dq_quality_results.execution_time
+             */
+            estimatedMs?: number;
+            /**
+             * Format: int64
+             * @description 검증 당시 총 위배 건수 (dq_quality_results.num_violated_rows)
+             */
+            totalViolatedRows?: number;
+        };
+        ApiResponseViolationQueryInfoResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["ViolationQueryInfoResponse"];
+        };
+        /** @description 위배 상세 데이터 조회 실행 요청 */
+        ViolationQueryRequest: {
+            /** @description 클라이언트가 생성한 조회 작업 ID(UUID). 실행 중 종료(abort)·페이지 조회에 동일 값 사용 */
+            jobId: string;
+            /** @description 지표 ID */
+            metricId: string;
+            /** @description 세부지표 ID (field/table/concept check_id 중 해당 값) */
+            checkId: string;
+            /** @description 수정한 검증 쿼리(선택). SELECT 단일문만 허용 */
+            editedSql?: string;
+        };
+        /** @description 위배 데이터 상세 1행 */
+        ViolationRowResponse: {
+            /** @description 행 키 (서버 부여 순번, 예: ROW-000001) */
+            rowKey?: string;
+            /** @description 참여자 ID */
+            participantId?: string;
+            /** @description 기관 ID */
+            institutionId?: string;
+            /** @description 오류 값 */
+            violatedValue?: string;
+        };
+        /** @description 페이지네이션 응답 */
+        PageResultViolationRowResponse: {
+            /** @description 데이터 목록 */
+            items?: components["schemas"]["ViolationRowResponse"][];
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        /** @description 위배 상세 조회 실행 결과 */
+        ViolationExecuteResponse: {
+            /** @description 조회 작업 ID (페이지 조회·종료에 사용) */
+            jobId?: string;
+            /** @description 실행 상태 (SUCCESS / ABORTED) */
+            execStatus?: string;
+            /**
+             * Format: int64
+             * @description 검증 당시 총 위배 건수
+             */
+            totalViolatedRows?: number;
+            /**
+             * Format: int32
+             * @description 실제 조회된 행수 (상한 캡까지)
+             */
+            returnedRows?: number;
+            /** @description 상한 캡에 도달해 일부만 조회됐는지 여부 */
+            capped?: boolean;
+            /**
+             * Format: int32
+             * @description 예상/실제 소요 시간(ms)
+             */
+            estimatedMs?: number;
+            /** @description 실행된 위배 조회 쿼리 (화면 표시용) */
+            violationQuery?: string;
+            page?: components["schemas"]["PageResultViolationRowResponse"];
+        };
+        ApiResponseViolationExecuteResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["ViolationExecuteResponse"];
+        };
+        ApiResponsePageResultViolationRowResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["PageResultViolationRowResponse"];
         };
         /** @description 세부지표 단위 품질 결과 — METRIC_ID 하위 드릴다운 계층 */
         DqSubMetricResultResponse: {
@@ -3373,6 +3536,104 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePageResultDqQualityResultResponse"];
+                };
+            };
+        };
+    };
+    getViolationQueryInfo: {
+        parameters: {
+            query: {
+                metricId: string;
+                checkId: string;
+            };
+            header?: never;
+            path: {
+                runId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseViolationQueryInfoResponse"];
+                };
+            };
+        };
+    };
+    executeViolationQuery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViolationQueryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseViolationExecuteResponse"];
+                };
+            };
+        };
+    };
+    getViolationPage: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultViolationRowResponse"];
+                };
+            };
+        };
+    };
+    abortViolationQuery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };

@@ -1,5 +1,6 @@
 'use client'
 
+import { Eye } from 'lucide-react'
 import { useState } from 'react'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { CompactPager } from '@/components/pager'
@@ -14,10 +15,10 @@ import {
 import { useApi } from '@/hooks/use-api'
 import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import type { DqSubMetricResultResponse, PageResult } from '@/lib/api'
-import { getScoreColor, isFiniteNumber } from './quality-result-utils'
+import { ViolationDetailDialog } from './violation-detail-dialog'
 
 const SUB_METRICS_PAGE_SIZE = 5
-const COLUMN_COUNT = 13
+const COLUMN_COUNT = 6
 
 /** METRIC_ID 하위 세부지표(검증 대상 열) 드릴다운 목록 */
 export function SubMetricResults({
@@ -28,6 +29,9 @@ export function SubMetricResults({
   metricId: string
 }) {
   const [page, setPage] = useState(1)
+  const [detailSub, setDetailSub] = useState<DqSubMetricResultResponse | null>(
+    null,
+  )
 
   const results = useApi(
     async (signal) =>
@@ -55,43 +59,12 @@ export function SubMetricResults({
           <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-28 truncate whitespace-nowrap text-xs">
-                  {'체크타입ID'}
-                </TableHead>
-                <TableHead className="w-28 truncate whitespace-nowrap text-xs">
-                  {'체크ID'}
-                </TableHead>
-                <TableHead className="w-40 truncate whitespace-nowrap text-xs">
-                  {'세부지표명'}
-                </TableHead>
-                <TableHead className="w-32 truncate whitespace-nowrap text-xs">
-                  {'검증 대상 열'}
-                </TableHead>
-                <TableHead className="w-64 text-xs">{'설명'}</TableHead>
-                <TableHead className="w-24 truncate whitespace-nowrap text-xs">
-                  {'필드체크ID'}
-                </TableHead>
-                <TableHead className="w-24 truncate whitespace-nowrap text-xs">
-                  {'테이블체크ID'}
-                </TableHead>
-                <TableHead className="w-28 truncate whitespace-nowrap text-xs">
-                  {'표준용어체크ID'}
-                </TableHead>
-                <TableHead className="w-24 truncate whitespace-nowrap text-xs">
-                  {'실패사유'}
-                </TableHead>
-                <TableHead className="w-20 text-right text-xs">
-                  {'대상행수'}
-                </TableHead>
-                <TableHead className="w-20 text-right text-xs">
-                  {'통과/위배행수'}
-                </TableHead>
-                <TableHead className="w-16 text-right text-xs">
-                  {'위배율(%)'}
-                </TableHead>
-                <TableHead className="w-16 text-right text-xs">
-                  {'통과율(%)'}
-                </TableHead>
+                <TableHead className="w-32 text-xs">{'세부지표 ID'}</TableHead>
+                <TableHead className="w-48 text-xs">{'세부지표명'}</TableHead>
+                <TableHead className="w-40 text-xs">{'검증 대상 열'}</TableHead>
+                <TableHead className="w-24 text-right text-xs">{'통과'}</TableHead>
+                <TableHead className="w-24 text-right text-xs">{'위반'}</TableHead>
+                <TableHead className="w-24 text-right text-xs">{'전체'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -111,12 +84,6 @@ export function SubMetricResults({
                     <TableRow key={sub.subMetricId}>
                       <TableCell
                         className="truncate whitespace-nowrap text-xs font-mono"
-                        title={sub.checkTypeId}
-                      >
-                        {sub.checkTypeId ?? '-'}
-                      </TableCell>
-                      <TableCell
-                        className="truncate whitespace-nowrap text-xs font-mono"
                         title={sub.subMetricId}
                       >
                         {sub.subMetricId ?? '-'}
@@ -133,65 +100,32 @@ export function SubMetricResults({
                       >
                         {sub.checkTargetColumn ?? '-'}
                       </TableCell>
-                      <TableCell
-                        className="truncate whitespace-nowrap text-xs text-muted-foreground"
-                        title={sub.checkNotes}
-                      >
-                        {sub.checkNotes ?? '-'}
-                      </TableCell>
-                      <TableCell
-                        className="truncate whitespace-nowrap text-xs font-mono text-muted-foreground"
-                        title={sub.fieldCheckId}
-                      >
-                        {sub.fieldCheckId ?? '-'}
-                      </TableCell>
-                      <TableCell
-                        className="truncate whitespace-nowrap text-xs font-mono text-muted-foreground"
-                        title={sub.tableCheckId}
-                      >
-                        {sub.tableCheckId ?? '-'}
-                      </TableCell>
-                      <TableCell
-                        className="truncate whitespace-nowrap text-xs font-mono text-muted-foreground"
-                        title={sub.conceptCheckId}
-                      >
-                        {sub.conceptCheckId ?? '-'}
-                      </TableCell>
-                      <TableCell
-                        className="truncate whitespace-nowrap text-xs text-red-600/80"
-                        title={sub.notApplicableReason}
-                      >
-                        {failed ? sub.notApplicableReason || '사유 없음' : '-'}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
-                        {sub.numDenominatorRows?.toLocaleString() ?? '-'}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
+                      <TableCell className="text-right text-xs">
                         {sub.numPassedRows?.toLocaleString() ?? '-'}
-                        {' / '}
-                        {sub.numViolatedRows?.toLocaleString() ?? '-'}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
-                        {isFiniteNumber(sub.pctViolatedRows)
-                          ? sub.pctViolatedRows.toFixed(1)
-                          : '-'}
                       </TableCell>
                       <TableCell className="text-right text-xs">
                         {failed ? (
-                          <span className="font-bold text-red-600">
+                          <span
+                            className="font-bold text-red-600"
+                            title={sub.notApplicableReason}
+                          >
                             {'실행 실패'}
                           </span>
-                        ) : !isFiniteNumber(sub.passRate) ? (
-                          <span className="font-bold text-muted-foreground">
-                            {'-'}
-                          </span>
-                        ) : (
-                          <span
-                            className={`font-bold ${getScoreColor(sub.passRate)}`}
+                        ) : (sub.numViolatedRows ?? 0) > 0 ? (
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 text-red-600 underline underline-offset-2 hover:text-red-700"
+                            onClick={() => setDetailSub(sub)}
                           >
-                            {Number(sub.passRate.toFixed(1))}
-                          </span>
+                            <Eye className="size-3" />
+                            {sub.numViolatedRows?.toLocaleString()}
+                          </button>
+                        ) : (
+                          (sub.numViolatedRows?.toLocaleString() ?? '-')
                         )}
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">
+                        {sub.numDenominatorRows?.toLocaleString() ?? '-'}
                       </TableCell>
                     </TableRow>
                   )
@@ -208,6 +142,14 @@ export function SubMetricResults({
           onChange={setPage}
         />
       </div>
+      {detailSub && (
+        <ViolationDetailDialog
+          runId={runId}
+          metricId={metricId}
+          sub={detailSub}
+          onClose={() => setDetailSub(null)}
+        />
+      )}
     </div>
   )
 }
