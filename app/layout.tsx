@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
-import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const pretendardGov = localFont({
@@ -25,7 +24,6 @@ export default function RootLayout({
     <html lang="ko">
       <body className={`${pretendardGov.variable} font-sans antialiased`}>
         {children}
-        <Analytics />
       </body>
     </html>
   )
