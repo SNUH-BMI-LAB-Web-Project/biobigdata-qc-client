@@ -138,18 +138,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/agent": {
+    "/api/admin/agent/{agentType}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Agent 사용 여부 조회 (관리자) */
-        get: operations["getAgent"];
+        get?: never;
         /**
          * Agent On/Off 변경 (관리자)
-         * @description 서버 메모리에 보관되며 재시작 시 OFF로 초기화
+         * @description agentType(QC/SQL)별로 On/Off를 변경한다. 서버 메모리에 보관되며 재시작 시 OFF로 초기화.
          */
         put: operations["updateAgent"];
         post?: never;
@@ -216,6 +215,66 @@ export interface paths {
          * @description target_stage, target_sub_stage를 지정해 통계 지표 검증 DAG를 트리거한다. PREP/INTG/OPEN 단계에서는 target_sub_stage(dq_stage의 개방 버전 값, GET /api/qc/stages 참고)가 필수이다.
          */
         post: operations["triggerStatsDagRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-results/{runId}/violations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 위배 상세 데이터 조회 실행
+         * @description 세부지표(runId+metricId+checkId)의 sql_text_violate를 DATABANK에 실행해 위배 행(참여자ID/기관ID/오류값)을 조회한다. 상한 캡까지 조회해 스냅샷으로 캐시하고 첫 페이지를 반환한다. jobId(클라이언트 생성 UUID)는 페이지 조회·종료에 재사용한다. 실데이터는 저장하지 않으며 실행 메타만 dq_run_logs_violate_detail에 적재한다.
+         */
+        post: operations["executeViolationQuery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-results/{runId}/violations/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 위배 상세 데이터 CSV 다운로드
+         * @description 위배 데이터 전체를 CSV(UTF-8 BOM, Excel 호환)로 스트리밍 다운로드한다. 페이징 없이 전체 결과를 내려받는다. 양식: RUN_ID, METRIC_ID, TABLE_CHECK_ID, FIELD_CHECK_ID, CONCEPT_CHECK_ID, SQL_TEXT_VIOLATE, ROW_KEY, INSTITUTION_ID, PARTICIPANT_ID, VIOLATED_VALUE. editedSql 지정 시 그 쿼리의 전체 결과를 내려받는다.
+         */
+        post: operations["exportViolations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-results/violations/{jobId}/abort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 위배 상세 조회 쿼리 종료(abort)
+         * @description 실행 중인 위배 조회 쿼리를 DB에 취소 전송한다. 이미 종료된 경우에도 정상 응답한다.
+         */
+        post: operations["abortViolationQuery"];
         delete?: never;
         options?: never;
         head?: never;
@@ -317,6 +376,83 @@ export interface paths {
          * @description 회원ID/비밀번호로 인증하고 세션을 생성한다.
          */
         post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 세션 생성
+         * @description 대화 1개 = 세션 1개. 본문 없음. 로그인 사용자가 X-User-Id로 묶인다.
+         */
+        post: operations["createSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/sessions/{sessionId}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 대화 초기화 (세션 유지) */
+        post: operations["resetSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/sessions/{sessionId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 메시지 전송 (blocking)
+         * @description 끝까지 대기 후 MessageResponse 반환. 본문 {"message":"..."}
+         */
+        post: operations["sendMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 새 질문 처리
+         * @description session_id=null이면 새 채팅으로 시작
+         */
+        post: operations["query"];
         delete?: never;
         options?: never;
         head?: never;
@@ -573,6 +709,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/quality-results/{runId}/violations/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 위배 상세 조회 실행 전 정보
+         * @description 세부지표(runId+metricId+checkId)의 저장된 위배 조회 쿼리(sql_text_violate), 예상 소요 시간(execution_time), 검증 당시 위배 건수를 반환한다. 쿼리를 실행하지 않는다. 쿼리 미준비 시 404.
+         */
+        get: operations["getViolationQueryInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-results/violations/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 위배 상세 데이터 페이지 조회
+         * @description 실행(POST .../violations)으로 생성된 jobId의 캐시 스냅샷에서 페이지를 조회한다(기본 200건). 캐시 만료 시 404.
+         */
+        get: operations["getViolationPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qc/quality-results/checks": {
         parameters: {
             query?: never;
@@ -604,74 +780,6 @@ export interface paths {
         get: operations["getQualityResultsByRunId"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/qc/quality-results/{runId}/violations/query": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 위배 상세 조회 실행 전 정보 */
-        get: operations["getViolationQueryInfo"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/qc/quality-results/{runId}/violations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** 위배 상세 데이터 조회 실행 */
-        post: operations["executeViolationQuery"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/qc/quality-results/violations/{jobId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 위배 상세 데이터 페이지 조회 */
-        get: operations["getViolationPage"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/qc/quality-results/violations/{jobId}/abort": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** 위배 상세 조회 쿼리 종료(abort) */
-        post: operations["abortViolationQuery"];
         delete?: never;
         options?: never;
         head?: never;
@@ -879,11 +987,213 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Agent 사용 여부 조회 */
+        /**
+         * Agent 사용 여부 조회
+         * @description QC/SQL 두 Agent의 On/Off 상태를 모두 반환한다.
+         */
         get: operations["getStatus"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 규칙 집계 */
+        get: operations["getSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/sessions/{sessionId}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 메시지 전송 (SSE 스트림)
+         * @description 진행 단계(stage)를 SSE로 받고 done 이벤트에 최종 MessageResponse가 온다. message는 1~2000자. EventSource는 헤더를 못 넣으므로 이 프록시를 경유한다(백엔드가 X-API-Key·X-User-Id 주입).
+         */
+        get: operations["stream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 저장된 규칙 목록 */
+        get: operations["getRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/rules/{ruleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 저장된 규칙 상세 */
+        get: operations["getRule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/chats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 내 대화 목록
+         * @description 최근순. limit 1~200(기본 50), offset(기본 0).
+         */
+        get: operations["getChats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/chats/{chatId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 대화 메시지 전체 조회
+         * @description seq 순 배열.
+         */
+        get: operations["getChatMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/chats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 사용자의 채팅방 목록 조회 */
+        get: operations["getChats_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/chats/{sessionId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 채팅방의 이전 질문·답변·차트 조회 */
+        get: operations["getMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/agent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agent 사용 여부 조회 (관리자)
+         * @description QC/SQL 두 Agent의 On/Off 상태를 모두 반환한다.
+         */
+        get: operations["getAgent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 세션 종료 */
+        delete: operations["deleteSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/sql/chats/{chatId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 내 대화 삭제 */
+        delete: operations["deleteChat"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1177,11 +1487,20 @@ export interface components {
              */
             enabled: boolean;
         };
-        ApiResponseBoolean: {
+        /** @description Agent 사용 여부 */
+        AgentStatusResponse: {
+            /** @description Agent 종류 (QC / SQL) */
+            type?: string;
+            /** @description Agent 표시명 */
+            label?: string;
+            /** @description 사용 여부 */
+            enabled?: boolean;
+        };
+        ApiResponseAgentStatusResponse: {
             success?: boolean;
             code?: string;
             message?: string;
-            data?: boolean;
+            data?: components["schemas"]["AgentStatusResponse"];
         };
         /** @description DQ 테이블 생성 요청 */
         CreateDqTableRequest: {
@@ -1287,6 +1606,110 @@ export interface components {
             state?: string;
             logicalDate?: string;
         };
+        /** @description 위배 상세 데이터 조회 실행 요청 */
+        ViolationQueryRequest: {
+            /**
+             * @description 클라이언트가 생성한 조회 작업 ID(UUID). 실행 중 종료(abort)·페이지 조회에 동일 값 사용
+             * @example a1b2c3d4-...
+             */
+            jobId: string;
+            /**
+             * @description 지표 ID
+             * @example QM101
+             */
+            metricId: string;
+            /**
+             * @description 세부지표 ID (field/table/concept check_id 중 해당 값)
+             * @example QM101-01
+             */
+            checkId: string;
+            /** @description 수정한 검증 쿼리(선택). 지정 시 저장된 sql_text_violate 대신 이 쿼리를 실행한다. SELECT 단일문만 허용되며 저장되지 않는다(화면 닫으면 폐기). */
+            editedSql?: string;
+        };
+        ApiResponseViolationExecuteResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["ViolationExecuteResponse"];
+        };
+        /** @description 페이지네이션 응답 */
+        PageResultViolationRowResponse: {
+            /** @description 데이터 목록 */
+            items?: components["schemas"]["ViolationRowResponse"][];
+            /**
+             * Format: int32
+             * @description 전체 데이터 수
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 현재 페이지
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description 페이지 크기
+             */
+            size?: number;
+            /**
+             * Format: int32
+             * @description 전체 페이지 수
+             */
+            totalPages?: number;
+        };
+        /** @description 위배 상세 조회 실행 결과 */
+        ViolationExecuteResponse: {
+            /** @description 조회 작업 ID (페이지 조회·종료에 사용) */
+            jobId?: string;
+            /** @description 실행 상태 (SUCCESS / ABORTED) */
+            execStatus?: string;
+            /**
+             * Format: int64
+             * @description 검증 당시 총 위배 건수 (dq_quality_results.num_violated_rows)
+             */
+            totalViolatedRows?: number;
+            /**
+             * Format: int32
+             * @description 실제 조회된 행수 (상한 캡까지)
+             */
+            returnedRows?: number;
+            /** @description 상한 캡에 도달해 일부만 조회됐는지 여부 */
+            capped?: boolean;
+            /**
+             * Format: int32
+             * @description 예상/실제 소요 시간(ms) — dq_quality_results.execution_time 기반
+             */
+            estimatedMs?: number;
+            /** @description 실행된 위배 조회 쿼리 (화면 표시용) */
+            violationQuery?: string;
+            page?: components["schemas"]["PageResultViolationRowResponse"];
+        };
+        /** @description 위배 데이터 상세 1행 */
+        ViolationRowResponse: {
+            /** @description 행 키 (서버 부여 순번, 예: ROW-000001) */
+            rowKey?: string;
+            /** @description 참여자 ID */
+            participantId?: string;
+            /** @description 기관 ID */
+            institutionId?: string;
+            /** @description 오류 값 */
+            violatedValue?: string;
+        };
+        /** @description 위배 상세 데이터 CSV 다운로드 요청 */
+        ViolationExportRequest: {
+            /**
+             * @description 지표 ID
+             * @example QM101
+             */
+            metricId: string;
+            /**
+             * @description 세부지표 ID (field/table/concept check_id 중 해당 값)
+             * @example QM101-01
+             */
+            checkId: string;
+            /** @description 수정한 검증 쿼리(선택). 지정 시 저장된 쿼리 대신 이 쿼리의 전체 결과를 내려받는다. SELECT 단일문만 허용. */
+            editedSql?: string;
+        };
         ApiResponseListDagRunResponse: {
             success?: boolean;
             code?: string;
@@ -1377,6 +1800,24 @@ export interface components {
              */
             role?: "ADMIN" | "MANAGER" | "VIEWER";
         };
+        /** @description 에이전트 질문 요청 */
+        AgentQueryRequest: {
+            /** @description 채팅방 세션 ID (null이면 새 채팅) */
+            sessionId?: string;
+            /** @description 질문 내용 */
+            question: string;
+            /** @description DB 단계 (LINK/PREP/INTG/OPEN) */
+            stage?: string;
+            /** @description 검증 유형 (quality/achilles) */
+            checkType?: string;
+        };
+        ApiResponseJsonNode: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["JsonNode"];
+        };
+        JsonNode: Record<string, never>;
         /** @description DB 단계 개방 버전 생성 요청 */
         CreateDqStageRequest: {
             /**
@@ -1780,6 +2221,33 @@ export interface components {
             message?: string;
             data?: components["schemas"]["DqStageResponse"][];
         };
+        ApiResponseViolationQueryInfoResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["ViolationQueryInfoResponse"];
+        };
+        /** @description 위배 상세 조회 실행 전 정보 (쿼리 편집·예상 시간 표시용) */
+        ViolationQueryInfoResponse: {
+            /** @description 저장된 위배 조회 쿼리 (sql_text_violate) */
+            violationQuery?: string;
+            /**
+             * Format: int32
+             * @description 예상 소요 시간(ms) — dq_quality_results.execution_time
+             */
+            estimatedMs?: number;
+            /**
+             * Format: int64
+             * @description 검증 당시 총 위배 건수 (dq_quality_results.num_violated_rows)
+             */
+            totalViolatedRows?: number;
+        };
+        ApiResponsePageResultViolationRowResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["PageResultViolationRowResponse"];
+        };
         ApiResponsePageResultDqQualityResultResponse: {
             success?: boolean;
             code?: string;
@@ -1863,101 +2331,6 @@ export interface components {
             code?: string;
             message?: string;
             data?: components["schemas"]["PageResultDqSubMetricResultResponse"];
-        };
-        /** @description 위배 상세 조회 실행 전 정보 (쿼리 편집·예상 시간 표시용) */
-        ViolationQueryInfoResponse: {
-            /** @description 저장된 위배 조회 쿼리 (sql_text_violate) */
-            violationQuery?: string;
-            /**
-             * Format: int32
-             * @description 예상 소요 시간(ms) — dq_quality_results.execution_time
-             */
-            estimatedMs?: number;
-            /**
-             * Format: int64
-             * @description 검증 당시 총 위배 건수 (dq_quality_results.num_violated_rows)
-             */
-            totalViolatedRows?: number;
-        };
-        ApiResponseViolationQueryInfoResponse: {
-            success?: boolean;
-            code?: string;
-            message?: string;
-            data?: components["schemas"]["ViolationQueryInfoResponse"];
-        };
-        /** @description 위배 상세 데이터 조회 실행 요청 */
-        ViolationQueryRequest: {
-            /** @description 클라이언트가 생성한 조회 작업 ID(UUID). 실행 중 종료(abort)·페이지 조회에 동일 값 사용 */
-            jobId: string;
-            /** @description 지표 ID */
-            metricId: string;
-            /** @description 세부지표 ID (field/table/concept check_id 중 해당 값) */
-            checkId: string;
-            /** @description 수정한 검증 쿼리(선택). SELECT 단일문만 허용 */
-            editedSql?: string;
-        };
-        /** @description 위배 데이터 상세 1행 */
-        ViolationRowResponse: {
-            /** @description 행 키 (서버 부여 순번, 예: ROW-000001) */
-            rowKey?: string;
-            /** @description 참여자 ID */
-            participantId?: string;
-            /** @description 기관 ID */
-            institutionId?: string;
-            /** @description 오류 값 */
-            violatedValue?: string;
-        };
-        /** @description 페이지네이션 응답 */
-        PageResultViolationRowResponse: {
-            /** @description 데이터 목록 */
-            items?: components["schemas"]["ViolationRowResponse"][];
-            /** Format: int32 */
-            totalCount?: number;
-            /** Format: int32 */
-            page?: number;
-            /** Format: int32 */
-            size?: number;
-            /** Format: int32 */
-            totalPages?: number;
-        };
-        /** @description 위배 상세 조회 실행 결과 */
-        ViolationExecuteResponse: {
-            /** @description 조회 작업 ID (페이지 조회·종료에 사용) */
-            jobId?: string;
-            /** @description 실행 상태 (SUCCESS / ABORTED) */
-            execStatus?: string;
-            /**
-             * Format: int64
-             * @description 검증 당시 총 위배 건수
-             */
-            totalViolatedRows?: number;
-            /**
-             * Format: int32
-             * @description 실제 조회된 행수 (상한 캡까지)
-             */
-            returnedRows?: number;
-            /** @description 상한 캡에 도달해 일부만 조회됐는지 여부 */
-            capped?: boolean;
-            /**
-             * Format: int32
-             * @description 예상/실제 소요 시간(ms)
-             */
-            estimatedMs?: number;
-            /** @description 실행된 위배 조회 쿼리 (화면 표시용) */
-            violationQuery?: string;
-            page?: components["schemas"]["PageResultViolationRowResponse"];
-        };
-        ApiResponseViolationExecuteResponse: {
-            success?: boolean;
-            code?: string;
-            message?: string;
-            data?: components["schemas"]["ViolationExecuteResponse"];
-        };
-        ApiResponsePageResultViolationRowResponse: {
-            success?: boolean;
-            code?: string;
-            message?: string;
-            data?: components["schemas"]["PageResultViolationRowResponse"];
         };
         /** @description 세부지표 단위 품질 결과 — METRIC_ID 하위 드릴다운 계층 */
         DqSubMetricResultResponse: {
@@ -2395,6 +2768,13 @@ export interface components {
              */
             score?: number;
         };
+        ApiResponseListAgentStatusResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["AgentStatusResponse"][];
+        };
+        StreamingResponseBody: Record<string, never>;
         ApiResponseRolePermissionsResponse: {
             success?: boolean;
             code?: string;
@@ -2787,31 +3167,13 @@ export interface operations {
             };
         };
     };
-    getAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseBoolean"];
-                };
-            };
-        };
-    };
     updateAgent: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                agentType: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -2826,7 +3188,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseBoolean"];
+                    "*/*": components["schemas"]["ApiResponseAgentStatusResponse"];
                 };
             };
         };
@@ -2983,6 +3345,78 @@ export interface operations {
             };
         };
     };
+    executeViolationQuery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViolationQueryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseViolationExecuteResponse"];
+                };
+            };
+        };
+    };
+    exportViolations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViolationExportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    abortViolationQuery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     getDqQualityMetricList: {
         parameters: {
             query?: {
@@ -3123,6 +3557,98 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseLoginResponse"];
+                };
+            };
+        };
+    };
+    createSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    resetSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    sendMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    query: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentQueryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
                 };
             };
         };
@@ -3490,6 +4016,56 @@ export interface operations {
             };
         };
     };
+    getViolationQueryInfo: {
+        parameters: {
+            query: {
+                metricId: string;
+                checkId: string;
+            };
+            header?: never;
+            path: {
+                runId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseViolationQueryInfoResponse"];
+                };
+            };
+        };
+    };
+    getViolationPage: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultViolationRowResponse"];
+                };
+            };
+        };
+    };
     getQualityRunLogs: {
         parameters: {
             query?: {
@@ -3536,104 +4112,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePageResultDqQualityResultResponse"];
-                };
-            };
-        };
-    };
-    getViolationQueryInfo: {
-        parameters: {
-            query: {
-                metricId: string;
-                checkId: string;
-            };
-            header?: never;
-            path: {
-                runId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseViolationQueryInfoResponse"];
-                };
-            };
-        };
-    };
-    executeViolationQuery: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                runId: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ViolationQueryRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseViolationExecuteResponse"];
-                };
-            };
-        };
-    };
-    getViolationPage: {
-        parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path: {
-                jobId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponsePageResultViolationRowResponse"];
-                };
-            };
-        };
-    };
-    abortViolationQuery: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
@@ -3894,7 +4372,248 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseBoolean"];
+                    "*/*": components["schemas"]["ApiResponseListAgentStatusResponse"];
+                };
+            };
+        };
+    };
+    getSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    stream: {
+        parameters: {
+            query: {
+                message: string;
+            };
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StreamingResponseBody"];
+                };
+            };
+        };
+    };
+    getRules: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                sessionId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getChats: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getChatMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chatId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getChats_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    getMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJsonNode"];
+                };
+            };
+        };
+    };
+    getAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListAgentStatusResponse"];
+                };
+            };
+        };
+    };
+    deleteSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    deleteChat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chatId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
         };

@@ -52,7 +52,7 @@ export function DashboardSidebar({
   onCollapsedChange,
 }: DashboardSidebarProps) {
   const pathname = usePathname()
-  const { enabled: agentEnabled } = useAgentEnabled()
+  const { anyEnabled: agentEnabled } = useAgentEnabled()
   const [resultsOpen, setResultsOpen] = useState(true)
   const resultsActive = RESULT_NAV_ITEMS.some((item) =>
     isPathActive(pathname, item.href),
@@ -95,7 +95,7 @@ export function DashboardSidebar({
               className={
                 collapsed
                   ? 'sr-only'
-                  : 'mb-5 px-3 text-lg font-bold leading-[26px]'
+                  : 'mb-5 px-3 text-lg font-bold leading-6.5'
               }
             >
               대시보드

@@ -1,19 +1,24 @@
 'use client'
 
 import { useApi } from '@/hooks/use-api'
-import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
+import { fetchAgentStatuses, type AgentType } from '@/lib/api/agent'
 
 /**
- * 관리자가 켜고 끄는 Agent 사용 여부.
- * 조회 전/실패 시에는 enabled=false 로 취급한다 (서버 기본값도 OFF).
+ * 관리자가 켜고 끄는 Agent(QC/SQL)별 사용 여부.
+ * 조회 전/실패 시에는 모두 OFF 로 취급한다 (서버 기본값도 OFF).
  */
 export function useAgentEnabled() {
-  const { data, isInitialLoading } = useApi(
-    async (signal) =>
-      unwrapGeneratedResult<boolean>(
-        await generatedApi.GET('/api/agent/status', { signal }),
-      ),
-  )
+  const { data, isInitialLoading, refetch } = useApi(() => fetchAgentStatuses())
 
-  return { enabled: data === true, loading: isInitialLoading }
+  const statuses = data ?? []
+  const isEnabled = (type: AgentType) =>
+    statuses.some((s) => s.type === type && s.enabled)
+
+  return {
+    statuses,
+    isEnabled,
+    anyEnabled: statuses.some((s) => s.enabled),
+    loading: isInitialLoading,
+    refetch,
+  }
 }

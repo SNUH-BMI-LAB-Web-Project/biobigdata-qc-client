@@ -1,75 +1,46 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Loader2, SquarePen, ZapOff } from 'lucide-react'
+import { Database, Loader2, SquarePen, ZapOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useAgentEnabled } from '@/hooks/use-agent-enabled'
-import { AGENT_SCOPES } from './agent-config'
+import type { AgentType, QcCheckType, QcStage } from '@/lib/api/agent'
+import { AGENT_CONFIG, QC_CHECK_TYPES, QC_STAGES } from './agent-config'
 import { AgentComposer } from './agent-composer'
 import { AgentGreeting } from './agent-greeting'
-import { AgentMessageList, type AgentMessage } from './agent-message-list'
+import { AgentHistory } from './agent-history'
+import { AgentMessageList } from './agent-message-list'
+import { useQcChat } from './use-qc-chat'
+import { useSqlChat } from './use-sql-chat'
 
-/** 데이터 연결 전까지 모든 질문에 동일하게 노출되는 자리표시 응답 */
-const PLACEHOLDER_ANSWER =
-  '아직 품질 검증 데이터에 연결되어 있지 않습니다.\n연결이 완료되면 검증 실행 이력과 지표 결과를 근거로 답변해 드릴게요.'
+const AGENT_TYPES: readonly AgentType[] = ['QC', 'SQL']
 
-/** 응답이 도착하기까지 보여줄 타이핑 인디케이터 시간(ms) */
-const FAKE_RESPONSE_DELAY = 900
-
-/** 품질 검증 Agent 화면 — 인사말·빠른 질문·대화·입력창을 조합한 외형 전용 뷰 */
+/** Agent 화면 — 왼쪽 위에서 Agent(QC/SQL)를 고르고, 하나라도 켜져 있으면 열린다 */
 export function AgentView() {
-  const { enabled, loading } = useAgentEnabled()
-  const [messages, setMessages] = useState<AgentMessage[]>([])
+  const { isEnabled, anyEnabled, loading, refetch } = useAgentEnabled()
+  const [selected, setSelected] = useState<AgentType | null>(null)
   const [input, setInput] = useState('')
-  const [pending, setPending] = useState(false)
-  const [scope, setScope] = useState(AGENT_SCOPES[0].id)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const hasConversation = messages.length > 0
+  // 두 Agent의 대화를 각각 유지한다 (전환해도 사라지지 않음)
+  const qc = useQcChat(refetch)
+  const sql = useSqlChat(refetch)
+
+  // 선택된 Agent가 꺼졌거나 아직 없으면 처음으로 켜진 Agent로
+  const active: AgentType | null =
+    selected && isEnabled(selected) ? selected : (AGENT_TYPES.find(isEnabled) ?? null)
+  const chat = active === 'SQL' ? sql.chat : qc.chat
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, pending])
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [])
-
-  const send = (text: string) => {
-    const content = text.trim()
-    if (!content || pending) return
-
-    setMessages((prev) => [...prev, { id: `${Date.now()}-user`, role: 'user', content }])
-    setInput('')
-    setPending(true)
-
-    timerRef.current = setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}-assistant`,
-          role: 'assistant',
-          content: PLACEHOLDER_ANSWER,
-        },
-      ])
-      setPending(false)
-    }, FAKE_RESPONSE_DELAY)
-  }
-
-  const handleStop = () => {
-    if (timerRef.current) clearTimeout(timerRef.current)
-    setPending(false)
-  }
-
-  const handleReset = () => {
-    if (timerRef.current) clearTimeout(timerRef.current)
-    setMessages([])
-    setInput('')
-    setPending(false)
-  }
+  }, [chat.messages, chat.pending])
 
   if (loading) {
     return (
@@ -79,7 +50,7 @@ export function AgentView() {
     )
   }
 
-  if (!enabled) {
+  if (!anyEnabled || !active) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
@@ -93,28 +64,55 @@ export function AgentView() {
     )
   }
 
+  const config = AGENT_CONFIG[active]
+  const hasConversation = chat.messages.length > 0
+
+  const send = (text: string) => {
+    chat.send(text)
+    setInput('')
+  }
+
+  const reset = () => {
+    chat.reset()
+    setInput('')
+  }
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex shrink-0 items-center justify-between gap-3 px-6 py-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold">{'품질 검증 Agent'}</h2>
+        <Select value={active} onValueChange={(v) => setSelected(v as AgentType)}>
+          <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 border-0 text-sm font-semibold shadow-none">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {AGENT_TYPES.map((type) => (
+              <SelectItem key={type} value={type} disabled={!isEnabled(type)}>
+                {AGENT_CONFIG[type].title}
+                {!isEnabled(type) && ' (비활성)'}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex items-center gap-1">
+          <AgentHistory key={active} type={active} onOpen={chat.openChat} />
+          <Button variant="ghost" size="sm" onClick={reset} disabled={!hasConversation && !input}>
+            <SquarePen className="h-4 w-4" />
+            {'새 대화'}
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleReset}
-          disabled={!hasConversation && !input}
-        >
-          <SquarePen className="h-4 w-4" />
-          {'새 대화'}
-        </Button>
       </header>
 
       <div className="flex-1 overflow-y-auto">
         {hasConversation ? (
-          <AgentMessageList messages={messages} pending={pending} />
+          <AgentMessageList
+            messages={chat.messages}
+            pending={chat.pending}
+            progress={chat.progress}
+            onChoose={send}
+          />
         ) : (
-          <AgentGreeting onQuickQuestion={send} />
+          <AgentGreeting config={config} />
         )}
         <div ref={bottomRef} />
       </div>
@@ -123,12 +121,46 @@ export function AgentView() {
         value={input}
         onChange={setInput}
         onSubmit={() => send(input)}
-        onStop={handleStop}
-        pending={pending}
-        scope={scope}
-        onScopeChange={setScope}
-        showSuggestions={hasConversation}
+        onStop={chat.stop}
+        pending={chat.pending}
+        placeholder={config.placeholder}
+        controls={
+          active === 'QC' && (
+            <>
+              <ScopeSelect value={qc.stage} onChange={(v) => qc.setStage(v as QcStage)} options={QC_STAGES} withIcon />
+              <ScopeSelect value={qc.checkType} onChange={(v) => qc.setCheckType(v as QcCheckType)} options={QC_CHECK_TYPES} />
+            </>
+          )
+        }
       />
     </div>
+  )
+}
+
+function ScopeSelect({
+  value,
+  onChange,
+  options,
+  withIcon,
+}: {
+  value: string
+  onChange: (value: string) => void
+  options: readonly { id: string; name: string }[]
+  withIcon?: boolean
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 rounded-full border-dashed text-xs text-muted-foreground">
+        {withIcon && <Database className="h-3.5 w-3.5" />}
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.id} value={o.id}>
+            {o.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
