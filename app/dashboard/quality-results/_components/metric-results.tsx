@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Database } from 'lucide-react'
+import { Database, Download, Loader2 } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -15,8 +15,9 @@ import {
   RefreshingContent,
 } from '@/components/async-state'
 import { CompactPager } from '@/components/pager'
+import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
-import { generatedApi, unwrapGeneratedResult } from '@/lib/api'
+import { API_BASE_URL, generatedApi, unwrapGeneratedResult } from '@/lib/api'
 import type { DqMetricResultResponse, PageResult } from '@/lib/api'
 import { MetricResultCard } from './metric-result-card'
 
@@ -28,6 +29,49 @@ export function MetricResults({ runId }: { runId: number | null }) {
 
   // 다른 검증을 선택하면 첫 페이지로
   useEffect(() => setPage(1), [runId])
+
+  const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<{
+    runId: number
+    message: string
+  } | null>(null)
+
+  // 요약(run_result_summary)이 비어 있으면 서버가 404 JSON 을 내려준다.
+  const downloadReport = async () => {
+    setDownloading(true)
+    setDownloadError(null)
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/qc/executions/${runId}/report`,
+        {
+          credentials: 'include',
+        },
+      )
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error('등록된 레포트가 없습니다.')
+        }
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.message ?? '레포트 다운로드에 실패했습니다.')
+      }
+      const url = URL.createObjectURL(await res.blob())
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `quality_report_${runId}.doc`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setDownloadError({
+        runId: runId!,
+        message:
+          err instanceof Error && err.message !== 'Failed to fetch'
+            ? err.message
+            : '레포트 다운로드 중 연결이 끊겼습니다. 다시 시도해주세요.',
+      })
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const results = useApi(
     async (signal) =>
@@ -66,13 +110,33 @@ export function MetricResults({ runId }: { runId: number | null }) {
             </CardDescription>
           </div>
           {runId != null && (
-            <CompactPager
-              page={results.data?.page ?? page}
-              totalPages={results.data?.totalPages ?? 1}
-              onChange={setPage}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="xs"
+                disabled={downloading}
+                onClick={downloadReport}
+              >
+                {downloading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Download />
+                )}
+                {'레포트 다운로드'}
+              </Button>
+              <CompactPager
+                page={results.data?.page ?? page}
+                totalPages={results.data?.totalPages ?? 1}
+                onChange={setPage}
+              />
+            </div>
           )}
         </div>
+        {downloadError?.runId === runId && (
+          <p role="alert" className="mt-2 text-xs text-red-600">
+            {downloadError.message}
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         {runId == null ? (

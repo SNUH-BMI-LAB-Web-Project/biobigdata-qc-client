@@ -57,6 +57,9 @@ export function MetricResultCard({
                 {metric.metricNameKor}
               </span>
               <Badge variant="outline" className="text-[10px]">
+                {metric.metricId}
+              </Badge>
+              <Badge variant="outline" className="text-[10px]">
                 {metric.category}
               </Badge>
               <Badge variant="secondary" className="text-[10px]">
