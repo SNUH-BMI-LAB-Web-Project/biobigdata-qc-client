@@ -52,6 +52,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/result-journals/{reviewId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 일지 상세 조회
+         * @description 검토 1건 + 하위 조치 목록을 반환한다.
+         */
+        get: operations["getJournal"];
+        /** 검토 수정 */
+        put: operations["updateReview"];
+        post?: never;
+        /**
+         * 검토 삭제
+         * @description 유효 종료 처리. 하위 조치도 함께 유효 종료된다.
+         */
+        delete: operations["deleteReview"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/result-journals/actions/{actionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 조치 수정 */
+        put: operations["updateAction"];
+        post?: never;
+        /**
+         * 조치 삭제
+         * @description 유효 종료 처리.
+         */
+        delete: operations["deleteAction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/me": {
         parameters: {
             query?: never;
@@ -215,6 +261,50 @@ export interface paths {
          * @description target_stage, target_sub_stage를 지정해 통계 지표 검증 DAG를 트리거한다. PREP/INTG/OPEN 단계에서는 target_sub_stage(dq_stage의 개방 버전 값, GET /api/qc/stages 참고)가 필수이다.
          */
         post: operations["triggerStatsDagRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/result-journals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 일지(검토) 목록 조회
+         * @description runId·metricId·keyword로 필터. 최신순 페이징.
+         */
+        get: operations["getList"];
+        put?: never;
+        /**
+         * 검토 작성
+         * @description 필수: runId·metricId·ruleCheckId
+         */
+        post: operations["createReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/result-journals/{reviewId}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 조치 작성
+         * @description 검토(reviewId) 하위에 조치 추가. 필수: issueNo·errorDescription·actionTeam·actionType·requestedAt·requestedBy
+         */
+        post: operations["createAction"];
         delete?: never;
         options?: never;
         head?: never;
@@ -709,6 +799,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qc/result-journals/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 일지 엑셀(CSV) 추출
+         * @description 검토+조치를 평면 결합해 CSV(UTF-8 BOM, Excel 호환)로 다운로드.
+         */
+        get: operations["export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qc/quality-results/{runId}/violations/query": {
         parameters: {
             query?: never;
@@ -932,6 +1042,26 @@ export interface paths {
          * @description RUN_ID에 해당하는 실행 로그를 반환합니다. 시작 시간(HH:mm), 종료 시간(HH:mm)을 포함합니다.
          */
         get: operations["getRunExecutionDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/executions/{runId}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 검증 결과 레포트 다운로드 (Word)
+         * @description RUN_ID의 결과 요약(dq_run_logs.run_result_summary)을 Word(.doc) 파일로 다운로드한다. 요약 본문·양식은 품질팀이 해당 컬럼에 채우며, 백엔드는 저장된 내용을 그대로 내보낸다. 요약이 비어 있으면 404.
+         */
+        get: operations["downloadRunReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1310,6 +1440,81 @@ export interface components {
             /** @description 활성화 여부 */
             isEnable?: string;
         };
+        /** @description 품질검증 일지 — 검토 작성/수정 요청 */
+        ResultReviewRequest: {
+            /**
+             * Format: int32
+             * @description 검증 회차 ID
+             */
+            runId: number;
+            /** @description 지표 ID */
+            metricId: string;
+            /** @description 세부지표(check) ID */
+            ruleCheckId: string;
+            /** @description 검토 내용 */
+            reviewContent?: string;
+            /** @description 검토 일시 (YYYY-MM-DD HH:mm:ss, 선택) */
+            reviewDatetime?: string;
+            /** @description 검토자 */
+            reviewer?: string;
+            /** @description 1차 검토 의견 */
+            reviewOpinion1st?: string;
+            /** @description 2차 검토 의견 */
+            reviewOpinion2nd?: string;
+            /** @description 3차 검토 의견 */
+            reviewOpinion3rd?: string;
+            /** @description 배정 팀 */
+            assignedTeam?: string;
+            /** @description 검토 결과 */
+            reviewResult?: string;
+        };
+        ApiResponseVoid: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: Record<string, never>;
+        };
+        /** @description 품질검증 일지 — 조치 작성/수정 요청 */
+        ResultActionRequest: {
+            /**
+             * Format: int32
+             * @description 이슈 번호
+             */
+            issueNo: number;
+            /** @description 오류 설명 */
+            errorDescription: string;
+            /** @description 처리 부서 */
+            actionTeam: string;
+            /** @description 수정 유형 */
+            actionType: string;
+            /** @description 수정 요청 일시 (YYYY-MM-DD HH:mm:ss) */
+            requestedAt: string;
+            /** @description 요청자 */
+            requestedBy: string;
+            /** @description 오류 테이블명 */
+            errorTableName?: string;
+            /** @description 오류 기관 */
+            errorInstitution?: string;
+            /** @description 오류 원인 */
+            errorCause?: string;
+            /** @description 수정 규칙 */
+            actionRule?: string;
+            /** @description 수정 대상 SQL */
+            actionTargetSql?: string;
+            /**
+             * Format: int64
+             * @description 수정 대상 행 수
+             */
+            actionTargetRows?: number;
+            /** @description 업체 로그 ID */
+            vendorLogId?: string;
+            /** @description 확인 일시 (YYYY-MM-DD HH:mm:ss, 선택) */
+            confirmedAt?: string;
+            /** @description 확인 결과 */
+            confirmResult?: string;
+            /** @description 확인자 */
+            confirmedBy?: string;
+        };
         /** @description 회원정보 수정 요청 */
         MemberUpdateRequest: {
             /**
@@ -1443,12 +1648,6 @@ export interface components {
              *     ]
              */
             permissions?: ("MEMBER_VIEW" | "MEMBER_CREATE" | "MEMBER_UPDATE" | "MEMBER_DELETE" | "DB_VIEW" | "DB_CREATE" | "DB_UPDATE" | "DB_DELETE" | "QC_RUN" | "QC_VIEW" | "QC_INDICATOR")[];
-        };
-        ApiResponseVoid: {
-            success?: boolean;
-            code?: string;
-            message?: string;
-            data?: Record<string, never>;
         };
         /** @description 관리자 - 사용자 수정 요청 */
         AdminMemberUpdateRequest: {
@@ -1605,6 +1804,19 @@ export interface components {
             targetStage?: string;
             state?: string;
             logicalDate?: string;
+        };
+        ApiResponseLong: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            /** Format: int64 */
+            data?: number;
+        };
+        ApiResponseString: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: string;
         };
         /** @description 위배 상세 데이터 조회 실행 요청 */
         ViolationQueryRequest: {
@@ -2221,6 +2433,102 @@ export interface components {
             message?: string;
             data?: components["schemas"]["DqStageResponse"][];
         };
+        ApiResponsePageResultDqResultReview: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["PageResultDqResultReview"];
+        };
+        /** @description 데이터 목록 */
+        DqResultReview: {
+            /** Format: int64 */
+            reviewId?: number;
+            /** Format: int32 */
+            runId?: number;
+            metricId?: string;
+            ruleCheckId?: string;
+            reviewContent?: string;
+            reviewDatetime?: string;
+            reviewer?: string;
+            reviewOpinion1st?: string;
+            reviewOpinion2nd?: string;
+            reviewOpinion3rd?: string;
+            assignedTeam?: string;
+            reviewResult?: string;
+            createdAt?: string;
+            createdBy?: string;
+            updatedAt?: string;
+            updatedBy?: string;
+            deletedAt?: string;
+            deletedBy?: string;
+        };
+        /** @description 페이지네이션 응답 */
+        PageResultDqResultReview: {
+            /** @description 데이터 목록 */
+            items?: components["schemas"]["DqResultReview"][];
+            /**
+             * Format: int32
+             * @description 전체 데이터 수
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 현재 페이지
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description 페이지 크기
+             */
+            size?: number;
+            /**
+             * Format: int32
+             * @description 전체 페이지 수
+             */
+            totalPages?: number;
+        };
+        ApiResponseResultJournalResponse: {
+            success?: boolean;
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["ResultJournalResponse"];
+        };
+        /** @description 조치(action) 목록 */
+        DqResultAction: {
+            actionId?: string;
+            /** Format: int64 */
+            reviewId?: number;
+            /** Format: int32 */
+            issueNo?: number;
+            errorTableName?: string;
+            errorDescription?: string;
+            errorInstitution?: string;
+            errorCause?: string;
+            actionTeam?: string;
+            actionType?: string;
+            actionRule?: string;
+            actionTargetSql?: string;
+            /** Format: int64 */
+            actionTargetRows?: number;
+            requestedAt?: string;
+            requestedBy?: string;
+            vendorLogId?: string;
+            confirmedAt?: string;
+            confirmResult?: string;
+            confirmedBy?: string;
+            createdAt?: string;
+            createdBy?: string;
+            updatedAt?: string;
+            updatedBy?: string;
+            deletedAt?: string;
+            deletedBy?: string;
+        };
+        /** @description 품질검증 일지 — 검토 1건 + 하위 조치 목록 */
+        ResultJournalResponse: {
+            review?: components["schemas"]["DqResultReview"];
+            /** @description 조치(action) 목록 */
+            actions?: components["schemas"]["DqResultAction"][];
+        };
         ApiResponseViolationQueryInfoResponse: {
             success?: boolean;
             code?: string;
@@ -2607,6 +2915,8 @@ export interface components {
             tableName?: string;
             /** @description 컬럼명 */
             fieldName?: string;
+            /** @description 컨셉명 (CONCEPT 단위일 때만, dq_concept_check.concept_name) */
+            conceptName?: string;
             /** @description 지표 생성일 */
             createdAt?: string;
         };
@@ -2914,6 +3224,124 @@ export interface operations {
             path: {
                 tableId: string;
                 fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    getJournal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResultJournalResponse"];
+                };
+            };
+        };
+    };
+    updateReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    deleteReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    updateAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                actionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultActionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    deleteAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                actionId: string;
             };
             cookie?: never;
         };
@@ -3341,6 +3769,82 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDagRunResponse"];
+                };
+            };
+        };
+    };
+    getList: {
+        parameters: {
+            query?: {
+                runId?: number;
+                metricId?: string;
+                keyword?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultDqResultReview"];
+                };
+            };
+        };
+    };
+    createReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseLong"];
+                };
+            };
+        };
+    };
+    createAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultActionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseString"];
                 };
             };
         };
@@ -4016,6 +4520,27 @@ export interface operations {
             };
         };
     };
+    export: {
+        parameters: {
+            query?: {
+                runId?: number;
+                metricId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getViolationQueryInfo: {
         parameters: {
             query: {
@@ -4308,6 +4833,26 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["ApiResponseListRunExecutionDetailResponse"];
                 };
+            };
+        };
+    };
+    downloadRunReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

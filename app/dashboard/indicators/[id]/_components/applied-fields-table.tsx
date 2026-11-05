@@ -36,7 +36,8 @@ export function AppliedFieldsTable({
   metricLevel?: string
 }) {
   const hasFieldColumn = metricLevel?.trim().toUpperCase() !== 'TABLE'
-  const colCount = hasFieldColumn ? 4 : 3
+  const hasConceptColumn = metricLevel?.trim().toUpperCase() === 'CONCEPT'
+  const colCount = 3 + (hasFieldColumn ? 1 : 0) + (hasConceptColumn ? 1 : 0)
   const [tableFilter, setTableFilter] = useState('')
   const [columnFilter, setColumnFilter] = useState('')
   const [activeFilter, setActiveFilter] = useState('all') // all | active | inactive
@@ -137,6 +138,7 @@ export function AppliedFieldsTable({
                     />
                   </TableHead>
                 )}
+                {hasConceptColumn && <TableHead />}
                 <TableHead className="text-xs">
                   <span className="text-muted-foreground">생성일</span>
                 </TableHead>
@@ -153,6 +155,12 @@ export function AppliedFieldsTable({
                   <SortHead
                     label="컬럼명"
                     onClick={() => handleSort('fieldName')}
+                  />
+                )}
+                {hasConceptColumn && (
+                  <SortHead
+                    label="컨셉명"
+                    onClick={() => handleSort('conceptName')}
                   />
                 )}
                 <SortHead
@@ -207,6 +215,11 @@ export function AppliedFieldsTable({
                           ) : (
                             '-'
                           )}
+                        </TableCell>
+                      )}
+                      {hasConceptColumn && (
+                        <TableCell className="text-xs">
+                          {row.conceptName || '-'}
                         </TableCell>
                       )}
                       <TableCell className="text-xs text-muted-foreground">
