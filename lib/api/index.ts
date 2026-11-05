@@ -102,6 +102,12 @@ export type DqStatisticsResultResponse = Schema<'DqStatisticsResultResponse'>
 export type DqStatisticsResultDistResponse =
   Schema<'DqStatisticsResultDistResponse'>
 export type DqStageResponse = Schema<'DqStageResponse'>
+export type DqResultReview = components['schemas']['DqResultReview']
+export type DqResultAction = components['schemas']['DqResultAction']
+export type ResultJournalResponse =
+  components['schemas']['ResultJournalResponse']
+export type ResultReviewRequest = components['schemas']['ResultReviewRequest']
+export type ResultActionRequest = components['schemas']['ResultActionRequest']
 
 export const ROLE_LABEL: Record<Role, string> = {
   ADMIN: '관리자',
