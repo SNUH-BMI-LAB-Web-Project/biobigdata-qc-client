@@ -16,6 +16,8 @@ import {
 import { Lock, User, Loader2 } from 'lucide-react'
 import { AuthLayout } from '@/components/layout/auth-layout'
 import { ApiError, generatedApi, unwrapGeneratedResult } from '@/lib/api'
+import type { LoginResponse } from '@/lib/api'
+import { VIEWER_HOME } from '@/lib/viewer-access'
 
 export function LoginView() {
   const router = useRouter()
@@ -29,12 +31,12 @@ export function LoginView() {
     setError(null)
     setLoading(true)
     try {
-      await unwrapGeneratedResult(
+      const me = await unwrapGeneratedResult<LoginResponse>(
         await generatedApi.POST('/api/auth/login', {
           body: { mberId: username, password },
         }),
       )
-      router.push('/dashboard')
+      router.push(me?.role === 'VIEWER' ? VIEWER_HOME : '/dashboard')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '로그인에 실패했습니다.')
       setLoading(false)

@@ -32,6 +32,8 @@ interface NavItem {
 interface DashboardSidebarProps {
   collapsed: boolean
   onCollapsedChange: (collapsed: boolean) => void
+  /** VIEWER 는 품질검증 결과 메뉴만 노출 */
+  viewer?: boolean
 }
 const EXECUTION_ITEM: NavItem = {
   name: '품질검증 실행',
@@ -52,6 +54,7 @@ const OTHER_NAV_ITEMS: readonly NavItem[] = [
 export function DashboardSidebar({
   collapsed,
   onCollapsedChange,
+  viewer = false,
 }: DashboardSidebarProps) {
   const pathname = usePathname()
   const { anyEnabled: agentEnabled } = useAgentEnabled()
@@ -104,11 +107,13 @@ export function DashboardSidebar({
             </p>
             <div className={collapsed ? 'h-6.5 mb-5' : ''}></div>
             <div className="space-y-1">
-              <SidebarLink
-                item={EXECUTION_ITEM}
-                active={isPathActive(pathname, EXECUTION_ITEM.href)}
-                collapsed={collapsed}
-              />
+              {!viewer && (
+                <SidebarLink
+                  item={EXECUTION_ITEM}
+                  active={isPathActive(pathname, EXECUTION_ITEM.href)}
+                  collapsed={collapsed}
+                />
+              )}
               {collapsed ? (
                 <CollapsedResults
                   key={pathname}
@@ -146,7 +151,7 @@ export function DashboardSidebar({
                   </div>
                 </div>
               )}
-              {OTHER_NAV_ITEMS.map((item) => (
+              {!viewer && OTHER_NAV_ITEMS.map((item) => (
                 <SidebarLink
                   key={item.href}
                   item={item}
