@@ -11,7 +11,7 @@ interface AsyncStateBlockProps {
   empty: boolean
   emptyMessage: string
   loadingMessage?: string
-  onRetry: () => void
+  onRetry?: () => void
   className?: string
 }
 
@@ -33,14 +33,16 @@ function ErrorBlock({
   onRetry,
 }: {
   message: string
-  onRetry: () => void
+  onRetry?: () => void
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm">
       <p className="text-red-600">{message}</p>
-      <Button variant="outline" size="sm" onClick={onRetry}>
-        {'다시 시도'}
-      </Button>
+      {onRetry && (
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          {'다시 시도'}
+        </Button>
+      )}
     </div>
   )
 }

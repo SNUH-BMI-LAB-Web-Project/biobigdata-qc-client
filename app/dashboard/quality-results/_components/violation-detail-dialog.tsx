@@ -110,17 +110,26 @@ export function ViolationDetailDialog({
   const [queryError, setQueryError] = useState<QueryError | null>(null)
 
   // 실행 전 정보: 저장된(원본) 쿼리 · 예상 소요 시간 (DATABANK 는 조회하지 않음)
+  // 404(쿼리 없음)는 데이터 상태라 재시도해도 같은 결과 — 재시도 버튼을 숨기기 위해 구분한다.
+  const [queryMissing, setQueryMissing] = useState(false)
   const info = useApi(
-    async (signal) =>
-      unwrapGeneratedResult<ViolationQueryInfoResponse>(
-        await generatedApi.GET(
-          '/api/qc/quality-results/{runId}/violations/query',
-          {
-            params: { path: { runId }, query: { metricId, checkId } },
-            signal,
-          },
-        ),
-      ),
+    async (signal) => {
+      setQueryMissing(false)
+      try {
+        return await unwrapGeneratedResult<ViolationQueryInfoResponse>(
+          await generatedApi.GET(
+            '/api/qc/quality-results/{runId}/violations/query',
+            {
+              params: { path: { runId }, query: { metricId, checkId } },
+              signal,
+            },
+          ),
+        )
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) setQueryMissing(true)
+        throw err
+      }
+    },
     [runId, metricId, checkId],
   )
   const originalQuery = info.data?.violationQuery ?? null
@@ -337,7 +346,7 @@ export function ViolationDetailDialog({
               empty={false}
               emptyMessage=""
               loadingMessage="검증 쿼리를 불러오는 중..."
-              onRetry={info.refetch}
+              onRetry={queryMissing ? undefined : info.refetch}
             />
           ) : (
             <div className="space-y-2">
