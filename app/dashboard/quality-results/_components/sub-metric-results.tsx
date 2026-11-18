@@ -1,6 +1,7 @@
 'use client'
 
-import { Eye } from 'lucide-react'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { Eye, X } from 'lucide-react'
 import { useState } from 'react'
 import { RefreshingContent, TableStateRow } from '@/components/async-state'
 import { CompactPager } from '@/components/pager'
@@ -30,6 +31,10 @@ export function SubMetricResults({
 }) {
   const [page, setPage] = useState(1)
   const [detailSub, setDetailSub] = useState<DqSubMetricResultResponse | null>(
+    null,
+  )
+
+  const [errorSub, setErrorSub] = useState<DqSubMetricResultResponse | null>(
     null,
   )
 
@@ -105,12 +110,13 @@ export function SubMetricResults({
                       </TableCell>
                       <TableCell className="text-right text-xs">
                         {failed ? (
-                          <span
-                            className="font-bold text-red-600"
-                            title={sub.notApplicableReason}
+                          <button
+                            type="button"
+                            className="font-bold text-red-600 underline underline-offset-2 hover:text-red-700"
+                            onClick={() => setErrorSub(sub)}
                           >
                             {'실행 실패'}
-                          </span>
+                          </button>
                         ) : (sub.numViolatedRows ?? 0) > 0 ? (
                           <button
                             type="button"
@@ -142,6 +148,28 @@ export function SubMetricResults({
           onChange={setPage}
         />
       </div>
+      <DialogPrimitive.Root
+        open={!!errorSub}
+        onOpenChange={(open) => !open && setErrorSub(null)}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
+          <DialogPrimitive.Content className="bg-background fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-lg border p-6 shadow-lg sm:max-w-2xl">
+            <DialogPrimitive.Title className="text-sm font-semibold">
+              {`실행 오류 로그 - ${errorSub?.subMetricId ?? ''}`}
+            </DialogPrimitive.Title>
+            <DialogPrimitive.Description className="sr-only">
+              {'세부지표 실행 실패 사유'}
+            </DialogPrimitive.Description>
+            <pre className="overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">
+              {errorSub?.notApplicableReason || '기록된 오류 로그가 없습니다.'}
+            </pre>
+            <DialogPrimitive.Close className="absolute top-4 right-4">
+              <X className="size-4" />
+            </DialogPrimitive.Close>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
       {detailSub && (
         <ViolationDetailDialog
           runId={runId}
