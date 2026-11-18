@@ -194,7 +194,7 @@ export interface paths {
         get?: never;
         /**
          * Agent On/Off 변경 (관리자)
-         * @description agentType(QC/SQL)별로 On/Off를 변경한다. 서버 메모리에 보관되며 재시작 시 OFF로 초기화.
+         * @description GPU 서버 제어 API로 Agent를 기동(start)/종료(stop)한다. 즉시 STARTING/STOPPING을 반환하며, 완료(ON/OFF)는 상태 조회로 확인한다. 다른 Agent가 OFF가 아니면 켤 수 없다(409).
          */
         put: operations["updateAgent"];
         post?: never;
@@ -682,6 +682,26 @@ export interface paths {
         patch: operations["updateDqStatisticsAnalysisActivation"];
         trace?: never;
     };
+    "/api/qc/quality-metrics/{metricId}/checks/{checkId}/activation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 품질 지표 세부지표 활성/비활성 토글
+         * @description 지표의 검증 단위(metric_level)에 맞는 dq_table_check/dq_field_check/dq_concept_check 행의 IS_ACTIVE를 Y/N으로 변경한다. N이면 deletedReason 필수이며 DELETED_AT(갱신 시각)·DELETED_BY·DELETED_REASON을 기록하고, Y면 세 값을 비운다.
+         */
+        patch: operations["updateDqCheckActivation"];
+        trace?: never;
+    };
     "/api/qc/quality-metrics/{metricId}/activation": {
         parameters: {
             query?: never;
@@ -1119,7 +1139,7 @@ export interface paths {
         };
         /**
          * Agent 사용 여부 조회
-         * @description QC/SQL 두 Agent의 On/Off 상태를 모두 반환한다.
+         * @description QC/SQL 두 Agent의 구동 상태를 모두 반환한다.
          */
         get: operations["getStatus"];
         put?: never;
@@ -1284,7 +1304,7 @@ export interface paths {
         };
         /**
          * Agent 사용 여부 조회 (관리자)
-         * @description QC/SQL 두 Agent의 On/Off 상태를 모두 반환한다.
+         * @description QC/SQL 두 Agent의 구동 상태를 모두 반환한다.
          */
         get: operations["getAgent"];
         put?: never;
@@ -1692,8 +1712,13 @@ export interface components {
             type?: string;
             /** @description Agent 표시명 */
             label?: string;
-            /** @description 사용 여부 */
+            /** @description 사용 가능 여부 (status=ON 일 때만 true) */
             enabled?: boolean;
+            /**
+             * @description 구동 상태
+             * @enum {string}
+             */
+            status?: "ON" | "STARTING" | "STOPPING" | "OFF" | "ERROR" | "UNREACHABLE";
         };
         ApiResponseAgentStatusResponse: {
             success?: boolean;
@@ -2086,6 +2111,16 @@ export interface components {
              * @enum {string}
              */
             isActive: "Y" | "N";
+        };
+        /** @description 세부지표 활성/비활성 토글 요청 */
+        UpdateCheckActivationRequest: {
+            /**
+             * @description 활성화 여부
+             * @enum {string}
+             */
+            isActive: "Y" | "N";
+            /** @description 비활성 사유 (isActive=N일 때 필수, DELETED_REASON에 저장) */
+            deletedReason?: string;
         };
         ApiResponsePageResultDqTableResponse: {
             success?: boolean;
@@ -2909,6 +2944,8 @@ export interface components {
         };
         /** @description 적용 대상 컬럼 항목 */
         FieldCheckItem: {
+            /** @description 세부지표 ID (검증 단위에 따라 field/table/concept check_id 중 하나) — 활성/비활성 토글 시 checkId로 사용 */
+            checkId?: string;
             /** @description 적용 여부 (Y/N) */
             isActive?: string;
             /** @description 테이블명 */
@@ -2919,6 +2956,10 @@ export interface components {
             conceptName?: string;
             /** @description 지표 생성일 */
             createdAt?: string;
+            /** @description 비활성 처리 일시 (isActive=N일 때) */
+            deletedAt?: string;
+            /** @description 비활성 사유 (isActive=N일 때) */
+            deletedReason?: string;
         };
         /** @description 페이지네이션 응답 */
         PageResultFieldCheckItem: {
@@ -4360,6 +4401,33 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateActivationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    updateDqCheckActivation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                metricId: string;
+                checkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCheckActivationRequest"];
             };
         };
         responses: {

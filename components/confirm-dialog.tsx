@@ -19,7 +19,11 @@ export function ConfirmDialog({
   destructive,
   pending,
   onConfirm,
+  children,
+  confirmDisabled,
 }: {
+  children?: React.ReactNode
+  confirmDisabled?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
@@ -47,6 +51,7 @@ export function ConfirmDialog({
           <AlertDialogPrimitive.Description className="text-sm text-muted-foreground">
             {description}
           </AlertDialogPrimitive.Description>
+          {children}
           <div className="flex justify-end gap-2">
             <AlertDialogPrimitive.Cancel asChild>
               <Button variant="outline" size="sm" disabled={pending}>
@@ -57,7 +62,7 @@ export function ConfirmDialog({
               <Button
                 size="sm"
                 variant={destructive ? 'destructive' : 'default'}
-                disabled={pending}
+                disabled={pending || confirmDisabled}
                 onClick={(e) => {
                   e.preventDefault()
                   onConfirm()

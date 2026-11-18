@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { ArrowUpDown, Loader2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { ActiveToggleCell } from '../../_components/active-toggle-cell'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -144,7 +144,7 @@ export function AppliedFieldsTable({
                 </TableHead>
               </TableRow>
               <TableRow>
-                <TableHead className="text-xs w-24">
+                <TableHead className="text-xs w-32">
                   <span>적용 여부</span>
                 </TableHead>
                 <SortHead
@@ -198,10 +198,35 @@ export function AppliedFieldsTable({
                   const active = isActiveFlag(row.isActive)
                   return (
                     <TableRow key={index}>
-                      <TableCell>
-                        <Badge variant={active ? 'default' : 'secondary'}>
-                          {active ? '적용' : '미적용'}
-                        </Badge>
+                      <TableCell
+                        title={
+                          !active && row.deletedReason
+                            ? `사유: ${row.deletedReason}${row.deletedAt ? ` (${row.deletedAt})` : ''}`
+                            : undefined
+                        }
+                      >
+                        <ActiveToggleCell
+                          active={active}
+                          label={`${row.tableName ?? ''}${row.fieldName ? `.${row.fieldName}` : ''}`}
+                          requireReasonOnDeactivate
+                          onSave={async (next, reason) => {
+                            await unwrapGeneratedResult(
+                              await generatedApi.PATCH(
+                                '/api/qc/quality-metrics/{metricId}/checks/{checkId}/activation',
+                                {
+                                  params: {
+                                    path: { metricId, checkId: row.checkId! },
+                                  },
+                                  body: {
+                                    isActive: next ? 'Y' : 'N',
+                                    deletedReason: next ? undefined : reason,
+                                  },
+                                },
+                              ),
+                            )
+                            refetch()
+                          }}
+                        />
                       </TableCell>
                       <TableCell className="text-xs font-medium">
                         {row.tableName}
