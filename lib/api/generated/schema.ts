@@ -275,8 +275,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 일지(검토) 목록 조회
-         * @description runId·metricId·keyword로 필터. 최신순 페이징.
+         * 검토 목록 조회
+         * @description stage·subStage(DB 단계, dq_run_logs 기준)·runId(검증ID)·metricId·keyword로 필터. 최신순 페이징. actionCount(삭제되지 않은 조치 건수)로 조치/검토대기를 구분한다.
          */
         get: operations["getList"];
         put?: never;
@@ -325,6 +325,26 @@ export interface paths {
          * @description 세부지표(runId+metricId+checkId)의 sql_text_violate를 DATABANK에 실행해 위배 행(참여자ID/기관ID/오류값)을 조회한다. 상한 캡까지 조회해 스냅샷으로 캐시하고 첫 페이지를 반환한다. jobId(클라이언트 생성 UUID)는 페이지 조회·종료에 재사용한다. 실데이터는 저장하지 않으며 실행 메타만 dq_run_logs_violate_detail에 적재한다.
          */
         post: operations["executeViolationQuery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qc/quality-results/{runId}/violations/raw-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 위배 원본 데이터 CSV 다운로드
+         * @description 세부지표의 sql_text_violate_raw를 DATABANK에 실행해 원본 데이터를 CSV(UTF-8 BOM, Excel 호환)로 스트리밍 다운로드한다. 결과 컬럼을 그대로 헤더로 사용한다. 쿼리가 없으면 404(오류 데이터를 지원하지 않는 검증 항목), 실행 실패 시 502(SQL 쿼리 오류 : 사유). 원본 데이터는 저장하지 않으며 실행 메타만 dq_run_logs_violate_detail에 적재한다.
+         */
+        post: operations["exportRawViolations"];
         delete?: never;
         options?: never;
         head?: never;
@@ -827,8 +847,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 일지 엑셀(CSV) 추출
-         * @description 검토+조치를 평면 결합해 CSV(UTF-8 BOM, Excel 호환)로 다운로드.
+         * 검토 결과 엑셀(CSV) 추출
+         * @description 검토+조치를 평면 결합해 CSV(UTF-8 BOM, Excel 호환)로 다운로드. stage·subStage 지정 시 해당 DB 단계의 검토만 추출.
          */
         get: operations["export"];
         put?: never;
@@ -1460,7 +1480,7 @@ export interface components {
             /** @description 활성화 여부 */
             isEnable?: string;
         };
-        /** @description 품질검증 일지 — 검토 작성/수정 요청 */
+        /** @description 품질검증 결과 검토 — 검토 작성/수정 요청 */
         ResultReviewRequest: {
             /**
              * Format: int32
@@ -1494,7 +1514,7 @@ export interface components {
             message?: string;
             data?: Record<string, never>;
         };
-        /** @description 품질검증 일지 — 조치 작성/수정 요청 */
+        /** @description 품질검증 결과 검토 — 조치 작성/수정 요청 */
         ResultActionRequest: {
             /**
              * Format: int32
@@ -1719,6 +1739,8 @@ export interface components {
              * @enum {string}
              */
             status?: "ON" | "STARTING" | "STOPPING" | "OFF" | "ERROR" | "UNREACHABLE";
+            /** @description 오류 원인 (status=ERROR/UNREACHABLE 일 때만). GPU 서버 last_error, 없으면 상태 요약 */
+            errorMessage?: string;
         };
         ApiResponseAgentStatusResponse: {
             success?: boolean;
@@ -1932,6 +1954,19 @@ export interface components {
             /** @description 오류 값 */
             violatedValue?: string;
         };
+        /** @description 위배 원본 데이터 CSV 다운로드 요청 */
+        ViolationRawExportRequest: {
+            /**
+             * @description 지표 ID
+             * @example QM101
+             */
+            metricId: string;
+            /**
+             * @description 세부지표 ID (field/table/concept check_id 중 해당 값)
+             * @example QM101-01
+             */
+            checkId: string;
+        };
         /** @description 위배 상세 데이터 CSV 다운로드 요청 */
         ViolationExportRequest: {
             /**
@@ -2058,7 +2093,7 @@ export interface components {
         /** @description DB 단계 개방 버전 생성 요청 */
         CreateDqStageRequest: {
             /**
-             * @description DB 단계. 연계DB(LINK)/수집DB(COLL)는 개방 버전 구분이 없어 등록할 수 없다.
+             * @description DB 단계. 수집DB(LINK)/기준DB(COLL)는 개방 버전 구분이 없어 등록할 수 없다.
              * @enum {string}
              */
             stage: "PREP" | "INTG" | "OPEN";
@@ -2496,6 +2531,10 @@ export interface components {
             updatedBy?: string;
             deletedAt?: string;
             deletedBy?: string;
+            stage?: string;
+            subStage?: string;
+            /** Format: int32 */
+            actionCount?: number;
         };
         /** @description 페이지네이션 응답 */
         PageResultDqResultReview: {
@@ -2558,7 +2597,7 @@ export interface components {
             deletedAt?: string;
             deletedBy?: string;
         };
-        /** @description 품질검증 일지 — 검토 1건 + 하위 조치 목록 */
+        /** @description 품질검증 결과 검토 — 검토 1건 + 하위 조치 목록 */
         ResultJournalResponse: {
             review?: components["schemas"]["DqResultReview"];
             /** @description 조치(action) 목록 */
@@ -2841,7 +2880,7 @@ export interface components {
             category?: string;
             /** @description 검증 단위 (TABLE/FIELD/CONCEPT) */
             metricLevel?: string;
-            /** @description 검증 대상 DB 단계 (LINK=연계 / PREP=전처리 / INTG=통합 / OPEN=개방) */
+            /** @description 검증 대상 DB 단계 (LINK=수집 / COLL=기준 / PREP=정제 / INTG=통합 / OPEN=개방) */
             stage?: string;
             /** @description 지표 국문명 */
             metricNameKor?: string;
@@ -3817,6 +3856,8 @@ export interface operations {
     getList: {
         parameters: {
             query?: {
+                stage?: string;
+                subStage?: string;
                 runId?: number;
                 metricId?: string;
                 keyword?: string;
@@ -3913,6 +3954,30 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["ApiResponseViolationExecuteResponse"];
                 };
+            };
+        };
+    };
+    exportRawViolations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViolationRawExportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4591,6 +4656,8 @@ export interface operations {
     export: {
         parameters: {
             query?: {
+                stage?: string;
+                subStage?: string;
                 runId?: number;
                 metricId?: string;
             };
