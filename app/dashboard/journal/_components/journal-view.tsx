@@ -22,7 +22,9 @@ import {
   generatedApi,
   unwrapGeneratedResult,
 } from '@/lib/api'
-import type { DqResultReview, PageResult } from '@/lib/api'
+import type { DqResultReview, DqRunLogResponse, PageResult } from '@/lib/api'
+import { StageVersionPanel } from '../../quality-results/_components/stage-version-panel'
+import { ColumnFilterHeader } from '../../indicators/_components/column-filter-header'
 import { JournalRowGroup } from './journal-row-group'
 import { ReviewFormDialog } from './review-form-dialog'
 import { errMessage } from './journal-utils'
@@ -37,23 +39,66 @@ export function JournalView() {
   const [deleteTarget, setDeleteTarget] = useState<DqResultReview | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const term = useDebounced(searchTerm.trim())
-  // 숫자만 입력하면 검증ID(회차)로, 그 외에는 키워드(지표ID·세부지표ID·배정팀·검토자)로 검색한다
-  const isRunId = /^\d+$/.test(term)
-  const runId = isRunId ? Number(term) : undefined
-  const keyword = isRunId ? undefined : term || undefined
+  const keyword = useDebounced(searchTerm.trim()) || undefined
+  // 품질검증 결과 화면과 동일한 2단 선택 — null = 미선택, '' = 버전 구분 없는 단계(연계DB)
+  const [stage, setStage] = useState<string | null>(null)
+  const [subStage, setSubStage] = useState<string | null>(null)
+  const [runFilter, setRunFilter] = useState('all')
+  const ready = !!stage && subStage !== null
+  const runId = runFilter === 'all' ? undefined : Number(runFilter)
 
-  const { data, isInitialLoading, isRefetching, error, refetch } = useApi(
-    async (signal) =>
-      unwrapGeneratedResult<PageResult<DqResultReview>>(
-        await generatedApi.GET('/api/qc/result-journals', {
+  // 검증ID 필터 옵션 — 선택한 DB 단계의 검증 실행 이력에서 도출
+  const runsApi = useApi(
+    async (signal) => {
+      if (!ready) return null
+      return unwrapGeneratedResult<PageResult<DqRunLogResponse>>(
+        await generatedApi.GET('/api/qc/quality-results/checks', {
           params: {
-            query: { runId, keyword, page, size: pageSize },
+            query: {
+              stage: stage ?? undefined,
+              subStage: subStage || undefined,
+              page: 1,
+              size: 100, // ponytail: 최근 100회차까지만 필터 옵션 제공, 더 필요하면 서버 distinct runId API 추가
+            },
           },
           signal,
         }),
-      ),
-    [runId, keyword, page, pageSize],
+      )
+    },
+    [ready, stage, subStage],
+  )
+  const runOptions = (runsApi.data?.items ?? []).map((r) => ({
+    value: String(r.runId),
+    label: String(r.runId),
+  }))
+
+  const handleSelectStage = (nextStage: string, nextSub: string | null) => {
+    setStage(nextStage)
+    setSubStage(nextSub)
+    setRunFilter('all')
+    resetList()
+  }
+
+  const { data, isInitialLoading, isRefetching, error, refetch } = useApi(
+    async (signal) => {
+      if (!ready) return null
+      return unwrapGeneratedResult<PageResult<DqResultReview>>(
+        await generatedApi.GET('/api/qc/result-journals', {
+          params: {
+            query: {
+              stage: stage ?? undefined,
+              subStage: subStage || undefined,
+              runId,
+              keyword,
+              page,
+              size: pageSize,
+            },
+          },
+          signal,
+        }),
+      )
+    },
+    [ready, stage, subStage, runId, keyword, page, pageSize],
   )
 
   const reviews = data?.items ?? []
@@ -88,13 +133,16 @@ export function JournalView() {
     }
   }
 
-  // 서버 export 는 runId 필터만 지원한다 (검색어 미적용 — 검토+조치 전체 CSV)
+  // 서버 export 는 stage·subStage·runId 필터만 지원한다 (검색어 미적용)
   const exportCsv = async () => {
+    if (!ready) return
     setExporting(true)
     try {
-      const qs = runId !== undefined ? `?runId=${runId}` : ''
+      const qs = new URLSearchParams({ stage: stage! })
+      if (subStage) qs.set('subStage', subStage)
+      if (runId !== undefined) qs.set('runId', String(runId))
       const res = await fetch(
-        `${API_BASE_URL}/api/qc/result-journals/export${qs}`,
+        `${API_BASE_URL}/api/qc/result-journals/export?${qs}`,
         { credentials: 'include' },
       )
       if (!res.ok) {
@@ -126,33 +174,23 @@ export function JournalView() {
               {'품질검증 결과에 대한 검토와 조치 내역을 기록하고 관리합니다'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="gap-1.5"
-              disabled={exporting}
-              onClick={exportCsv}
-              title="검색창에 검증ID(숫자)를 입력했다면 해당 회차만, 아니면 검토+조치 전체를 CSV로 추출합니다"
-            >
-              {exporting ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <FileDown />
-              )}
-              {'엑셀 추출'}
-            </Button>
-            <Button className="gap-1.5" onClick={() => setAddOpen(true)}>
-              <Plus />
-              {'일지 작성'}
-            </Button>
-          </div>
+          <Button className="gap-1.5" onClick={() => setAddOpen(true)}>
+            <Plus />
+            {'일지 작성'}
+          </Button>
         </div>
+
+        <StageVersionPanel
+          selectedStage={stage}
+          selectedSubStage={subStage}
+          onSelect={handleSelectStage}
+        />
 
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="검증ID(숫자), 지표ID, 세부지표ID, 배정팀, 검토자 검색..."
+              placeholder="지표ID, 세부지표ID, 배정팀, 검토자 검색..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value)
@@ -161,6 +199,16 @@ export function JournalView() {
               className="pl-10"
             />
           </div>
+          <Button
+            variant="outline"
+            className="gap-1.5"
+            disabled={exporting || !ready}
+            onClick={exportCsv}
+            title="선택한 DB 단계의 검토+조치를 CSV로 추출합니다 (검증ID 필터 적용)"
+          >
+            {exporting ? <Loader2 className="animate-spin" /> : <FileDown />}
+            {'엑셀 추출'}
+          </Button>
         </div>
 
         <ReviewFormDialog
@@ -209,7 +257,19 @@ export function JournalView() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-8" />
-                    <TableHead className="text-xs">{'검증ID'}</TableHead>
+                    <TableHead className="w-20 text-xs">{'상태'}</TableHead>
+                    <TableHead className="w-24 px-1 text-xs">
+                      <ColumnFilterHeader
+                        label="검증ID"
+                        allLabel="전체 검증ID"
+                        value={runFilter}
+                        onChange={(v) => {
+                          setRunFilter(v)
+                          resetList()
+                        }}
+                        options={runOptions}
+                      />
+                    </TableHead>
                     <TableHead className="text-xs">{'지표ID'}</TableHead>
                     <TableHead className="text-xs">{'세부지표ID'}</TableHead>
                     <TableHead className="text-xs">{'배정 팀'}</TableHead>
@@ -221,11 +281,15 @@ export function JournalView() {
                 <TableBody>
                   {reviews.length === 0 ? (
                     <TableStateRow
-                      colSpan={8}
+                      colSpan={9}
                       loading={isInitialLoading}
                       error={error}
                       empty={!isInitialLoading && !error}
-                      emptyMessage="등록된 일지가 없습니다."
+                      emptyMessage={
+                        ready
+                          ? '등록된 일지가 없습니다.'
+                          : '먼저 조회 대상 DB와 데이터를 선택하세요'
+                      }
                       onRetry={refetch}
                     />
                   ) : (

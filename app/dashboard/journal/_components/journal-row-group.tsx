@@ -2,6 +2,7 @@
 
 import { memo } from 'react'
 import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { TableCell, TableRow } from '@/components/ui/table'
 import type { DqResultReview } from '@/lib/api'
@@ -29,6 +30,13 @@ export const JournalRowGroup = memo(function JournalRowGroup({
             <ChevronDown className="size-4 text-muted-foreground" />
           ) : (
             <ChevronRight className="size-4 text-muted-foreground" />
+          )}
+        </TableCell>
+        <TableCell>
+          {(review.actionCount ?? 0) > 0 ? (
+            <Badge>{'조치'}</Badge>
+          ) : (
+            <Badge variant="outline">{'검토대기'}</Badge>
           )}
         </TableCell>
         <TableCell className="font-mono text-xs">{review.runId}</TableCell>
@@ -70,7 +78,7 @@ export const JournalRowGroup = memo(function JournalRowGroup({
 
       {expanded && (
         <TableRow>
-          <TableCell colSpan={8} className="bg-muted/20 p-0">
+          <TableCell colSpan={9} className="max-w-0 bg-muted/20 p-0">
             {/* 검토 수정 시 updatedAt 이 바뀌어 패널이 새로 로드된다 */}
             <ActionsPanel
               key={`${review.reviewId}:${review.updatedAt ?? ''}`}
