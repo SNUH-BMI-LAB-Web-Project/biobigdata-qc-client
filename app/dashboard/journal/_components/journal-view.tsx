@@ -120,7 +120,7 @@ export function JournalView() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold leading-[34px]">
-              {'품질검증 일지'}
+              {'품질검증 결과 검토'}
             </h1>
             <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
               {'품질검증 결과에 대한 검토와 조치 내역을 기록하고 관리합니다'}

@@ -46,7 +46,7 @@ const RESULT_NAV_ITEMS = [
 ] as const
 const OTHER_NAV_ITEMS: readonly NavItem[] = [
   { name: '지표DB 관리', href: '/dashboard/indicators', icon: Table },
-  { name: '품질검증 일지', href: '/dashboard/journal', icon: NotebookPen },
+  { name: '품질검증 결과 검토', href: '/dashboard/journal', icon: NotebookPen },
   { name: 'Agent', href: '/dashboard/agent', icon: Sparkles },
 ]
 
