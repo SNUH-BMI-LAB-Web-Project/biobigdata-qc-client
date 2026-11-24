@@ -148,6 +148,8 @@ export function ViolationDetailDialog({
 
   const [downloading, setDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [rawDownloading, setRawDownloading] = useState(false)
+  const [rawError, setRawError] = useState<string | null>(null)
 
   const runningJobRef = useRef<string | null>(null)
   const requestRef = useRef<AbortController | null>(null)
@@ -274,41 +276,66 @@ export function ViolationDetailDialog({
   }
 
   // ponytail: 전체 CSV를 메모리 blob으로 받음 — 수십만 행 넘으면 GET + <a href> 직접 다운로드로 전환
-  const downloadCsv = async () => {
-    setDownloading(true)
-    setDownloadError(null)
+  const saveCsv = async (
+    path: string,
+    body: object,
+    filename: string,
+    setBusy: (v: boolean) => void,
+    setError: (v: string | null) => void,
+  ) => {
+    setBusy(true)
+    setError(null)
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/qc/quality-results/${runId}/violations/export`,
+        `${API_BASE_URL}/api/qc/quality-results/${runId}/violations/${path}`,
         {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ metricId, checkId, editedSql: executedSql }),
+          body: JSON.stringify(body),
         },
       )
       if (!res.ok) {
-        const body = await res.json().catch(() => null)
-        throw new Error(body?.message ?? 'CSV 다운로드에 실패했습니다.')
+        const err = await res.json().catch(() => null)
+        throw new Error(err?.message ?? 'CSV 다운로드에 실패했습니다.')
       }
       // 서버가 전송 도중 실패하면 연결이 끊겨 blob() 이 reject 된다 (잘린 파일 저장 방지)
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `violations_${runId}_${metricId}_${checkId}.csv`
+      a.download = filename
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
-      setDownloadError(
+      setError(
         err instanceof Error && err.message !== 'Failed to fetch'
           ? err.message
           : '다운로드 중 연결이 끊겼습니다. 다시 시도해주세요.',
       )
     } finally {
-      setDownloading(false)
+      setBusy(false)
     }
   }
+
+  const downloadCsv = () =>
+    saveCsv(
+      'export',
+      { metricId, checkId, editedSql: executedSql },
+      `violations_${runId}_${metricId}_${checkId}.csv`,
+      setDownloading,
+      setDownloadError,
+    )
+
+  // 서버가 sql_text_violate_raw 를 실행 — NULL 이면 404, 실행 실패면 502 + 메시지를 그대로 표시
+  const downloadRawCsv = () =>
+    saveCsv(
+      'raw-export',
+      { metricId, checkId },
+      `violations_raw_${runId}_${metricId}_${checkId}.csv`,
+      setRawDownloading,
+      setRawError,
+    )
 
   const elapsedMs = Math.max(0, now - startedAt)
   const items = rows?.items ?? []
@@ -318,26 +345,42 @@ export function ViolationDetailDialog({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className={OVERLAY_CLASS} />
         <DialogPrimitive.Content className={CONTENT_CLASS}>
-          <div className="pr-6">
-            <DialogPrimitive.Title className="flex items-center gap-2 text-lg font-semibold">
-              <AlertCircle className="size-5 text-red-600" />
-              {'위반 데이터 상세'}
-            </DialogPrimitive.Title>
-            <DialogPrimitive.Description className="mt-1 text-xs text-muted-foreground">
-              {sub.subMetricName ?? '-'}
-              {' · '}
-              <span className="font-mono">{checkId}</span>
-              {' · 위반 '}
-              <span className="font-bold text-red-600">
-                {(
-                  result?.totalViolatedRows ??
-                  info.data?.totalViolatedRows ??
-                  sub.numViolatedRows
-                )?.toLocaleString() ?? '-'}
-              </span>
-              {'건'}
-            </DialogPrimitive.Description>
+          <div className="pr-6 gap-6 flex items-center">
+            <div>
+              <DialogPrimitive.Title className="flex items-center gap-2 text-lg font-semibold">
+                <AlertCircle className="size-5 text-red-600" />
+                {'위반 데이터 상세'}
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="mt-1 text-xs text-muted-foreground">
+                {sub.subMetricName ?? '-'}
+                {' · '}
+                <span className="font-mono">{checkId}</span>
+                {' · 위반 '}
+                <span className="font-bold text-red-600">
+                  {(
+                    result?.totalViolatedRows ??
+                    info.data?.totalViolatedRows ??
+                    sub.numViolatedRows
+                  )?.toLocaleString() ?? '-'}
+                </span>
+                {'건'}
+              </DialogPrimitive.Description>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={rawDownloading}
+              onClick={downloadRawCsv}
+            >
+              {rawDownloading ? <Loader2 className="animate-spin" /> : <Download />}
+              {'위반 데이터 원본 추출'}
+            </Button>
           </div>
+          {rawError && (
+            <p role="alert" className="text-xs text-red-600">
+              {rawError}
+            </p>
+          )}
 
           {originalQuery === null ? (
             <AsyncStateBlock
