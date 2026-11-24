@@ -25,8 +25,8 @@ import type {
 import { OVERLAY_CLASS } from '@/components/confirm-dialog'
 
 const STAGE_OPTIONS: { value: Stage; label: string }[] = [
-  { value: 'LINK', label: '연계' },
-  { value: 'PREP', label: '전처리' },
+  { value: 'LINK', label: '수집' },
+  { value: 'PREP', label: '정제' },
   { value: 'INTG', label: '통합' },
   { value: 'OPEN', label: '개방' },
 ]

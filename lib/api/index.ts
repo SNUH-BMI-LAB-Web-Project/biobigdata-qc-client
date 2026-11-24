@@ -126,9 +126,9 @@ export const runTypeLabel = (runType: string): string =>
   ({ quality: '품질지표', statistics: '통계지표' })[runType] ?? runType
 
 export const STAGE_LABEL: Record<string, string> = {
-  LINK: '연계DB',
-  COLL: '수집DB',
-  PREP: '전처리DB',
+  LINK: '수집DB',
+  COLL: '기준DB',
+  PREP: '정제DB',
   INTG: '통합DB',
   OPEN: '개방DB',
 }

@@ -31,7 +31,7 @@ const CHECKS_PAGE_SIZE = 5
 
 interface ChecksTableProps {
   selectedStage: string | null
-  /** 선택 전이면 null, 버전 구분이 없는 단계(연계DB)면 '' */
+  /** 선택 전이면 null, 버전 구분이 없는 단계(수집DB)면 '' */
   selectedSubStage: string | null
   selectedRunId: number | null
   onSelectRun: (runId: number) => void

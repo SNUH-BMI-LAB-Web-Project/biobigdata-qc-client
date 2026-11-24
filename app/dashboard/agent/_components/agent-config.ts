@@ -29,8 +29,8 @@ export interface AgentScope {
 
 /** QC Agent 대상 DB 단계 — API가 LINK/PREP/INTG/OPEN 만 받는다 */
 export const QC_STAGES: readonly AgentScope[] = [
-  { id: 'LINK', name: '연계DB' },
-  { id: 'PREP', name: '전처리DB' },
+  { id: 'LINK', name: '수집DB' },
+  { id: 'PREP', name: '정제DB' },
   { id: 'INTG', name: '통합DB' },
   { id: 'OPEN', name: '개방DB' },
 ]
