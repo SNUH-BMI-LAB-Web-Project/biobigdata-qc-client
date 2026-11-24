@@ -37,7 +37,7 @@ export function AppliedFieldsTable({
 }) {
   const hasFieldColumn = metricLevel?.trim().toUpperCase() !== 'TABLE'
   const hasConceptColumn = metricLevel?.trim().toUpperCase() === 'CONCEPT'
-  const colCount = 3 + (hasFieldColumn ? 1 : 0) + (hasConceptColumn ? 1 : 0)
+  const colCount = 4 + (hasFieldColumn ? 1 : 0) + (hasConceptColumn ? 1 : 0)
   const [tableFilter, setTableFilter] = useState('')
   const [columnFilter, setColumnFilter] = useState('')
   const [activeFilter, setActiveFilter] = useState('all') // all | active | inactive
@@ -120,6 +120,7 @@ export function AppliedFieldsTable({
                     <option value="inactive">미적용</option>
                   </select>
                 </TableHead>
+                <TableHead />
                 <TableHead className="text-xs">
                   <Input
                     placeholder="테이블 검색..."
@@ -147,6 +148,10 @@ export function AppliedFieldsTable({
                 <TableHead className="text-xs w-32">
                   <span>적용 여부</span>
                 </TableHead>
+                <SortHead
+                  label="CHECK_ID"
+                  onClick={() => handleSort('checkId')}
+                />
                 <SortHead
                   label="테이블명"
                   onClick={() => handleSort('tableName')}
@@ -227,6 +232,15 @@ export function AppliedFieldsTable({
                             refetch()
                           }}
                         />
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {row.checkId ? (
+                          <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                            {row.checkId}
+                          </code>
+                        ) : (
+                          '-'
+                        )}
                       </TableCell>
                       <TableCell className="text-xs font-medium">
                         {row.tableName}
